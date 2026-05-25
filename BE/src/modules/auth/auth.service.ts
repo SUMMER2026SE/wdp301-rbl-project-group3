@@ -11,7 +11,7 @@ import {
   hashToken,
 } from '../../utils/hash.util';
 import { generateTokenPair, verifyRefreshToken } from '../../utils/token.util';
-import { sendVerificationEmail, sendPasswordResetEmail } from '../../utils/mail.util';
+import { sendVerificationEmail, sendPasswordResetEmail, sendOtpEmail } from '../../utils/mail.util';
 import { cloudinary } from '../../config/cloudinary.config';
 import { env } from '../../config/env.config';
 import { DeviceInfo } from '../../types/common.types';
@@ -40,14 +40,14 @@ export class AuthService {
       isEmailVerified: false,
     });
 
-    const rawToken = generateSecureToken();
-    const tokenHash = hashToken(rawToken);
-    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const tokenHash = hashToken(otp);
+    const expires = new Date(Date.now() + 15 * 60 * 1000);
 
     await authRepository.setEmailVerifyToken(user._id.toString(), tokenHash, expires);
-    await sendVerificationEmail(data.email, rawToken);
+    await sendOtpEmail(data.email, otp);
 
-    return { message: 'Registration successful. Please verify your email.' };
+    return { message: 'Registration successful. An OTP has been sent to your email.' };
   }
 
   // ─── Verify Email ────────────────────────────────────────
@@ -55,6 +55,33 @@ export class AuthService {
     const tokenHash = hashToken(token);
     const user = await authRepository.findUserByEmailVerifyToken(tokenHash);
     if (!user) throw new AppError('Invalid or expired verification token', 400);
+
+    await authRepository.markEmailVerified(user._id.toString());
+    return { message: 'Email verified successfully.' };
+  }
+
+  // ─── OTP Email Verification ──────────────────────────────
+  async requestEmailVerificationOtp(userId: string): Promise<{ message: string }> {
+    const user = await authRepository.findUserById(userId);
+    if (!user) throw new AppError('User not found', 404);
+    if (user.isEmailVerified) throw new AppError('Email is already verified', 400);
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const tokenHash = hashToken(otp);
+    const expires = new Date(Date.now() + 15 * 60 * 1000);
+
+    await authRepository.setEmailVerifyToken(user._id.toString(), tokenHash, expires);
+    await sendOtpEmail(user.email, otp);
+
+    return { message: 'OTP sent to your email.' };
+  }
+
+  async verifyEmailOtp(userId: string, otp: string): Promise<{ message: string }> {
+    const tokenHash = hashToken(otp);
+    const user = await authRepository.findUserByEmailVerifyToken(tokenHash);
+    if (!user || user._id.toString() !== userId) {
+      throw new AppError('Invalid or expired OTP', 400);
+    }
 
     await authRepository.markEmailVerified(user._id.toString());
     return { message: 'Email verified successfully.' };
@@ -75,9 +102,7 @@ export class AuthService {
     const isMatch = await comparePassword(data.password, user.passwordHash);
     if (!isMatch) throw new AppError('Invalid credentials', 401);
 
-    if (!user.isEmailVerified) throw new AppError('Please verify your email first', 403);
     if (user.status === 'banned') throw new AppError('Account has been banned', 403);
-    if (user.status === 'inactive') throw new AppError('Account is inactive', 403);
 
     const tokenId = uuidv4();
     const { accessToken, refreshToken } = generateTokenPair(user, tokenId);
@@ -294,6 +319,40 @@ export class AuthService {
     await authRepository.updateUser(userId, {
       passwordHash,
       passwordChangedAt: new Date(),
+    });
+
+    await authRepository.revokeAllUserTokens(userId);
+    await authRepository.incrementRefreshTokenVersion(userId);
+
+    return { message: 'Password changed successfully. Please login again.' };
+  }
+
+  // ─── Change Password With OTP ─────────────────────────────
+  async changePasswordWithOtp(
+    userId: string,
+    otp: string,
+    newPassword: string
+  ): Promise<{ message: string }> {
+    const tokenHash = hashToken(otp);
+    const userOTP = await authRepository.findUserByEmailVerifyToken(tokenHash);
+    if (!userOTP || userOTP._id.toString() !== userId) {
+      throw new AppError('Invalid or expired OTP', 400);
+    }
+
+    const user = await authRepository.findUserById(userId, true);
+    if (!user || user.authProvider !== 'local' || !user.passwordHash) {
+      throw new AppError('Cannot change password for social accounts', 400);
+    }
+
+    const isSame = await comparePassword(newPassword, user.passwordHash);
+    if (isSame) throw new AppError('New password must be different from current password', 400);
+
+    const passwordHash = await hashPassword(newPassword);
+    await authRepository.updateUser(userId, {
+      passwordHash,
+      passwordChangedAt: new Date(),
+      emailVerifyToken: undefined,
+      emailVerifyTokenExpires: undefined,
     });
 
     await authRepository.revokeAllUserTokens(userId);
