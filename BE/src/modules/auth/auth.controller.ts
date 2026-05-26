@@ -106,6 +106,33 @@ export class AuthController {
     clearRefreshCookie(res);
     sendSuccess(res, null, result.message);
   });
+
+  requestEmailVerificationOtp = asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!.userId;
+    const result = await authService.requestEmailVerificationOtp(userId);
+    sendSuccess(res, null, result.message);
+  });
+
+  requestPasswordChangeOtp = asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!.userId;
+    const result = await authService.requestPasswordChangeOtp(userId);
+    sendSuccess(res, null, result.message);
+  });
+
+  verifyEmailOtp = asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!.userId;
+    const { otp } = req.body;
+    const result = await authService.verifyEmailOtp(userId, otp);
+    sendSuccess(res, null, result.message);
+  });
+
+  changePasswordWithOtp = asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!.userId;
+    const { otp, newPassword } = req.body;
+    const result = await authService.changePasswordWithOtp(userId, otp, newPassword);
+    clearRefreshCookie(res);
+    sendSuccess(res, null, result.message);
+  });
 }
 
 export const authController = new AuthController();

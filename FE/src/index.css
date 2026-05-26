@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #151c27;
+  background-color: #f9f9ff;
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-synthesis: none;
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background-color: #f9f9ff;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background-color: #f9f9ff;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: inherit;
+}
+
+#root {
+  min-height: 100vh;
+  width: 100%;
+}
+
+.soft-lift {
+  box-shadow: 0 4px 12px rgb(0 0 0 / 5%);
+}
+
+.glass-cart {
+  backdrop-filter: blur(10px);
+  background: rgb(255 255 255 / 85%);
+}
+
+.beveled-btn {
+  box-shadow: inset 0 1px 0 0 rgb(255 255 255 / 20%);
+}

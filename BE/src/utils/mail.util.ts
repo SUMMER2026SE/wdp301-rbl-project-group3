@@ -58,3 +58,21 @@ export const sendPasswordResetEmail = async (email: string, token: string): Prom
     `,
   });
 };
+
+export const sendOtpEmail = async (email: string, otp: string): Promise<void> => {
+  await transporter.sendMail({
+    from: env.email.from,
+    to: email,
+    subject: 'Mã OTP Xác thực - MiniMart',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #2d7a4f;">Mã OTP Xác thực</h2>
+        <p>Đây là mã OTP của bạn để xác thực hành động. Vui lòng không chia sẻ mã này với bất kỳ ai.</p>
+        <div style="background:#f4f4f4; padding:16px; text-align:center; font-size:24px; font-weight:bold; letter-spacing:4px; color:#333; margin:16px 0;">
+          ${otp}
+        </div>
+        <p style="color:#999; font-size:13px;">Mã OTP này sẽ hết hạn sau 15 phút.</p>
+      </div>
+    `,
+  });
+};
