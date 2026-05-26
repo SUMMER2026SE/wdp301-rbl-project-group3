@@ -76,6 +76,22 @@ export class AuthService {
     return { message: 'OTP sent to your email.' };
   }
 
+  // ─── OTP Password Change ─────────────────────────────────
+  async requestPasswordChangeOtp(userId: string): Promise<{ message: string }> {
+    const user = await authRepository.findUserById(userId);
+    if (!user) throw new AppError('User not found', 404);
+    if (user.authProvider !== 'local') throw new AppError('Cannot change password for social accounts', 400);
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const tokenHash = hashToken(otp);
+    const expires = new Date(Date.now() + 15 * 60 * 1000);
+
+    await authRepository.setEmailVerifyToken(user._id.toString(), tokenHash, expires);
+    await sendOtpEmail(user.email, otp);
+
+    return { message: 'OTP sent to your email.' };
+  }
+
   async verifyEmailOtp(userId: string, otp: string): Promise<{ message: string }> {
     const tokenHash = hashToken(otp);
     const user = await authRepository.findUserByEmailVerifyToken(tokenHash);
@@ -260,12 +276,12 @@ export class AuthService {
     const user = await authRepository.findUserByEmail(email);
 
     if (!user || user.authProvider !== 'local') {
-      return { message: 'If the email exists, a reset link has been sent.' };
+      return { message: 'If the email exists, an OTP has been sent.' };
     }
 
-    const rawToken = generateSecureToken();
+    const rawToken = Math.floor(100000 + Math.random() * 900000).toString();
     const tokenHash = hashToken(rawToken);
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 mins for OTP
 
     await authRepository.createPasswordReset({
       userId: user._id,
@@ -273,8 +289,8 @@ export class AuthService {
       expiresAt,
     });
 
-    await sendPasswordResetEmail(email, rawToken);
-    return { message: 'If the email exists, a reset link has been sent.' };
+    await sendOtpEmail(email, rawToken);
+    return { message: 'If the email exists, an OTP has been sent.' };
   }
 
   // ─── Reset Password ───────────────────────────────────────

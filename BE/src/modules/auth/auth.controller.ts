@@ -113,6 +113,12 @@ export class AuthController {
     sendSuccess(res, null, result.message);
   });
 
+  requestPasswordChangeOtp = asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!.userId;
+    const result = await authService.requestPasswordChangeOtp(userId);
+    sendSuccess(res, null, result.message);
+  });
+
   verifyEmailOtp = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!.userId;
     const { otp } = req.body;

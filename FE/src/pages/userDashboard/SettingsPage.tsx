@@ -52,7 +52,7 @@ export const SettingsPage = () => {
 
     setLoading(true)
     try {
-      await authService.requestEmailVerificationOtp()
+      await authService.requestPasswordChangeOtp()
       setOtpSent(true)
       setSuccess('OTP sent to your verified email.')
     } catch (err) {

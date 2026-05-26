@@ -100,6 +100,12 @@ export const authService = {
     return response.data
   },
 
+  // Request password change OTP
+  requestPasswordChangeOtp: async (): Promise<ApiResponse<{ message: string }>> => {
+    const response = await apiClient.post('/api/auth/request-password-change-otp')
+    return response.data
+  },
+
   // Verify email using OTP
   verifyEmailOtp: async (otp: string): Promise<ApiResponse<{ message: string }>> => {
     const response = await apiClient.post('/api/auth/verify-email-otp', { otp })

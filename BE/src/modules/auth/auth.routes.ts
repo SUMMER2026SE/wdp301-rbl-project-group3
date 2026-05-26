@@ -17,6 +17,7 @@ router.post('/reset-password', validate(resetPasswordSchema), authController.res
 router.post('/change-password', authenticate, validate(changePasswordSchema), authController.changePassword);
 
 router.post('/request-email-otp', authenticate, authController.requestEmailVerificationOtp);
+router.post('/request-password-change-otp', authenticate, authController.requestPasswordChangeOtp);
 router.post('/verify-email-otp', authenticate, validate(verifyEmailOtpSchema), authController.verifyEmailOtp);
 router.post('/change-password-otp', authenticate, validate(changePasswordWithOtpSchema), authController.changePasswordWithOtp);
 

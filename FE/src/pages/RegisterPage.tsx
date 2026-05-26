@@ -31,6 +31,9 @@ export const RegisterPage = () => {
   const [phone, setPhone] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [showOtp, setShowOtp] = useState(false)
+  const [otp, setOtp] = useState('')
+  const [otpLoading, setOtpLoading] = useState(false)
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -63,12 +66,28 @@ export const RegisterPage = () => {
 
     try {
       await register({ fullName, email, password, phone: phone || undefined })
+      setShowOtp(true)
+    } catch (err) {
+      setError(getErrorMessage(err, 'Registration failed'))
+    }
+  }
+
+  const handleVerifyOtp = async (e: FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setOtpLoading(true)
+
+    try {
+      await authService.verifyEmail(otp)
       setSuccess(true)
+      setShowOtp(false)
       setTimeout(() => {
         navigate('/login')
       }, 3000)
     } catch (err) {
-      setError(getErrorMessage(err, 'Registration failed'))
+      setError(getErrorMessage(err, 'Invalid or expired OTP'))
+    } finally {
+      setOtpLoading(false)
     }
   }
 
@@ -104,11 +123,60 @@ export const RegisterPage = () => {
               Registration Successful!
             </h2>
             <p className="text-body-md text-on-surface-variant mb-4">
-              Please check your email to verify your account.
+              Your account has been verified. You can now sign in.
             </p>
             <p className="text-label-sm text-on-surface-variant">
               Redirecting to login page...
             </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (showOtp) {
+    return (
+      <div className="min-h-screen bg-surface flex items-center justify-center px-4">
+        <div className="w-full max-w-md">
+          <div className="bg-surface-container-lowest rounded-2xl shadow-xl p-8 text-center">
+            <h2 className="font-headline-md text-headline-md text-primary mb-2">Verify Email</h2>
+            <p className="text-body-md text-on-surface-variant mb-6">
+              Please enter the 6-digit OTP sent to <span className="font-bold">{email}</span>.
+            </p>
+
+            {error && (
+              <div className="mb-6 p-4 bg-error-container text-on-error-container rounded-lg flex items-center gap-2 text-left">
+                <AlertCircle size={20} className="shrink-0" />
+                <span className="text-label-md">{error}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleVerifyOtp} className="space-y-6">
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="000000"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
+                className="w-full rounded-lg border border-transparent bg-surface-container-low px-4 py-4 text-center text-3xl font-black tracking-[0.5em] outline-none transition focus:border-primary/30 focus:ring-2 focus:ring-primary/20"
+                required
+              />
+              <button
+                type="submit"
+                disabled={otpLoading || otp.length !== 6}
+                className="w-full bg-primary text-white py-3 rounded-lg font-bold text-label-lg hover:bg-primary-container hover:text-on-primary-container transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {otpLoading ? (
+                  <>
+                    <Loader className="animate-spin" size={20} />
+                    Verifying...
+                  </>
+                ) : (
+                  'Verify Account'
+                )}
+              </button>
+            </form>
           </div>
         </div>
       </div>
