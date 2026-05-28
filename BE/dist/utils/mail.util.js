@@ -1,27 +1,30 @@
-import nodemailer from 'nodemailer';
-import { env } from '../config/env.config';
-
-const transporter = nodemailer.createTransport({
-  host: env.email.host,
-  port: env.email.port,
-  secure: env.email.port === 465,
-  auth: {
-    user: env.email.user,
-    pass: env.email.pass,
-  },
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.sendOtpEmail = exports.sendPasswordResetEmail = exports.sendVerificationEmail = void 0;
+const nodemailer_1 = __importDefault(require("nodemailer"));
+const env_config_1 = require("../config/env.config");
+const transporter = nodemailer_1.default.createTransport({
+    host: env_config_1.env.email.host,
+    port: env_config_1.env.email.port,
+    secure: env_config_1.env.email.port === 465,
+    auth: {
+        user: env_config_1.env.email.user,
+        pass: env_config_1.env.email.pass,
+    },
 });
-
-export const sendVerificationEmail = async (email: string, token: string): Promise<void> => {
-  const verifyUrl = `${env.clientUrl}/auth/verify-email?token=${token}`;
-
-  await transporter.sendMail({
-    from: env.email.from,
-    to: email,
-    subject: 'Xác thực email - PMAN-Mart',
-    html: `
+const sendVerificationEmail = async (email, token) => {
+    const verifyUrl = `${env_config_1.env.clientUrl}/auth/verify-email?token=${token}`;
+    await transporter.sendMail({
+        from: env_config_1.env.email.from,
+        to: email,
+        subject: 'Xác thực email - PMAN-MART',
+        html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #2d7a4f;">Xác thực Email của bạn</h2>
-        <p>Cảm ơn bạn đã đăng ký tài khoản PMAN-Mart.</p>
+        <p>Cảm ơn bạn đã đăng ký tài khoản PMAN-MART.</p>
         <p>Nhấn vào nút bên dưới để xác thực email:</p>
         <a href="${verifyUrl}" 
            style="display:inline-block; padding:12px 24px; background:#2d7a4f; color:#fff; text-decoration:none; border-radius:6px; margin:16px 0;">
@@ -32,17 +35,16 @@ export const sendVerificationEmail = async (email: string, token: string): Promi
         <p style="color:#999; font-size:13px;">Link này sẽ hết hạn sau 24 giờ.</p>
       </div>
     `,
-  });
+    });
 };
-
-export const sendPasswordResetEmail = async (email: string, token: string): Promise<void> => {
-  const resetUrl = `${env.clientUrl}/auth/reset-password?token=${token}`;
-
-  await transporter.sendMail({
-    from: env.email.from,
-    to: email,
-    subject: 'Đặt lại mật khẩu - PMAN-Mart',
-    html: `
+exports.sendVerificationEmail = sendVerificationEmail;
+const sendPasswordResetEmail = async (email, token) => {
+    const resetUrl = `${env_config_1.env.clientUrl}/auth/reset-password?token=${token}`;
+    await transporter.sendMail({
+        from: env_config_1.env.email.from,
+        to: email,
+        subject: 'Đặt lại mật khẩu - PMAN-MART',
+        html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #2d7a4f;">Đặt Lại Mật Khẩu</h2>
         <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.</p>
@@ -56,15 +58,15 @@ export const sendPasswordResetEmail = async (email: string, token: string): Prom
         <p style="color:#999; font-size:13px;">Link này sẽ hết hạn sau 1 giờ. Nếu bạn không yêu cầu, hãy bỏ qua email này.</p>
       </div>
     `,
-  });
+    });
 };
-
-export const sendOtpEmail = async (email: string, otp: string): Promise<void> => {
-  await transporter.sendMail({
-    from: env.email.from,
-    to: email,
-    subject: 'Mã OTP Xác thực - PMAN-Mart',
-    html: `
+exports.sendPasswordResetEmail = sendPasswordResetEmail;
+const sendOtpEmail = async (email, otp) => {
+    await transporter.sendMail({
+        from: env_config_1.env.email.from,
+        to: email,
+        subject: 'Mã OTP Xác thực - PMAN-MART',
+        html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #2d7a4f;">Mã OTP Xác thực</h2>
         <p>Đây là mã OTP của bạn để xác thực hành động. Vui lòng không chia sẻ mã này với bất kỳ ai.</p>
@@ -74,5 +76,7 @@ export const sendOtpEmail = async (email: string, otp: string): Promise<void> =>
         <p style="color:#999; font-size:13px;">Mã OTP này sẽ hết hạn sau 15 phút.</p>
       </div>
     `,
-  });
+    });
 };
+exports.sendOtpEmail = sendOtpEmail;
+//# sourceMappingURL=mail.util.js.map
