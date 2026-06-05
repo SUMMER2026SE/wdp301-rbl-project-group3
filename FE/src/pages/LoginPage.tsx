@@ -132,7 +132,7 @@ export const LoginPage = () => {
               <ShoppingBasket size={16} className="text-white" />
             </div>
             <span className="font-headline-sm text-headline-sm text-primary font-bold">
-              WinMart
+              PMAN-Mart
             </span>
           </div>
 
@@ -163,7 +163,7 @@ export const LoginPage = () => {
                 <ShoppingBasket size={20} className="text-white" />
               </div>
               <span className="font-headline-md text-headline-md text-primary font-black tracking-tight">
-                WinMart
+                PMAN-Mart
               </span>
             </div>
 
