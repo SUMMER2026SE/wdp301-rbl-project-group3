@@ -13,7 +13,9 @@ export class UserController {
 
   updateProfile = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!.userId;
-    const updated = await userService.updateProfile(userId, req.body);
+    // Chỉ lấy đúng các field được phép từ body
+    const { fullName, phone, address } = req.body;
+    const updated = await userService.updateProfile(userId, { fullName, phone, address });
     sendSuccess(res, { user: updated }, 'Profile updated');
   });
 
@@ -21,7 +23,11 @@ export class UserController {
     const userId = req.user!.userId;
     if (!req.file) throw new AppError('No file uploaded', 400);
 
-    const avatarUrl = await userService.updateAvatar(userId, req.file.buffer, req.file.mimetype);
+    const avatarUrl = await userService.updateAvatar(
+      userId,
+      req.file.buffer,
+      req.file.mimetype
+    );
     sendSuccess(res, { avatarUrl }, 'Avatar updated');
   });
 }
