@@ -5,12 +5,9 @@ import { authorize } from '../../middlewares/role.middleware';
 import { createProductSchema, listProductsSchema, validate } from './product.validation';
 
 const router = Router();
-const backOfficeRoles = ['superadmin', 'admin', 'manager', 'staff'] as const;
-
-router.use(authenticate);
-router.use(authorize(...backOfficeRoles));
+const backOfficeRoles = ['admin', 'branch_manager', 'staff'] as const;
 
 router.get('/', validate(listProductsSchema), productController.getAll);
-router.post('/', validate(createProductSchema), productController.create);
+router.post('/', authenticate, authorize(...backOfficeRoles), validate(createProductSchema), productController.create);
 
 export default router;
