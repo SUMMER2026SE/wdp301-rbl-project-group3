@@ -2,41 +2,35 @@ import { Request, Response } from 'express';
 import { orderService } from './order.service';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { sendSuccess } from '../../utils/response.util';
+import { OrderStatus } from '../../models/order.model';
 
 export class OrderController {
-    // UC09 — POST /api/orders
-    placeOrder = asyncHandler(async (req: Request, res: Response) => {
-        const userId = req.user!.userId;
-        const {
-            branchId,
-            shippingAddress,
-            phoneNumber,
-            note,
-            paymentMethod,
-            selectedItemIds,
-        } = req.body;
-
-        const order = await orderService.placeOrder({
-            userId,
-            branchId,
-            shippingAddress,
-            phoneNumber,
-            note,
-            paymentMethod: paymentMethod ?? 'COD',
-            selectedItemIds,
-        });
-
-        sendSuccess(res, order, 'Order placed successfully', 201);
+  getAll = asyncHandler(async (req: Request, res: Response) => {
+    const orders = await orderService.getOrders({
+      branchId: req.query.branchId as string | undefined,
+      status: req.query.status as string | undefined,
     });
+    sendSuccess(res, { orders }, 'Orders retrieved');
+  });
 
-    // GET /api/orders/:orderId — xem chi tiết đơn (dùng cho UC10 track cũng gọi endpoint này)
-    getOrder = asyncHandler(async (req: Request, res: Response) => {
-        const userId = req.user!.userId;
-        const orderId = req.params['orderId'] as string;
+  getById = asyncHandler(async (req: Request, res: Response) => {
+    const order = await orderService.getOrderById(String(req.params.id));
+    sendSuccess(res, { order }, 'Order retrieved');
+  });
 
-        const order = await orderService.getOrderById(orderId, userId);
-        sendSuccess(res, order, 'Order retrieved successfully');
-    });
+  confirm = asyncHandler(async (req: Request, res: Response) => {
+    const order = await orderService.confirmOrder(String(req.params.id), req.user!.userId);
+    sendSuccess(res, { order }, 'Order confirmed');
+  });
+
+  updateStatus = asyncHandler(async (req: Request, res: Response) => {
+    const order = await orderService.updateStatus(
+      String(req.params.id),
+      req.body.status as OrderStatus,
+      req.user!.userId
+    );
+    sendSuccess(res, { order }, 'Order status updated');
+  });
 }
 
 export const orderController = new OrderController();

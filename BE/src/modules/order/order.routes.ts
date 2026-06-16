@@ -2,26 +2,17 @@ import { Router } from 'express';
 import { orderController } from './order.controller';
 import { authenticate } from '../../middlewares/auth.middleware';
 import { authorize } from '../../middlewares/role.middleware';
-import { validate, placeOrderSchema, getOrderSchema } from './order.validation';
+import { listOrdersSchema, orderIdParamSchema, updateOrderStatusSchema, validate } from './order.validation';
 
 const router = Router();
+const backOfficeRoles = ['superadmin', 'admin', 'manager', 'staff'] as const;
 
-// UC09 — Đặt hàng (customer only)
-router.post(
-    '/',
-    authenticate,
-    authorize('customer'),
-    validate(placeOrderSchema),
-    orderController.placeOrder
-);
+router.use(authenticate);
+router.use(authorize(...backOfficeRoles));
 
-// GET /orders/:orderId — xem chi tiết đơn
-router.get(
-    '/:orderId',
-    authenticate,
-    authorize('customer'),
-    validate(getOrderSchema),
-    orderController.getOrder
-);
+router.get('/', validate(listOrdersSchema), orderController.getAll);
+router.patch('/:id/confirm', validate(orderIdParamSchema), orderController.confirm);
+router.patch('/:id/status', validate(updateOrderStatusSchema), orderController.updateStatus);
+router.get('/:id', validate(orderIdParamSchema), orderController.getById);
 
 export default router;
