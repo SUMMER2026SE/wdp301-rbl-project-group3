@@ -38,13 +38,18 @@ const mongoose_1 = __importStar(require("mongoose"));
 const PasswordResetSchema = new mongoose_1.Schema({
     userId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },
     tokenHash: { type: String, required: true },
+    type: {
+        type: String,
+        enum: ['forgot_password', 'change_password'],
+        required: true,
+    },
     expiresAt: { type: Date, required: true },
     usedAt: { type: Date },
 }, {
     timestamps: { createdAt: true, updatedAt: false },
     versionKey: false,
 });
-PasswordResetSchema.index({ userId: 1 });
+PasswordResetSchema.index({ userId: 1, type: 1 });
 PasswordResetSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 exports.PasswordReset = mongoose_1.default.model('PasswordReset', PasswordResetSchema);
 //# sourceMappingURL=passwordReset.model.js.map

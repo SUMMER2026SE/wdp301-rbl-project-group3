@@ -1,4 +1,4 @@
-export type UserRole = 'superadmin' | 'admin' | 'manager' | 'staff' | 'customer';
+export type UserRole = 'superadmin' | 'admin' | 'branch_manager' | 'manager' | 'staff' | 'customer';
 export type UserStatus = 'active' | 'inactive' | 'banned';
 export type AuthProvider = 'local' | 'google';
 export type DeviceType = 'web' | 'mobile' | 'unknown';
