@@ -11,7 +11,7 @@ import {
 } from './branch.validation';
 
 const router = Router();
-const backOfficeRoles = ['superadmin', 'admin', 'manager', 'staff'] as const;
+const backOfficeRoles = ['admin', 'branch_manager', 'staff'] as const;
 
 router.use(authenticate);
 router.use(authorize(...backOfficeRoles));

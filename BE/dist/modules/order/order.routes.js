@@ -6,7 +6,7 @@ const auth_middleware_1 = require("../../middlewares/auth.middleware");
 const role_middleware_1 = require("../../middlewares/role.middleware");
 const order_validation_1 = require("./order.validation");
 const router = (0, express_1.Router)();
-const backOfficeRoles = ['superadmin', 'admin', 'manager', 'staff'];
+const backOfficeRoles = ['admin', 'branch_manager', 'staff'];
 router.use(auth_middleware_1.authenticate);
 router.use((0, role_middleware_1.authorize)(...backOfficeRoles));
 router.get('/', (0, order_validation_1.validate)(order_validation_1.listOrdersSchema), order_controller_1.orderController.getAll);
