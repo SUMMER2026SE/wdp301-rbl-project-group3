@@ -76,11 +76,16 @@ export interface CartResponse {
 export interface Product {
   _id: string
   productName: string
+  name?: string
   categoryId: string
   price: number
+  salePrice?: number
+  sku?: string
+  description?: string
   unit?: string
+  imageUrl?: string
   barcode?: string
-  status: boolean
+  status: boolean | string | 'active' | 'inactive'
   createdAt?: string
   updatedAt?: string
 }
@@ -121,6 +126,80 @@ export interface OrdersListResponse {
   total: number
   page: number
   limit: number
+}
+
+export interface Branch {
+  _id: string
+  name: string
+  code: string
+  address: string
+  phone?: string
+  managerId?: string
+  status: 'active' | 'inactive'
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface InventoryProduct {
+  _id: string
+  name: string
+  productName?: string
+  sku: string
+  unit: string
+  salePrice: number
+  price?: number
+  imageUrl?: string
+}
+
+export interface InventoryBranch {
+  _id: string
+  name: string
+  code: string
+  address?: string
+}
+
+export interface Inventory {
+  _id: string
+  branchId: InventoryBranch | string
+  productId: InventoryProduct
+  quantity: number
+  averageCost: number
+  lastImportCost?: number
+  lowStockThreshold: number
+  updatedBy?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface ImportReceiptItem {
+  productId: InventoryProduct
+  quantity: number
+  unitCost: number
+  subtotal: number
+}
+
+export interface ImportReceipt {
+  _id: string
+  code: string
+  branchId: InventoryBranch
+  supplierName?: string
+  note?: string
+  items: ImportReceiptItem[]
+  totalCost: number
+  createdBy: { _id: string; fullName: string; email: string } | string
+  createdAt: string
+  updatedAt?: string
+}
+
+export interface CreateImportReceiptInput {
+  branchId: string
+  supplierName?: string
+  note?: string
+  items: {
+    productId: string
+    quantity: number
+    unitCost: number
+  }[]
 }
 
 
