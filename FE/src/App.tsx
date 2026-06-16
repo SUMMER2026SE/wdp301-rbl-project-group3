@@ -16,6 +16,7 @@ import {
   VouchersPage,
   SettingsPage,
 } from './pages/userDashboard'
+import { AdminLayout } from './pages/adminDashboard'
 import './App.css'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
@@ -32,7 +33,7 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
             
-            {/* Dashboard Routes */}
+            {/* Customer Dashboard Routes */}
             <Route path="/dashboard" element={<DashboardLayout />}>
               <Route index element={<DashboardOverview />} />
               <Route path="orders" element={<OrdersPage />} />
@@ -42,6 +43,13 @@ function App() {
               <Route path="vouchers" element={<VouchersPage />} />
               <Route path="settings" element={<SettingsPage />} />
             </Route>
+
+            {/* Admin / Back-office Routes */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<div className="py-12 text-center text-on-surface-variant">Trang Quản lý Đơn hàng đang được phát triển…</div>} />
+              <Route path="inventory" element={<div className="py-12 text-center text-on-surface-variant">Trang Quản lý Kho hàng đang được phát triển…</div>} />
+              <Route path="branches" element={<div className="py-12 text-center text-on-surface-variant">Trang Quản lý Chi nhánh đang được phát triển…</div>} />
+            </Route>
           </Routes>
         </Router>
       </CartProvider>
@@ -50,4 +58,3 @@ function App() {
 }
 
 export default App
-

@@ -2,7 +2,7 @@ export interface User {
   id: string
   fullName: string
   email: string
-  role: 'customer' | 'admin'
+  role: 'customer' | 'admin' | 'branch_manager' | 'staff'
   avatarUrl?: string
   phone?: string
   isEmailVerified: boolean
