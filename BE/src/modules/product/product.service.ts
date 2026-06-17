@@ -8,6 +8,9 @@ export interface ListProductsQuery {
   limit: number;
   status?: string;
   keyword?: string;
+  categoryId?: string;
+  minPrice?: number;
+  maxPrice?: number;
 }
 
 export interface ListProductsResult {
@@ -49,7 +52,13 @@ export class ProductService {
 
   async listProducts(query: ListProductsQuery): Promise<ListProductsResult> {
     const { items, total, page, limit, totalPages } = await productRepository.findPaginated(
-      { status: query.status, keyword: query.keyword },
+      {
+        status: query.status,
+        keyword: query.keyword,
+        categoryId: query.categoryId,
+        minPrice: query.minPrice,
+        maxPrice: query.maxPrice,
+      },
       query.page,
       query.limit
     );
