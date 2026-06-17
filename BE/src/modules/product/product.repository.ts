@@ -56,6 +56,10 @@ export class ProductRepository {
   async findBySku(sku: string): Promise<IProduct | null> {
     return Product.findOne({ sku: sku.toUpperCase() }).exec();
   }
+
+  async updateById(id: string, data: Partial<IProduct>): Promise<IProduct | null> {
+    return Product.findByIdAndUpdate(id, data, { new: true }).exec();
+  }
 }
 
 export const productRepository = new ProductRepository();
