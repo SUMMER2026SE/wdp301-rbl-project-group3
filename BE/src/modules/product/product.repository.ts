@@ -3,6 +3,9 @@ import { IProduct, Product } from '../../models/product.model';
 export interface ProductListFilters {
   status?: string;
   keyword?: string;
+  categoryId?: string;
+  minPrice?: number;
+  maxPrice?: number;
 }
 
 export interface PaginatedProducts {
@@ -26,10 +29,30 @@ export class ProductRepository {
     const query: Record<string, unknown> = {};
 
     if (filters.status) query.status = filters.status;
+    if (filters.categoryId) query.categoryId = filters.categoryId;
     if (filters.keyword) {
       query.$or = [
         { name: { $regex: filters.keyword, $options: 'i' } },
         { sku: { $regex: filters.keyword, $options: 'i' } },
+        { description: { $regex: filters.keyword, $options: 'i' } },
+      ];
+    }
+
+    if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
+      const salePriceQuery: Record<string, number> = {};
+      const legacyPriceQuery: Record<string, number> = {};
+      if (filters.minPrice !== undefined) {
+        salePriceQuery.$gte = filters.minPrice;
+        legacyPriceQuery.$gte = filters.minPrice;
+      }
+      if (filters.maxPrice !== undefined) {
+        salePriceQuery.$lte = filters.maxPrice;
+        legacyPriceQuery.$lte = filters.maxPrice;
+      }
+
+      query.$and = [
+        ...(Array.isArray(query.$and) ? query.$and : []),
+        { $or: [{ salePrice: salePriceQuery }, { price: legacyPriceQuery }] },
       ];
     }
 
