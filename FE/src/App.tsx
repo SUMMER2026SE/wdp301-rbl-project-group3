@@ -16,7 +16,7 @@ import {
   VouchersPage,
   SettingsPage,
 } from './pages/userDashboard'
-import { AdminLayout, ManageInventoryPage } from './pages/adminDashboard'
+import { AdminLayout, ManageInventoryPage, ManageOrdersPage } from './pages/adminDashboard'
 import './App.css'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
@@ -46,7 +46,7 @@ function App() {
 
             {/* Admin / Back-office Routes */}
             <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<div className="py-12 text-center text-on-surface-variant">Trang Quản lý Đơn hàng đang được phát triển…</div>} />
+              <Route index element={<ManageOrdersPage />} />
               <Route path="inventory" element={<ManageInventoryPage />} />
               <Route path="branches" element={<div className="py-12 text-center text-on-surface-variant">Trang Quản lý Chi nhánh đang được phát triển…</div>} />
             </Route>

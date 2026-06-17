@@ -202,4 +202,58 @@ export interface CreateImportReceiptInput {
   }[]
 }
 
+export type AdminOrderStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'preparing'
+  | 'delivering'
+  | 'delivered'
+  | 'cancelled'
+
+export interface AdminOrderItem {
+  productId: {
+    _id: string
+    productName: string
+    name?: string
+    sku?: string
+    unit?: string
+    imageUrl?: string
+  } | string
+  quantity: number
+  unitPrice: number
+  subtotal: number
+}
+
+export interface AdminOrder {
+  _id: string
+  code: string
+  customerId: {
+    _id: string
+    fullName: string
+    email: string
+    phone?: string
+  } | string
+  branchId: {
+    _id: string
+    name: string
+    code: string
+    address?: string
+  } | string
+  items: AdminOrderItem[]
+  totalAmount: number
+  status: AdminOrderStatus
+  deliveryAddress?: string
+  note?: string
+  confirmedBy?: {
+    _id: string
+    fullName: string
+    email: string
+  } | string
+  confirmedAt?: string
+  createdAt: string
+  updatedAt: string
+}
+
+
+
 
