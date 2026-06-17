@@ -15,9 +15,9 @@ export const authService = {
     return response.data
   },
 
-  // Verify email with token
-  verifyEmail: async (token: string): Promise<ApiResponse<{ message: string }>> => {
-    const response = await apiClient.post('/api/auth/verify-email', { token })
+  // Verify email with email and otp
+  verifyEmail: async (email: string, otp: string): Promise<ApiResponse<{ message: string }>> => {
+    const response = await apiClient.post('/api/auth/verify-email', { email, otp })
     return response.data
   },
 

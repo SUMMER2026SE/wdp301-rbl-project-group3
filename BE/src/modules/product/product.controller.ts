@@ -15,6 +15,11 @@ export class ProductController {
     const result = await productService.listProducts(query);
     sendSuccess(res, result, 'Products retrieved');
   });
+
+  create = asyncHandler(async (req: Request, res: Response) => {
+    const product = await productService.createProduct(req.body);
+    sendSuccess(res, { product }, 'Product created', 201);
+  });
 }
 
 export const productController = new ProductController();

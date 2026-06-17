@@ -14,6 +14,10 @@ export interface PaginatedProducts {
 }
 
 export class ProductRepository {
+  async create(data: Partial<IProduct>): Promise<IProduct> {
+    return new Product(data).save();
+  }
+
   async findPaginated(
     filters: ProductListFilters,
     page: number,
@@ -43,6 +47,14 @@ export class ProductRepository {
       limit,
       totalPages: total === 0 ? 0 : Math.ceil(total / limit),
     };
+  }
+
+  async findById(id: string): Promise<IProduct | null> {
+    return Product.findById(id).exec();
+  }
+
+  async findBySku(sku: string): Promise<IProduct | null> {
+    return Product.findOne({ sku: sku.toUpperCase() }).exec();
   }
 }
 

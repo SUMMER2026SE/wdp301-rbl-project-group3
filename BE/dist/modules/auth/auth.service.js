@@ -11,12 +11,28 @@ const mail_util_1 = require("../../utils/mail.util");
 const cloudinary_config_1 = require("../../config/cloudinary.config");
 const env_config_1 = require("../../config/env.config");
 const googleClient = new google_auth_library_1.OAuth2Client(env_config_1.env.google.clientId);
+const OTP_EXPIRES_MS = 15 * 60 * 1000; // 15 phút
+function generateOtp() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+}
 class AuthService {
     // ─── Register ────────────────────────────────────────────
+    // Đăng ký → gửi OTP xác thực email, chưa active account
     async register(data) {
         const existing = await auth_repository_1.authRepository.findUserByEmail(data.email);
-        if (existing)
-            throw new errorHandler_middleware_1.AppError('Email already registered', 409);
+        // Nếu đã tồn tại nhưng chưa verify → gửi lại OTP thay vì báo lỗi trùng
+        if (existing) {
+            if (existing.isEmailVerified) {
+                throw new errorHandler_middleware_1.AppError('Email already registered', 409);
+            }
+            // Gửi lại OTP cho tài khoản chưa verify
+            const otp = generateOtp();
+            const otpHash = (0, hash_util_1.hashToken)(otp);
+            const expires = new Date(Date.now() + OTP_EXPIRES_MS);
+            await auth_repository_1.authRepository.setEmailVerifyOtp(existing._id.toString(), otpHash, expires);
+            await (0, mail_util_1.sendOtpEmail)(data.email, otp);
+            return { message: 'An OTP has been sent to your email. Please verify to complete registration.' };
+        }
         const passwordHash = await (0, hash_util_1.hashPassword)(data.password);
         const user = await auth_repository_1.authRepository.createUser({
             fullName: data.fullName,
@@ -27,53 +43,60 @@ class AuthService {
             status: 'inactive',
             isEmailVerified: false,
         });
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const tokenHash = (0, hash_util_1.hashToken)(otp);
-        const expires = new Date(Date.now() + 15 * 60 * 1000);
-        await auth_repository_1.authRepository.setEmailVerifyToken(user._id.toString(), tokenHash, expires);
+        const otp = generateOtp();
+        const otpHash = (0, hash_util_1.hashToken)(otp);
+        const expires = new Date(Date.now() + OTP_EXPIRES_MS);
+        await auth_repository_1.authRepository.setEmailVerifyOtp(user._id.toString(), otpHash, expires);
         await (0, mail_util_1.sendOtpEmail)(data.email, otp);
-        return { message: 'Registration successful. An OTP has been sent to your email.' };
+        return { message: 'Registration successful. Please check your email for the OTP to verify your account.' };
     }
-    // ─── Verify Email ────────────────────────────────────────
-    async verifyEmail(token) {
-        const tokenHash = (0, hash_util_1.hashToken)(token);
-        const user = await auth_repository_1.authRepository.findUserByEmailVerifyToken(tokenHash);
-        if (!user)
-            throw new errorHandler_middleware_1.AppError('Invalid or expired verification token', 400);
+    // ─── Verify Email OTP (dùng cho đăng ký) ────────────────
+    // Người dùng chưa đăng nhập → truyền email + otp
+    async verifyEmailWithOtp(email, otp) {
+        const otpHash = (0, hash_util_1.hashToken)(otp);
+        const user = await auth_repository_1.authRepository.findUserByEmailVerifyOtp(otpHash);
+        if (!user || user.email !== email.toLowerCase()) {
+            throw new errorHandler_middleware_1.AppError('Invalid or expired OTP', 400);
+        }
+        if (user.isEmailVerified) {
+            throw new errorHandler_middleware_1.AppError('Email is already verified', 400);
+        }
         await auth_repository_1.authRepository.markEmailVerified(user._id.toString());
-        return { message: 'Email verified successfully.' };
+        return { message: 'Email verified successfully. You can now login.' };
     }
-    // ─── OTP Email Verification ──────────────────────────────
+    // ─── Resend Email Verification OTP ──────────────────────
+    // Dùng khi user chưa login, muốn gửi lại OTP xác thực email
+    async resendEmailVerificationOtp(email) {
+        const user = await auth_repository_1.authRepository.findUserByEmail(email);
+        // Luôn trả về cùng message để tránh user enumeration
+        if (!user || user.isEmailVerified || user.authProvider !== 'local') {
+            return { message: 'If the email is pending verification, an OTP has been sent.' };
+        }
+        const otp = generateOtp();
+        const otpHash = (0, hash_util_1.hashToken)(otp);
+        const expires = new Date(Date.now() + OTP_EXPIRES_MS);
+        await auth_repository_1.authRepository.setEmailVerifyOtp(user._id.toString(), otpHash, expires);
+        await (0, mail_util_1.sendOtpEmail)(user.email, otp);
+        return { message: 'If the email is pending verification, an OTP has been sent.' };
+    }
+    // ─── Request Email Verification OTP (khi đã đăng nhập) ──
     async requestEmailVerificationOtp(userId) {
         const user = await auth_repository_1.authRepository.findUserById(userId);
         if (!user)
             throw new errorHandler_middleware_1.AppError('User not found', 404);
         if (user.isEmailVerified)
             throw new errorHandler_middleware_1.AppError('Email is already verified', 400);
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const tokenHash = (0, hash_util_1.hashToken)(otp);
-        const expires = new Date(Date.now() + 15 * 60 * 1000);
-        await auth_repository_1.authRepository.setEmailVerifyToken(user._id.toString(), tokenHash, expires);
+        const otp = generateOtp();
+        const otpHash = (0, hash_util_1.hashToken)(otp);
+        const expires = new Date(Date.now() + OTP_EXPIRES_MS);
+        await auth_repository_1.authRepository.setEmailVerifyOtp(user._id.toString(), otpHash, expires);
         await (0, mail_util_1.sendOtpEmail)(user.email, otp);
         return { message: 'OTP sent to your email.' };
     }
-    // ─── OTP Password Change ─────────────────────────────────
-    async requestPasswordChangeOtp(userId) {
-        const user = await auth_repository_1.authRepository.findUserById(userId);
-        if (!user)
-            throw new errorHandler_middleware_1.AppError('User not found', 404);
-        if (user.authProvider !== 'local')
-            throw new errorHandler_middleware_1.AppError('Cannot change password for social accounts', 400);
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const tokenHash = (0, hash_util_1.hashToken)(otp);
-        const expires = new Date(Date.now() + 15 * 60 * 1000);
-        await auth_repository_1.authRepository.setEmailVerifyToken(user._id.toString(), tokenHash, expires);
-        await (0, mail_util_1.sendOtpEmail)(user.email, otp);
-        return { message: 'OTP sent to your email.' };
-    }
+    // ─── Verify Email OTP (khi đã đăng nhập) ────────────────
     async verifyEmailOtp(userId, otp) {
-        const tokenHash = (0, hash_util_1.hashToken)(otp);
-        const user = await auth_repository_1.authRepository.findUserByEmailVerifyToken(tokenHash);
+        const otpHash = (0, hash_util_1.hashToken)(otp);
+        const user = await auth_repository_1.authRepository.findUserByEmailVerifyOtp(otpHash);
         if (!user || user._id.toString() !== userId) {
             throw new errorHandler_middleware_1.AppError('Invalid or expired OTP', 400);
         }
@@ -93,6 +116,10 @@ class AuthService {
             throw new errorHandler_middleware_1.AppError('Invalid credentials', 401);
         if (user.status === 'banned')
             throw new errorHandler_middleware_1.AppError('Account has been banned', 403);
+        // Yêu cầu xác thực email trước khi đăng nhập
+        if (!user.isEmailVerified) {
+            throw new errorHandler_middleware_1.AppError('Please verify your email before logging in', 403);
+        }
         const tokenId = (0, uuid_1.v4)();
         const { accessToken, refreshToken } = (0, token_util_1.generateTokenPair)(user, tokenId);
         const refreshTokenHash = (0, hash_util_1.hashToken)(refreshToken);
@@ -113,6 +140,7 @@ class AuthService {
                 email: user.email,
                 role: user.role,
                 avatarUrl: user.avatarUrl,
+                isEmailVerified: user.isEmailVerified,
             },
         };
     }
@@ -150,6 +178,8 @@ class AuthService {
                 status: 'active',
             });
         }
+        if (user.status === 'banned')
+            throw new errorHandler_middleware_1.AppError('Account has been banned', 403);
         const tokenId = (0, uuid_1.v4)();
         const { accessToken, refreshToken } = (0, token_util_1.generateTokenPair)(user, tokenId);
         const refreshTokenHash = (0, hash_util_1.hashToken)(refreshToken);
@@ -169,6 +199,7 @@ class AuthService {
                 email: user.email,
                 role: user.role,
                 avatarUrl: user.avatarUrl,
+                isEmailVerified: user.isEmailVerified,
             },
         };
     }
@@ -214,9 +245,8 @@ class AuthService {
             await auth_repository_1.authRepository.revokeUserToken(payload.tokenId);
         }
         catch {
-            // silently fail - token may already be invalid
+            // silently fail — token may already be invalid
         }
-        return { message: 'Logged out successfully' };
     }
     // ─── Logout All ───────────────────────────────────────────
     async logoutAll(userId) {
@@ -224,29 +254,42 @@ class AuthService {
         await auth_repository_1.authRepository.incrementRefreshTokenVersion(userId);
         return { message: 'Logged out from all devices' };
     }
-    // ─── Forgot Password ──────────────────────────────────────
+    // ─── Forgot Password — Gửi OTP ────────────────────────────
     async forgotPassword(email) {
+        const GENERIC_MSG = 'If the email exists, an OTP has been sent.';
         const user = await auth_repository_1.authRepository.findUserByEmail(email);
-        if (!user || user.authProvider !== 'local') {
-            return { message: 'If the email exists, an OTP has been sent.' };
+        if (!user || user.authProvider !== 'local' || !user.isEmailVerified) {
+            return { message: GENERIC_MSG };
         }
-        const rawToken = Math.floor(100000 + Math.random() * 900000).toString();
-        const tokenHash = (0, hash_util_1.hashToken)(rawToken);
-        const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 mins for OTP
-        await auth_repository_1.authRepository.createPasswordReset({
+        if (user.status === 'banned') {
+            return { message: GENERIC_MSG };
+        }
+        const otp = generateOtp();
+        const otpHash = (0, hash_util_1.hashToken)(otp);
+        const expiresAt = new Date(Date.now() + OTP_EXPIRES_MS);
+        await auth_repository_1.authRepository.createPasswordResetOtp({
             userId: user._id,
-            tokenHash,
+            tokenHash: otpHash,
+            type: 'forgot_password',
             expiresAt,
         });
-        await (0, mail_util_1.sendOtpEmail)(email, rawToken);
-        return { message: 'If the email exists, an OTP has been sent.' };
+        await (0, mail_util_1.sendOtpEmail)(email, otp);
+        return { message: GENERIC_MSG };
     }
-    // ─── Reset Password ───────────────────────────────────────
-    async resetPassword(token, newPassword) {
-        const tokenHash = (0, hash_util_1.hashToken)(token);
-        const resetRecord = await auth_repository_1.authRepository.findPasswordResetByTokenHash(tokenHash);
+    // ─── Reset Password — Xác nhận OTP ───────────────────────
+    async resetPassword(otp, newPassword) {
+        const otpHash = (0, hash_util_1.hashToken)(otp);
+        const resetRecord = await auth_repository_1.authRepository.findPasswordResetOtp(otpHash, 'forgot_password');
         if (!resetRecord)
-            throw new errorHandler_middleware_1.AppError('Invalid or expired reset token', 400);
+            throw new errorHandler_middleware_1.AppError('Invalid or expired OTP', 400);
+        const user = await auth_repository_1.authRepository.findUserById(resetRecord.userId.toString(), true);
+        if (!user)
+            throw new errorHandler_middleware_1.AppError('User not found', 404);
+        if (user.passwordHash) {
+            const isSame = await (0, hash_util_1.comparePassword)(newPassword, user.passwordHash);
+            if (isSame)
+                throw new errorHandler_middleware_1.AppError('New password must be different from the current password', 400);
+        }
         const passwordHash = await (0, hash_util_1.hashPassword)(newPassword);
         await auth_repository_1.authRepository.updateUser(resetRecord.userId.toString(), {
             passwordHash,
@@ -257,7 +300,7 @@ class AuthService {
         await auth_repository_1.authRepository.incrementRefreshTokenVersion(resetRecord.userId.toString());
         return { message: 'Password reset successfully. Please login again.' };
     }
-    // ─── Change Password ──────────────────────────────────────
+    // ─── Change Password (biết mật khẩu hiện tại) ────────────
     async changePassword(userId, currentPassword, newPassword) {
         const user = await auth_repository_1.authRepository.findUserById(userId, true);
         if (!user)
@@ -280,11 +323,31 @@ class AuthService {
         await auth_repository_1.authRepository.incrementRefreshTokenVersion(userId);
         return { message: 'Password changed successfully. Please login again.' };
     }
-    // ─── Change Password With OTP ─────────────────────────────
+    // ─── Request OTP để đổi mật khẩu (khi đã đăng nhập) ─────
+    async requestPasswordChangeOtp(userId) {
+        const user = await auth_repository_1.authRepository.findUserById(userId);
+        if (!user)
+            throw new errorHandler_middleware_1.AppError('User not found', 404);
+        if (user.authProvider !== 'local') {
+            throw new errorHandler_middleware_1.AppError('Cannot change password for social accounts', 400);
+        }
+        const otp = generateOtp();
+        const otpHash = (0, hash_util_1.hashToken)(otp);
+        const expiresAt = new Date(Date.now() + OTP_EXPIRES_MS);
+        await auth_repository_1.authRepository.createPasswordResetOtp({
+            userId: user._id,
+            tokenHash: otpHash,
+            type: 'change_password',
+            expiresAt,
+        });
+        await (0, mail_util_1.sendOtpEmail)(user.email, otp);
+        return { message: 'OTP sent to your email.' };
+    }
+    // ─── Change Password với OTP (khi đã đăng nhập) ──────────
     async changePasswordWithOtp(userId, otp, newPassword) {
-        const tokenHash = (0, hash_util_1.hashToken)(otp);
-        const userOTP = await auth_repository_1.authRepository.findUserByEmailVerifyToken(tokenHash);
-        if (!userOTP || userOTP._id.toString() !== userId) {
+        const otpHash = (0, hash_util_1.hashToken)(otp);
+        const resetRecord = await auth_repository_1.authRepository.findPasswordResetOtp(otpHash, 'change_password');
+        if (!resetRecord || resetRecord.userId.toString() !== userId) {
             throw new errorHandler_middleware_1.AppError('Invalid or expired OTP', 400);
         }
         const user = await auth_repository_1.authRepository.findUserById(userId, true);
@@ -298,9 +361,8 @@ class AuthService {
         await auth_repository_1.authRepository.updateUser(userId, {
             passwordHash,
             passwordChangedAt: new Date(),
-            emailVerifyToken: undefined,
-            emailVerifyTokenExpires: undefined,
         });
+        await auth_repository_1.authRepository.markPasswordResetUsed(resetRecord._id.toString());
         await auth_repository_1.authRepository.revokeAllUserTokens(userId);
         await auth_repository_1.authRepository.incrementRefreshTokenVersion(userId);
         return { message: 'Password changed successfully. Please login again.' };

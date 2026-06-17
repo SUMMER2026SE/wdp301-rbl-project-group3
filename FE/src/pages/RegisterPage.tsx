@@ -78,7 +78,7 @@ export const RegisterPage = () => {
     setOtpLoading(true)
 
     try {
-      await authService.verifyEmail(otp)
+      await authService.verifyEmail(email, otp)
       setSuccess(true)
       setShowOtp(false)
       setTimeout(() => {

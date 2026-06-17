@@ -28,15 +28,15 @@ class AuthRepository {
     async updateUser(id, data) {
         return user_model_1.User.findByIdAndUpdate(id, data, { new: true }).exec();
     }
-    async setEmailVerifyToken(userId, tokenHash, expires) {
+    async setEmailVerifyOtp(userId, otpHash, expires) {
         await user_model_1.User.findByIdAndUpdate(userId, {
-            emailVerifyToken: tokenHash,
+            emailVerifyToken: otpHash,
             emailVerifyTokenExpires: expires,
         }).exec();
     }
-    async findUserByEmailVerifyToken(tokenHash) {
+    async findUserByEmailVerifyOtp(otpHash) {
         return user_model_1.User.findOne({
-            emailVerifyToken: tokenHash,
+            emailVerifyToken: otpHash,
             emailVerifyTokenExpires: { $gt: new Date() },
         })
             .select('+emailVerifyToken +emailVerifyTokenExpires')
@@ -46,6 +46,12 @@ class AuthRepository {
         await user_model_1.User.findByIdAndUpdate(userId, {
             isEmailVerified: true,
             status: 'active',
+            emailVerifyToken: undefined,
+            emailVerifyTokenExpires: undefined,
+        }).exec();
+    }
+    async clearEmailVerifyOtp(userId) {
+        await user_model_1.User.findByIdAndUpdate(userId, {
             emailVerifyToken: undefined,
             emailVerifyTokenExpires: undefined,
         }).exec();
@@ -85,15 +91,17 @@ class AuthRepository {
     async updateUserToken(tokenId, refreshTokenHash, expiresAt) {
         await userToken_model_1.UserToken.findByIdAndUpdate(tokenId, { refreshTokenHash, expiresAt }).exec();
     }
-    // ─── PasswordReset ───────────────────────────────────────
-    async createPasswordReset(data) {
-        await passwordReset_model_1.PasswordReset.deleteMany({ userId: data.userId });
+    // ─── PasswordReset (OTP) ─────────────────────────────────
+    async createPasswordResetOtp(data) {
+        // Xoá OTP cũ cùng type trước khi tạo mới
+        await passwordReset_model_1.PasswordReset.deleteMany({ userId: data.userId, type: data.type });
         const reset = new passwordReset_model_1.PasswordReset(data);
         return reset.save();
     }
-    async findPasswordResetByTokenHash(tokenHash) {
+    async findPasswordResetOtp(tokenHash, type) {
         return passwordReset_model_1.PasswordReset.findOne({
             tokenHash,
+            type,
             expiresAt: { $gt: new Date() },
             usedAt: { $exists: false },
         }).exec();

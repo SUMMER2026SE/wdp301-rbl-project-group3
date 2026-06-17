@@ -33,7 +33,7 @@ const UserSchema = new Schema<IUser>(
     address: { type: String, trim: true },
     role: {
       type: String,
-      enum: ['superadmin', 'admin', 'manager', 'staff', 'customer'],
+      enum: ['admin', 'branch_manager', 'staff', 'customer'],
       default: 'customer',
     },
     branchId: { type: Schema.Types.ObjectId, ref: 'Branch' },
