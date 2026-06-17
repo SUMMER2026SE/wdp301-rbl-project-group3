@@ -1,0 +1,20 @@
+import { Request, Response } from 'express';
+import { productService } from './product.service';
+import { asyncHandler } from '../../utils/asyncHandler';
+import { sendSuccess } from '../../utils/response.util';
+import { listProductsSchema } from './product.validation';
+
+export class ProductController {
+  list = asyncHandler(async (req: Request, res: Response) => {
+    const { query } = listProductsSchema.parse({
+      query: req.query,
+      body: req.body,
+      params: req.params,
+    });
+
+    const result = await productService.listProducts(query);
+    sendSuccess(res, result, 'Products retrieved');
+  });
+}
+
+export const productController = new ProductController();
