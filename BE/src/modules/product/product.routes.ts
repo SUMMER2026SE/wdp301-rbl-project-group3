@@ -7,7 +7,7 @@ import { createProductSchema, listProductsSchema, validate } from './product.val
 const router = Router();
 const backOfficeRoles = ['admin', 'branch_manager', 'staff'] as const;
 
-router.get('/', validate(listProductsSchema), productController.getAll);
+router.get('/', validate(listProductsSchema), productController.list);
 router.post('/', authenticate, authorize(...backOfficeRoles), validate(createProductSchema), productController.create);
 
 export default router;

@@ -2,19 +2,23 @@ import { Request, Response } from 'express';
 import { productService } from './product.service';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { sendSuccess } from '../../utils/response.util';
+import { listProductsSchema } from './product.validation';
 
 export class ProductController {
+  list = asyncHandler(async (req: Request, res: Response) => {
+    const { query } = listProductsSchema.parse({
+      query: req.query,
+      body: req.body,
+      params: req.params,
+    });
+
+    const result = await productService.listProducts(query);
+    sendSuccess(res, result, 'Products retrieved');
+  });
+
   create = asyncHandler(async (req: Request, res: Response) => {
     const product = await productService.createProduct(req.body);
     sendSuccess(res, { product }, 'Product created', 201);
-  });
-
-  getAll = asyncHandler(async (req: Request, res: Response) => {
-    const products = await productService.getProducts({
-      status: req.query.status as string | undefined,
-      keyword: req.query.keyword as string | undefined,
-    });
-    sendSuccess(res, { products }, 'Products retrieved');
   });
 }
 
