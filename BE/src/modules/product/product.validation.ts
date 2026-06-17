@@ -3,6 +3,9 @@ import { validate } from '../auth/auth.validation';
 
 const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid ObjectId');
 
+const emptyToUndefined = <T extends z.ZodTypeAny>(schema: T) =>
+  z.preprocess((val) => (val === '' || val === null || val === undefined ? undefined : val), schema);
+
 export const productIdParamSchema = z.object({
   params: z.object({
     id: objectId,
@@ -22,10 +25,25 @@ export const createProductSchema = z.object({
   body: z.object({
     name: z.string().min(2).max(150),
     sku: z.string().min(2).max(50),
-    description: z.string().max(1000).optional(),
-    unit: z.string().min(1).max(30).optional(),
-    salePrice: z.number().min(0).optional(),
-    imageUrl: z.string().url().optional(),
+    description: emptyToUndefined(z.string().max(1000).optional()),
+    categoryId: emptyToUndefined(objectId.optional()),
+    unit: emptyToUndefined(z.string().min(1).max(30).optional()),
+    salePrice: z.coerce.number().min(0).optional(),
+    status: z.enum(['active', 'inactive']).optional(),
+  }),
+});
+
+export const updateProductSchema = z.object({
+  params: z.object({
+    id: objectId,
+  }),
+  body: z.object({
+    name: z.string().min(2).max(150).optional(),
+    sku: z.string().min(2).max(50).optional(),
+    description: emptyToUndefined(z.string().max(1000).optional()),
+    categoryId: emptyToUndefined(objectId.optional()),
+    unit: emptyToUndefined(z.string().min(1).max(30).optional()),
+    salePrice: z.coerce.number().min(0).optional(),
     status: z.enum(['active', 'inactive']).optional(),
   }),
 });
