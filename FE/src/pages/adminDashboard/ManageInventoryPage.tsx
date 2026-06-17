@@ -18,6 +18,13 @@ import { branchService } from '@services/branchService'
 import { productService } from '@services/productService'
 import type { Inventory, ImportReceipt, Branch, Product } from '@/types'
 
+const formatVND = (num: number) => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+  }).format(num)
+}
+
 export const ManageInventoryPage = () => {
   const [activeTab, setActiveTab] = useState<'stock' | 'import' | 'catalog'>('stock')
   
@@ -520,10 +527,10 @@ export const ManageInventoryPage = () => {
                             {item.quantity}
                           </td>
                           <td className="p-4 text-right font-semibold text-on-surface-variant">
-                            ${(item.averageCost ?? 0).toFixed(2)}
+                            {formatVND(item.averageCost ?? 0)}
                           </td>
                           <td className="p-4 text-right font-semibold text-on-surface-variant">
-                            {item.lastImportCost !== undefined ? `$${item.lastImportCost.toFixed(2)}` : 'N/A'}
+                            {item.lastImportCost !== undefined ? formatVND(item.lastImportCost) : 'N/A'}
                           </td>
                           <td className="p-4 text-center">
                             <span
@@ -630,7 +637,7 @@ export const ManageInventoryPage = () => {
                             {rec.supplierName || <span className="italic opacity-50">Không rõ</span>}
                           </td>
                           <td className="p-4 text-right font-black text-primary">
-                            ${rec.totalCost.toFixed(2)}
+                            {formatVND(rec.totalCost)}
                           </td>
                           <td className="p-4 text-on-surface-variant font-medium">
                             {creatorName}
@@ -646,7 +653,7 @@ export const ManageInventoryPage = () => {
                                     {it.productId?.productName || 'Sản phẩm'}
                                   </span>
                                   <span>
-                                    x{it.quantity} (${it.unitCost.toFixed(2)})
+                                    x{it.quantity} ({formatVND(it.unitCost)})
                                   </span>
                                 </div>
                               ))}
@@ -743,7 +750,7 @@ export const ManageInventoryPage = () => {
                             {product.unit || 'item'}
                           </td>
                           <td className="p-4 text-right font-black text-primary">
-                            ${(product.price ?? 0).toFixed(2)}
+                            {formatVND(product.price ?? 0)}
                           </td>
                           <td className="p-4 text-center">
                             <span
@@ -896,12 +903,12 @@ export const ManageInventoryPage = () => {
                     {/* Unit Cost */}
                     <div className="w-full md:w-32 space-y-1">
                       <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">
-                        Giá vốn ($)
+                        Giá vốn (đ)
                       </label>
                       <input
                         type="number"
                         min="0"
-                        step="0.01"
+                        step="1"
                         required
                         value={item.unitCost}
                         onChange={(e) => updateImportItemRow(idx, 'unitCost', parseFloat(e.target.value) || 0)}
@@ -915,7 +922,7 @@ export const ManageInventoryPage = () => {
                         Thành tiền
                       </label>
                       <div className="w-full py-2 text-xs text-right font-bold text-primary">
-                        ${(item.quantity * item.unitCost).toFixed(2)}
+                        {formatVND(item.quantity * item.unitCost)}
                       </div>
                     </div>
 
@@ -950,7 +957,7 @@ export const ManageInventoryPage = () => {
               {/* Summary and Action Buttons */}
               <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t border-outline-variant">
                 <div className="text-sm font-medium">
-                  Tổng chi phí đợt nhập: <span className="text-lg font-black text-primary">${importTotalCost.toFixed(2)}</span>
+                  Tổng chi phí đợt nhập: <span className="text-lg font-black text-primary">{formatVND(importTotalCost)}</span>
                 </div>
                 
                 <div className="flex items-center gap-3">
@@ -1056,14 +1063,14 @@ export const ManageInventoryPage = () => {
                 {/* Giá bán niêm yết */}
                 <div className="space-y-1.5">
                   <label htmlFor="prod-price" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
-                    Giá bán ($) <span className="text-error">*</span>
+                    Giá bán (đ) <span className="text-error">*</span>
                   </label>
                   <input
                     type="number"
                     id="prod-price"
                     required
                     min="0"
-                    step="0.01"
+                    step="1"
                     value={productForm.salePrice}
                     onChange={(e) => setProductForm({ ...productForm, salePrice: parseFloat(e.target.value) || 0 })}
                     className="w-full bg-surface-container-low border-none rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary text-sm transition-all"
