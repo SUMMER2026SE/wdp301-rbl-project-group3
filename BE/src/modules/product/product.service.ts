@@ -45,10 +45,14 @@ export class ProductService {
     });
   }
 
-  async ensureProductExists(id: string): Promise<IProduct> {
+  async getProductById(id: string): Promise<IProduct> {
     const product = await productRepository.findById(id);
     if (!product) throw new AppError('Product not found', 404);
     return product;
+  }
+
+  async ensureProductExists(id: string): Promise<IProduct> {
+    return this.getProductById(id);
   }
 }
 
