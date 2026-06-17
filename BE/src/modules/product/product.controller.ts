@@ -16,6 +16,11 @@ export class ProductController {
     sendSuccess(res, result, 'Products retrieved');
   });
 
+  getById = asyncHandler(async (req: Request, res: Response) => {
+    const product = await productService.getProductById(String(req.params.id));
+    sendSuccess(res, { product }, 'Product retrieved');
+  });
+
   create = asyncHandler(async (req: Request, res: Response) => {
     const product = await productService.createProduct(req.body);
     sendSuccess(res, { product }, 'Product created', 201);
