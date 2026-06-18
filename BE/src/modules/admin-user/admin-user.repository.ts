@@ -1,5 +1,6 @@
+import { Types } from 'mongoose';
 import { User, IUser } from '../../models/user.model';
-import { UserStatus } from '../../types/common.types';
+import { UserRole, UserStatus } from '../../types/common.types';
 
 export interface AdminUserListFilters {
   keyword?: string;
@@ -68,6 +69,27 @@ export class AdminUserRepository {
     const update: Record<string, unknown> = { $set: { status } };
     if (incrementTokenVersion) {
       update.$inc = { refreshTokenVersion: 1 };
+    }
+
+    return User.findByIdAndUpdate(id, update, { new: true, runValidators: true })
+      .select(userListProjection)
+      .exec();
+  }
+
+  async updateRoleById(
+    id: string,
+    role: UserRole,
+    branchId?: Types.ObjectId | null
+  ): Promise<IUser | null> {
+    const update: Record<string, unknown> = {
+      $set: { role },
+      $inc: { refreshTokenVersion: 1 },
+    };
+
+    if (branchId === null) {
+      update.$unset = { branchId: '' };
+    } else if (branchId) {
+      (update.$set as Record<string, unknown>).branchId = branchId;
     }
 
     return User.findByIdAndUpdate(id, update, { new: true, runValidators: true })
