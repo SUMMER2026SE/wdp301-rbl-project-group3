@@ -19,4 +19,16 @@ export const listUsersSchema = z.object({
   }),
 });
 
+const userRole = z.enum(['admin', 'branch_manager', 'staff', 'customer']);
+
+export const changeRoleSchema = z.object({
+  params: z.object({
+    id: objectId,
+  }),
+  body: z.object({
+    role: userRole,
+    branchId: objectId.optional(),
+  }),
+});
+
 export { validate };
