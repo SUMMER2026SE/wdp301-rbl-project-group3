@@ -96,6 +96,23 @@ export class SystemSettingService {
     return toSettingResponse(setting);
   }
 
+  async getSettingsByGroup() {
+    await this.ensureDefaultSettings();
+
+    const settings = await systemSettingRepository.findAll();
+    const grouped = settings.reduce<Record<string, ReturnType<typeof toSettingResponse>[]>>(
+      (acc, setting) => {
+        const response = toSettingResponse(setting);
+        if (!acc[setting.group]) acc[setting.group] = [];
+        acc[setting.group].push(response);
+        return acc;
+      },
+      {}
+    );
+
+    return { groups: grouped };
+  }
+
   async createSetting(
     data: {
       key: string;
@@ -152,6 +169,36 @@ export class SystemSettingService {
     if (!updated) throw new AppError('Setting not found', 404);
 
     return toSettingResponse(updated);
+  }
+
+  async bulkUpdateSettings(
+    items: { key: string; value: string | number | boolean }[],
+    adminUserId: string
+  ) {
+    const updated: ReturnType<typeof toSettingResponse>[] = [];
+    const notFound: string[] = [];
+
+    for (const item of items) {
+      const setting = await systemSettingRepository.findByKey(item.key);
+      if (!setting) {
+        notFound.push(item.key);
+        continue;
+      }
+
+      assertValueMatchesType(item.value, setting.valueType);
+
+      const result = await systemSettingRepository.updateByKey(item.key, {
+        value: item.value,
+        updatedBy: new Types.ObjectId(adminUserId),
+      });
+      if (result) updated.push(toSettingResponse(result));
+    }
+
+    if (notFound.length > 0) {
+      throw new AppError(`Settings not found: ${notFound.join(', ')}`, 404);
+    }
+
+    return { settings: updated };
   }
 
   async deleteSetting(key: string) {
