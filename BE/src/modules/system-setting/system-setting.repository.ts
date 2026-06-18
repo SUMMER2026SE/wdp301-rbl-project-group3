@@ -64,6 +64,10 @@ export class SystemSettingRepository {
     return SystemSetting.find({ isPublic: true }).sort({ group: 1, key: 1 }).exec();
   }
 
+  async findAll(): Promise<ISystemSetting[]> {
+    return SystemSetting.find().sort({ group: 1, key: 1 }).exec();
+  }
+
   async findByKey(key: string): Promise<ISystemSetting | null> {
     return SystemSetting.findOne({ key: key.toLowerCase() }).exec();
   }
