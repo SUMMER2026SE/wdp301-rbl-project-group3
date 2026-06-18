@@ -11,7 +11,8 @@ import {
   Layers, 
   AlertTriangle, 
   PlusCircle, 
-  Trash2 
+  Trash2,
+  Pencil
 } from 'lucide-react'
 import { inventoryService } from '@services/inventoryService'
 import { branchService } from '@services/branchService'
@@ -61,12 +62,16 @@ export const ManageInventoryPage = () => {
   const [catalogLoading, setCatalogLoading] = useState(false)
   const [catalogError, setCatalogError] = useState<string | null>(null)
   const [catalogSearch, setCatalogSearch] = useState('')
+  const [catalogPage, setCatalogPage] = useState(1)
+  const [catalogTotalPages, setCatalogTotalPages] = useState(1)
 
-  // Create Product Modal
+  // Create / Edit Product Modal
   const [isProductModalOpen, setIsProductModalOpen] = useState(false)
   const [productLoading, setProductLoading] = useState(false)
   const [productError, setProductError] = useState<string | null>(null)
   const [productSuccess, setProductSuccess] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [imageFile, setImageFile] = useState<File | null>(null)
   const [productForm, setProductForm] = useState({
     name: '',
     sku: '',
@@ -97,18 +102,29 @@ export const ManageInventoryPage = () => {
     fetchBranches()
   }, [])
 
+  // Reset page to 1 when search query changes
+  useEffect(() => {
+    setCatalogPage(1)
+  }, [catalogSearch])
+
   // Fetch products (all active/inactive) for catalog and receipts
   const fetchProducts = async () => {
     try {
       setCatalogLoading(true)
       setCatalogError(null)
-      const params: { keyword?: string } = {}
+      const params: { keyword?: string; page?: number; limit?: number } = {
+        page: catalogPage,
+        limit: 10
+      }
       if (catalogSearch.trim()) {
         params.keyword = catalogSearch.trim()
       }
       const response = await productService.getProducts(params)
       if (response.success) {
         setProducts(response.data)
+        if (response.pagination) {
+          setCatalogTotalPages(response.pagination.totalPages || 1)
+        }
       } else {
         setCatalogError(response.message || 'Failed to fetch catalog products')
       }
@@ -131,7 +147,7 @@ export const ManageInventoryPage = () => {
         if (res.success) setProducts(res.data)
       })
     }
-  }, [activeTab, catalogSearch])
+  }, [activeTab, catalogSearch, catalogPage])
 
   // Fetch inventory stock for Tab 1
   const fetchInventory = async () => {
@@ -265,7 +281,74 @@ export const ManageInventoryPage = () => {
     }
   }
 
-  // Submit new master product
+  // Click edit button
+  const handleEditClick = (product: Product) => {
+    setEditingProduct(product)
+    setProductForm({
+      name: product.productName || product.name || '',
+      sku: product.sku || '',
+      salePrice: product.price ?? product.salePrice ?? 0,
+      unit: product.unit || 'item',
+      description: product.description || '',
+      imageUrl: product.imageUrl || '',
+      status: (product.status === 'active' || product.status === true) ? 'active' : 'inactive'
+    })
+    setImageFile(null)
+    setProductError(null)
+    setProductSuccess(false)
+    setIsProductModalOpen(true)
+  }
+
+  // Close product modal
+  const handleCloseProductModal = () => {
+    setIsProductModalOpen(false)
+    setEditingProduct(null)
+    setImageFile(null)
+    setProductForm({
+      name: '',
+      sku: '',
+      salePrice: 0,
+      unit: 'item',
+      description: '',
+      imageUrl: '',
+      status: 'active'
+    })
+  }
+
+  // Toggle activation status (Dừng bán / Mở bán lại)
+  const handleToggleProductStatus = async (product: Product) => {
+    const isActive = product.status === 'active' || product.status === true
+    const actionText = isActive ? 'dừng bán' : 'mở bán lại'
+    
+    if (window.confirm(`Bạn có chắc chắn muốn ${actionText} sản phẩm "${product.productName || product.name}" không?`)) {
+      try {
+        setCatalogLoading(true)
+        setCatalogError(null)
+        
+        let res
+        if (isActive) {
+          // Inactive means calling delete API
+          res = await productService.deleteProduct(product._id)
+        } else {
+          // Active means calling PATCH API with status active
+          res = await productService.updateProduct(product._id, { status: 'active' })
+        }
+        
+        if (res.success) {
+          fetchProducts() // refresh catalog list
+        } else {
+          setCatalogError(res.message || `Không thể ${actionText} sản phẩm.`)
+        }
+      } catch (err: any) {
+        const msg = err.response?.data?.message || err.message || `Lỗi khi thực hiện thao tác ${actionText}.`
+        setCatalogError(msg)
+      } finally {
+        setCatalogLoading(false)
+      }
+    }
+  }
+
+  // Submit new or edited master product
   const handleProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!productForm.name.trim() || !productForm.sku.trim()) {
@@ -276,15 +359,30 @@ export const ManageInventoryPage = () => {
     try {
       setProductLoading(true)
       setProductError(null)
-      const res = await productService.createProduct({
+
+      const payload: any = {
         name: productForm.name.trim(),
         sku: productForm.sku.trim().toUpperCase(),
         salePrice: productForm.salePrice,
         unit: productForm.unit || 'item',
         description: productForm.description.trim(),
-        imageUrl: productForm.imageUrl.trim() || undefined,
         status: productForm.status
-      })
+      }
+
+      if (imageFile) {
+        payload.image = imageFile
+      } else if (productForm.imageUrl.trim()) {
+        payload.imageUrl = productForm.imageUrl.trim()
+      } else {
+        payload.imageUrl = ''
+      }
+
+      let res
+      if (editingProduct) {
+        res = await productService.updateProduct(editingProduct._id, payload)
+      } else {
+        res = await productService.createProduct(payload)
+      }
 
       if (res.success) {
         setProductSuccess(true)
@@ -297,16 +395,18 @@ export const ManageInventoryPage = () => {
           imageUrl: '',
           status: 'active'
         })
+        setImageFile(null)
         setTimeout(() => {
           setProductSuccess(false)
           setIsProductModalOpen(false)
+          setEditingProduct(null)
           fetchProducts() // refresh catalog list
         }, 1500)
       } else {
-        setProductError(res.message || 'Không thể tạo sản phẩm.')
+        setProductError(res.message || (editingProduct ? 'Không thể cập nhật sản phẩm.' : 'Không thể tạo sản phẩm.'))
       }
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || 'Lỗi khi tạo sản phẩm.'
+      const msg = err.response?.data?.message || err.message || (editingProduct ? 'Lỗi khi cập nhật sản phẩm.' : 'Lỗi khi tạo sản phẩm.')
       setProductError(msg)
     } finally {
       setProductLoading(false)
@@ -359,6 +459,17 @@ export const ManageInventoryPage = () => {
           {activeTab === 'catalog' && (
             <button
               onClick={() => {
+                setEditingProduct(null)
+                setImageFile(null)
+                setProductForm({
+                  name: '',
+                  sku: '',
+                  salePrice: 0,
+                  unit: 'item',
+                  description: '',
+                  imageUrl: '',
+                  status: 'active'
+                })
                 setProductError(null)
                 setProductSuccess(false)
                 setIsProductModalOpen(true)
@@ -713,6 +824,7 @@ export const ManageInventoryPage = () => {
                 <table className="w-full text-left border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-outline-variant bg-surface-container-low/50">
+                      <th className="p-4 font-bold text-on-surface-variant text-center">STT</th>
                       <th className="p-4 font-bold text-on-surface-variant">Ảnh</th>
                       <th className="p-4 font-bold text-on-surface-variant">Mã SKU</th>
                       <th className="p-4 font-bold text-on-surface-variant">Tên Sản phẩm</th>
@@ -720,13 +832,17 @@ export const ManageInventoryPage = () => {
                       <th className="p-4 font-bold text-on-surface-variant text-right">Giá Bán Niêm Yết</th>
                       <th className="p-4 font-bold text-on-surface-variant text-center">Trạng thái bán</th>
                       <th className="p-4 font-bold text-on-surface-variant">Mô tả chi tiết</th>
+                      <th className="p-4 font-bold text-on-surface-variant text-center">Hành động</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-outline-variant/60">
-                    {products.map((product) => {
+                    {products.map((product, idx) => {
                       const isActive = product.status === 'active' || product.status === true
                       return (
                         <tr key={product._id} className="hover:bg-surface-container-low/20 transition-colors">
+                          <td className="p-4 text-center font-semibold text-on-surface-variant">
+                            {idx + 1}
+                          </td>
                           <td className="p-4">
                             <div className="w-10 h-10 bg-surface-container-low rounded-lg overflow-hidden border border-outline-variant flex items-center justify-center">
                               {product.imageUrl ? (
@@ -766,11 +882,58 @@ export const ManageInventoryPage = () => {
                           <td className="p-4 text-on-surface-variant max-w-xs truncate">
                             {product.description || <span className="italic opacity-40 text-xs">Chưa cập nhật mô tả</span>}
                           </td>
+                          <td className="p-4 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => handleEditClick(product)}
+                                className="rounded-lg p-2 text-primary hover:bg-primary-container/20 transition-colors"
+                                title="Chỉnh sửa sản phẩm"
+                              >
+                                <Pencil size={16} />
+                              </button>
+                              <button
+                                onClick={() => handleToggleProductStatus(product)}
+                                className={`rounded-lg p-2 transition-colors ${
+                                  isActive
+                                    ? 'text-error hover:bg-error-container/20'
+                                    : 'text-success hover:bg-success-container/20'
+                                }`}
+                                title={isActive ? 'Dừng bán sản phẩm' : 'Kích hoạt lại sản phẩm'}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </td>
                         </tr>
                       )
                     })}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Pagination Controls */}
+              <div className="flex items-center justify-between border-t border-outline-variant bg-surface-container-low/30 px-6 py-4">
+                <div className="text-xs font-semibold text-on-surface-variant">
+                  Trang <span className="font-bold text-on-surface">{catalogPage}</span> / {catalogTotalPages}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={catalogPage <= 1 || catalogLoading}
+                    onClick={() => setCatalogPage((prev) => Math.max(prev - 1, 1))}
+                    className="inline-flex items-center justify-center rounded-xl border border-outline px-4 py-2 text-xs font-bold text-on-surface bg-surface hover:bg-surface-container-high active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
+                  >
+                    Trang trước
+                  </button>
+                  <button
+                    type="button"
+                    disabled={catalogPage >= catalogTotalPages || catalogLoading}
+                    onClick={() => setCatalogPage((prev) => Math.min(prev + 1, catalogTotalPages))}
+                    className="inline-flex items-center justify-center rounded-xl border border-outline px-4 py-2 text-xs font-bold text-on-surface bg-surface hover:bg-surface-container-high active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
+                  >
+                    Trang sau
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -998,11 +1161,11 @@ export const ManageInventoryPage = () => {
             <div className="flex items-center justify-between border-b border-outline-variant bg-surface-container-low px-6 py-4">
               <h2 className="text-lg font-black text-on-surface flex items-center gap-2">
                 <Layers size={20} className="text-primary" />
-                Thêm Sản Phẩm Mới Vào Hệ Thống
+                {editingProduct ? 'Chỉnh Sửa Thông Tin Sản Phẩm' : 'Thêm Sản Phẩm Mới Vào Hệ Thống'}
               </h2>
               <button
                 type="button"
-                onClick={() => setIsProductModalOpen(false)}
+                onClick={handleCloseProductModal}
                 className="rounded-full p-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors"
               >
                 <X size={20} />
@@ -1021,7 +1184,9 @@ export const ManageInventoryPage = () => {
               {productSuccess && (
                 <div className="flex items-center gap-3 p-4 bg-success-container text-on-success-container rounded-xl border border-success/20">
                   <Check size={20} className="shrink-0" />
-                  <p className="text-sm font-semibold">Tạo sản phẩm gốc thành công!</p>
+                  <p className="text-sm font-semibold">
+                    {editingProduct ? 'Cập nhật sản phẩm thành công!' : 'Tạo sản phẩm gốc thành công!'}
+                  </p>
                 </div>
               )}
 
@@ -1109,19 +1274,42 @@ export const ManageInventoryPage = () => {
                 </div>
               </div>
 
-              {/* Link ảnh */}
-              <div className="space-y-1.5">
-                <label htmlFor="prod-img" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
-                  Link ảnh sản phẩm
-                </label>
-                <input
-                  type="url"
-                  id="prod-img"
-                  value={productForm.imageUrl}
-                  onChange={(e) => setProductForm({ ...productForm, imageUrl: e.target.value })}
-                  placeholder="https://example.com/apple.png"
-                  className="w-full bg-surface-container-low border-none rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary text-sm transition-all"
-                />
+              {/* Tải ảnh hoặc Nhập Link ảnh */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label htmlFor="prod-img-file" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                    Tải ảnh từ máy tính (Upload)
+                  </label>
+                  <input
+                    type="file"
+                    id="prod-img-file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        setImageFile(e.target.files[0])
+                        setProductForm({ ...productForm, imageUrl: '' }) // Clear text URL if file chosen
+                      }
+                    }}
+                    className="w-full bg-surface-container-low border-none rounded-xl py-2 px-4 focus:ring-2 focus:ring-primary text-sm transition-all"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label htmlFor="prod-img" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                    Hoặc dùng Link ảnh trực tiếp
+                  </label>
+                  <input
+                    type="url"
+                    id="prod-img"
+                    value={productForm.imageUrl}
+                    onChange={(e) => {
+                      setProductForm({ ...productForm, imageUrl: e.target.value })
+                      setImageFile(null) // Clear file if text URL chosen
+                    }}
+                    placeholder="https://example.com/apple.png"
+                    className="w-full bg-surface-container-low border-none rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary text-sm transition-all"
+                  />
+                </div>
               </div>
 
               {/* Mô tả */}
@@ -1143,7 +1331,7 @@ export const ManageInventoryPage = () => {
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-outline-variant">
                 <button
                   type="button"
-                  onClick={() => setIsProductModalOpen(false)}
+                  onClick={handleCloseProductModal}
                   disabled={productLoading}
                   className="rounded-xl px-5 py-3 text-sm font-bold text-on-surface-variant hover:bg-surface-container-low transition-colors disabled:opacity-50"
                 >
@@ -1160,7 +1348,7 @@ export const ManageInventoryPage = () => {
                       Đang xử lý...
                     </>
                   ) : (
-                    'Tạo sản phẩm'
+                    editingProduct ? 'Lưu thay đổi' : 'Tạo sản phẩm'
                   )}
                 </button>
               </div>
