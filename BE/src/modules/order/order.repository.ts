@@ -1,109 +1,55 @@
-import { Types } from 'mongoose';
-import { Order, IOrder, OrderStatus } from '../../models/order.model';
-
-export interface CreateOrderData {
-    userId: string;
-    branchId: string;
-    shippingAddress: string;
-    phoneNumber: string;
-    note?: string;
-    paymentMethod: 'COD' | 'banking' | 'momo' | 'vnpay';
-    items: {
-        productId: string;
-        productName: string;
-        quantity: number;
-        price: number;
-    }[];
-    totalAmount: number;
-}
+import { IOrder, Order, OrderStatus } from '../../models/order.model';
 
 export class OrderRepository {
-    async create(data: CreateOrderData): Promise<IOrder> {
-        const order = new Order({
-            userId: new Types.ObjectId(data.userId),
-            branchId: new Types.ObjectId(data.branchId),
-            shippingAddress: data.shippingAddress,
-            phoneNumber: data.phoneNumber,
-            note: data.note,
-            paymentMethod: data.paymentMethod,
-            totalAmount: data.totalAmount,
-            status: 'pending',
-            paymentStatus: 'pending',
-            items: data.items.map((i) => ({
-                _id: new Types.ObjectId(),
-                productId: new Types.ObjectId(i.productId),
-                productName: i.productName,
-                quantity: i.quantity,
-                price: i.price,
-            })),
-        });
-        return order.save();
-    }
+  async findAll(filters: { branchId?: string; status?: string }): Promise<IOrder[]> {
+    const query: Record<string, unknown> = {};
 
-    async findById(orderId: string): Promise<IOrder | null> {
-        return Order.findById(orderId)
-            .populate('branchId', 'branchName address phone')
-            .exec();
-    }
+    if (filters.branchId) query.branchId = filters.branchId;
+    if (filters.status) query.status = filters.status;
 
-    async findByIdAndUserId(orderId: string, userId: string): Promise<IOrder | null> {
-        return Order.findOne({
-            _id: new Types.ObjectId(orderId),
-            userId: new Types.ObjectId(userId),
-        }).exec();
-    }
+    return Order.find(query)
+      .populate('customerId', 'fullName email phone')
+      .populate('branchId', 'name code address')
+      .populate('items.productId', 'name sku unit')
+      .sort({ createdAt: -1 })
+      .exec();
+  }
 
-    /** Lấy danh sách đơn hàng của user, mới nhất trước */
-    async findByUserId(
-        userId: string,
-        page: number,
-        limit: number,
-        status?: OrderStatus
-    ): Promise<{ orders: IOrder[]; total: number }> {
-        const filter: Record<string, unknown> = { userId: new Types.ObjectId(userId) };
-        if (status) filter.status = status;
+  async findById(id: string): Promise<IOrder | null> {
+    return Order.findById(id)
+      .populate('customerId', 'fullName email phone')
+      .populate('branchId', 'name code address')
+      .populate('items.productId', 'name sku unit')
+      .exec();
+  }
 
-        const [orders, total] = await Promise.all([
-            Order.find(filter)
-                .sort({ createdAt: -1 })
-                .skip((page - 1) * limit)
-                .limit(limit)
-                .exec(),
-            Order.countDocuments(filter),
-        ]);
+  async updateStatus(id: string, data: {
+    status: OrderStatus;
+    confirmedBy?: string;
+    confirmedAt?: Date;
+  }): Promise<IOrder | null> {
+    return Order.findByIdAndUpdate(id, data, { new: true })
+      .populate('customerId', 'fullName email phone')
+      .populate('branchId', 'name code address')
+      .populate('items.productId', 'name sku unit')
+      .exec();
+  }
 
-        return { orders, total };
-    }
-
-    /** Staff/Manager dùng: lấy đơn theo branchId */
-    async findByBranchId(
-        branchId: string,
-        page: number,
-        limit: number,
-        status?: OrderStatus
-    ): Promise<{ orders: IOrder[]; total: number }> {
-        const filter: Record<string, unknown> = { branchId: new Types.ObjectId(branchId) };
-        if (status) filter.status = status;
-
-        const [orders, total] = await Promise.all([
-            Order.find(filter)
-                .sort({ createdAt: -1 })
-                .skip((page - 1) * limit)
-                .limit(limit)
-                .exec(),
-            Order.countDocuments(filter),
-        ]);
-
-        return { orders, total };
-    }
-
-    async updateStatus(orderId: string, status: OrderStatus): Promise<IOrder | null> {
-        return Order.findByIdAndUpdate(
-            orderId,
-            { $set: { status } },
-            { new: true }
-        ).exec();
-    }
+  async updateStatusIfCurrent(id: string, currentStatus: OrderStatus, data: {
+    status: OrderStatus;
+    confirmedBy?: string;
+    confirmedAt?: Date;
+  }): Promise<IOrder | null> {
+    return Order.findOneAndUpdate(
+      { _id: id, status: currentStatus },
+      data,
+      { new: true }
+    )
+      .populate('customerId', 'fullName email phone')
+      .populate('branchId', 'name code address')
+      .populate('items.productId', 'name sku unit')
+      .exec();
+  }
 }
 
 export const orderRepository = new OrderRepository();

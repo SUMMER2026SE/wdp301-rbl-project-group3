@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@hooks/useAuth'
+import { useCart } from '@/contexts/CartContext'
+import { productService } from '@services/productService'
+import type { Product } from '@/types'
 import {
   ArrowRight,
   Camera,
@@ -42,6 +45,19 @@ type Category = {
   icon: string
   label: string
   active?: boolean
+}
+
+const productImageMap: Record<string, string> = {
+  'Fresh Organic Tomato': '/assets/winmart/tomatoes.png',
+  'Premium Ribeye Steak': '/assets/winmart/ribeye.png',
+  'Mixed Berry Bowl': '/assets/winmart/berries.png',
+  'Whole Organic Milk': '/assets/winmart/milk.png',
+  'Artisan Sourdough': '/assets/winmart/sourdough.png',
+  'Organic Bunch Carrots': '/assets/winmart/carrots.png',
+  'Pure Alpine Sparkle': '/assets/winmart/sparkling-water.png',
+  'Young Green Asparagus': '/assets/winmart/asparagus.png',
+  'Velvet Greek Yogurt': '/assets/winmart/greek-yogurt.png',
+  'Fresh Whole Sea Bass': '/assets/winmart/sea-bass.png',
 }
 
 type FlashSaleProduct = {
@@ -216,10 +232,6 @@ const citrusImage = '/assets/winmart/citrus.png'
 
 const bbqImage = '/assets/winmart/bbq.png'
 
-const cartImages = [
-  '/assets/winmart/tomatoes.png',
-  '/assets/winmart/ribeye.png',
-]
 
 const getCountdownTime = (): CountdownTime => {
   const now = new Date()
@@ -249,7 +261,7 @@ const Icon = ({ children, className = '', filled = false }: IconProps) => {
   )
 }
 
-const FlashSaleCard = ({ product }: { product: FlashSaleProduct }) => (
+const FlashSaleCard = ({ product, onAddToCart }: { product: FlashSaleProduct; onAddToCart?: () => void }) => (
   <article className="bg-surface-container-lowest rounded-xl p-4 soft-lift group hover:scale-[0.98] transition-all cursor-pointer relative border border-transparent hover:border-primary/20">
     <div className="absolute top-2 left-2 bg-secondary-fixed text-on-secondary-fixed text-[10px] font-bold px-2 py-1 rounded-full z-10">
       {product.discount}
@@ -271,6 +283,10 @@ const FlashSaleCard = ({ product }: { product: FlashSaleProduct }) => (
         </span>
       </div>
       <button
+        onClick={(e) => {
+          e.stopPropagation()
+          onAddToCart?.()
+        }}
         className="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center beveled-btn hover:bg-primary hover:text-white transition-colors"
         type="button"
         aria-label={`Add ${product.title} to cart`}
@@ -281,7 +297,7 @@ const FlashSaleCard = ({ product }: { product: FlashSaleProduct }) => (
   </article>
 )
 
-const RecommendedCard = ({ product }: { product: RecommendedProduct }) => (
+const RecommendedCard = ({ product, onAddToCart }: { product: RecommendedProduct; onAddToCart?: () => void }) => (
   <article className="bg-surface-container-lowest rounded-xl p-4 soft-lift border border-transparent hover:border-primary/20 group transition-all">
     <div className="aspect-square bg-surface-container-low rounded-lg mb-4 relative overflow-hidden">
       <img className="w-full h-full object-cover" src={product.image} alt={product.alt} />
@@ -307,6 +323,10 @@ const RecommendedCard = ({ product }: { product: RecommendedProduct }) => (
     <div className="flex justify-between items-center">
       <span className="text-primary font-bold text-headline-sm">{product.price}</span>
       <button
+        onClick={(e) => {
+          e.stopPropagation()
+          onAddToCart?.()
+        }}
         className="flex items-center justify-center gap-1 bg-primary text-white px-3 py-1.5 rounded-lg text-[12px] font-bold beveled-btn hover:bg-primary-container transition-all"
         type="button"
         aria-label={`Add ${product.title} to cart`}
@@ -320,9 +340,26 @@ const RecommendedCard = ({ product }: { product: RecommendedProduct }) => (
 export const HomePage = () => {
   const navigate = useNavigate()
   const { user, isAuthenticated, logout } = useAuth()
+  const { cart, addToCart, updateQuantity, removeItem, clearCart } = useCart()
   const [countdown, setCountdown] = useState<CountdownTime>(() => getCountdownTime())
   const heroImageRef = useRef<HTMLImageElement | null>(null)
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [isCartOpen, setIsCartOpen] = useState(false)
+  const [dbProducts, setDbProducts] = useState<Product[]>([])
+
+  useEffect(() => {
+    const fetchDbProducts = async () => {
+      try {
+        const res = await productService.getProducts()
+        if (res.success) {
+          setDbProducts(res.data)
+        }
+      } catch (err) {
+        console.error('Failed to fetch products:', err)
+      }
+    }
+    fetchDbProducts()
+  }, [])
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -475,15 +512,20 @@ export const HomePage = () => {
                 <span className="font-label-lg text-label-lg hidden lg:block">Login</span>
               </button>
             )}
-            <div className="relative hidden sm:block cursor-pointer group">
+            <div
+              onClick={() => setIsCartOpen(true)}
+              className="relative hidden sm:block cursor-pointer group"
+            >
               <div className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center group-hover:bg-primary/10 transition-colors">
                 <Icon className="text-primary" filled>
                   shopping_cart
                 </Icon>
               </div>
-              <span className="absolute -top-1 -right-1 bg-secondary text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">
-                3
-              </span>
+              {cart && cart.totalItems > 0 && (
+                <span className="absolute -top-1 -right-1 bg-secondary text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">
+                  {cart.totalItems}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -569,9 +611,30 @@ export const HomePage = () => {
             </a>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-gutter-md">
-            {flashSaleProducts.map((product) => (
-              <FlashSaleCard key={product.title} product={product} />
-            ))}
+            {flashSaleProducts.map((product) => {
+              const dbProduct = dbProducts.find((p) => p.productName === product.title)
+              return (
+                <FlashSaleCard
+                  key={product.title}
+                  product={product}
+                  onAddToCart={async () => {
+                    if (!isAuthenticated) {
+                      navigate('/login')
+                      return
+                    }
+                    if (dbProduct) {
+                      try {
+                        await addToCart(dbProduct._id, 1)
+                      } catch (err: any) {
+                        alert(err.message || 'Failed to add to cart')
+                      }
+                    } else {
+                      alert('Product not available in database!')
+                    }
+                  }}
+                />
+              )
+            })}
           </div>
         </section>
 
@@ -638,43 +701,78 @@ export const HomePage = () => {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-gutter-md">
-            {recommendedProducts.map((product) => (
-              <RecommendedCard key={product.title} product={product} />
-            ))}
+            {recommendedProducts.map((product) => {
+              const dbProduct = dbProducts.find((p) => p.productName === product.title)
+              return (
+                <RecommendedCard
+                  key={product.title}
+                  product={product}
+                  onAddToCart={async () => {
+                    if (!isAuthenticated) {
+                      navigate('/login')
+                      return
+                    }
+                    if (dbProduct) {
+                      try {
+                        await addToCart(dbProduct._id, 1)
+                      } catch (err: any) {
+                        alert(err.message || 'Failed to add to cart')
+                      }
+                    } else {
+                      alert('Product not available in database!')
+                    }
+                  }}
+                />
+              )
+            })}
           </div>
         </section>
       </main>
 
-      <div className="fixed bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-lg glass-cart rounded-2xl p-3 md:p-4 flex items-center justify-between gap-3 shadow-2xl z-50 border border-white/20">
-        <div className="flex items-center gap-3 md:gap-4 min-w-0">
-          <div className="flex -space-x-4">
-            {cartImages.map((image) => (
-              <div
-                key={image}
-                className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-white overflow-hidden bg-surface-container"
-              >
-                <img className="w-full h-full object-cover" src={image} alt="Cart item" />
-              </div>
-            ))}
-            <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-white flex items-center justify-center bg-primary-container text-white text-[10px] font-bold">
-              +1
+      {isAuthenticated && cart && cart.totalItems > 0 && (
+        <div
+          onClick={() => setIsCartOpen(true)}
+          className="fixed bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-lg glass-cart rounded-2xl p-3 md:p-4 flex items-center justify-between gap-3 shadow-2xl z-50 border border-white/20 cursor-pointer hover:scale-[1.02] transition-all"
+        >
+          <div className="flex items-center gap-3 md:gap-4 min-w-0">
+            <div className="flex -space-x-4">
+              {cart.items.slice(0, 3).map((item) => {
+                const image = productImageMap[item.product.name] || '/assets/winmart/tomatoes.png'
+                return (
+                  <div
+                    key={item.itemId}
+                    className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-white overflow-hidden bg-surface-container"
+                  >
+                    <img className="w-full h-full object-cover" src={image} alt={item.product.name} />
+                  </div>
+                )
+              })}
+              {cart.items.length > 3 && (
+                <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-white flex items-center justify-center bg-primary-container text-white text-[10px] font-bold">
+                  +{cart.items.length - 3}
+                </div>
+              )}
+            </div>
+            <div>
+              <p className="text-label-lg font-bold whitespace-nowrap">{cart.totalItems} items in cart</p>
+              <p className="text-[12px] text-on-surface-variant">
+                Estimated Total: <span className="text-primary font-bold">${cart.totalAmount.toFixed(2)}</span>
+              </p>
             </div>
           </div>
-          <div>
-            <p className="text-label-lg font-bold whitespace-nowrap">3 items in cart</p>
-            <p className="text-[12px] text-on-surface-variant">
-              Estimated Total: <span className="text-primary font-bold">$14.40</span>
-            </p>
-          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              navigate('/checkout')
+            }}
+            className="hidden sm:flex bg-primary text-white px-4 md:px-6 py-3 rounded-xl font-bold text-body-md hover:bg-on-primary-fixed-variant transition-all items-center gap-2"
+            type="button"
+          >
+            <span className="hidden sm:inline">Checkout</span>
+            <Icon>shopping_bag</Icon>
+          </button>
         </div>
-        <button
-          className="hidden sm:flex bg-primary text-white px-4 md:px-6 py-3 rounded-xl font-bold text-body-md hover:bg-on-primary-fixed-variant transition-all items-center gap-2"
-          type="button"
-        >
-          <span className="hidden sm:inline">Checkout</span>
-          <Icon>shopping_bag</Icon>
-        </button>
-      </div>
+      )}
 
       <footer className="bg-surface-container-highest border-t border-outline-variant mt-16">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-gutter-md w-full px-8 py-stack-lg max-w-7xl mx-auto">
@@ -757,6 +855,166 @@ export const HomePage = () => {
           </div>
         </div>
       </footer>
+
+      {/* Shopping Cart Drawer */}
+      {isCartOpen && (
+        <div className="fixed inset-0 z-50 overflow-hidden">
+          {/* Backdrop */}
+          <div
+            onClick={() => setIsCartOpen(false)}
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+          />
+
+          <div className="absolute inset-y-0 right-0 max-w-full flex">
+            <div className="w-screen max-w-md bg-surface-container-lowest shadow-2xl flex flex-col">
+              {/* Header */}
+              <div className="px-6 py-5 border-b border-outline-variant flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Icon className="text-primary" filled>shopping_cart</Icon>
+                  <h2 className="text-headline-sm font-bold">Shopping Cart</h2>
+                </div>
+                <div className="flex items-center gap-2">
+                  {cart && cart.items.length > 0 && (
+                    <button
+                      onClick={async () => {
+                        if (window.confirm('Are you sure you want to clear your cart?')) {
+                          try {
+                            await clearCart()
+                          } catch (err: any) {
+                            alert(err.message)
+                          }
+                        }
+                      }}
+                      className="text-error font-bold text-label-md flex items-center gap-1 hover:bg-error/10 px-3 py-1.5 rounded-lg transition-colors"
+                      type="button"
+                    >
+                      <Icon className="w-5 h-5">delete</Icon> Clear All
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setIsCartOpen(false)}
+                    className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container-high transition-colors"
+                    type="button"
+                    aria-label="Close cart"
+                  >
+                    <Icon>close</Icon>
+                  </button>
+                </div>
+              </div>
+
+              {/* Items List */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {!cart || cart.items.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center opacity-60">
+                    <Icon className="text-outline w-16 h-16 mb-4 animate-bounce">shopping_cart_off</Icon>
+                    <p className="font-bold text-body-lg">Your cart is empty</p>
+                    <p className="text-body-md">Add items to start shopping!</p>
+                  </div>
+                ) : (
+                  cart.items.map((item) => {
+                    const image = productImageMap[item.product.name] || '/assets/winmart/tomatoes.png'
+                    return (
+                      <div
+                        key={item.itemId}
+                        className="flex items-center gap-4 bg-surface-container-low p-3 rounded-xl border border-outline-variant/30"
+                      >
+                        <div className="w-16 h-16 rounded-lg overflow-hidden bg-surface-container-high flex-shrink-0">
+                          <img className="w-full h-full object-cover" src={image} alt={item.product.name} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-body-md truncate">{item.product.name}</h4>
+                          {item.product.unit && (
+                            <p className="text-label-md text-on-surface-variant">{item.product.unit}</p>
+                          )}
+                          <p className="text-primary font-bold text-body-md mt-1">
+                            ${item.product.price.toFixed(2)}
+                          </p>
+                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                          <button
+                            onClick={async () => {
+                              try {
+                                await removeItem(item.itemId)
+                              } catch (err: any) {
+                                alert(err.message)
+                              }
+                            }}
+                            className="text-on-surface-variant hover:text-error transition-colors"
+                            type="button"
+                            aria-label={`Remove ${item.product.name}`}
+                          >
+                            <Icon className="w-5 h-5">delete</Icon>
+                          </button>
+                          <div className="flex items-center border border-outline rounded-lg overflow-hidden bg-surface">
+                            <button
+                              onClick={async () => {
+                                if (item.quantity > 1) {
+                                  try {
+                                    await updateQuantity(item.itemId, item.quantity - 1)
+                                  } catch (err: any) {
+                                    alert(err.message)
+                                  }
+                                } else {
+                                  try {
+                                    await removeItem(item.itemId)
+                                  } catch (err: any) {
+                                    alert(err.message)
+                                  }
+                                }
+                              }}
+                              className="w-7 h-7 flex items-center justify-center hover:bg-surface-container-high transition-colors font-bold"
+                              type="button"
+                            >
+                              -
+                            </button>
+                            <span className="w-8 text-center text-label-lg font-bold">
+                              {item.quantity}
+                            </span>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await updateQuantity(item.itemId, item.quantity + 1)
+                                } catch (err: any) {
+                                  alert(err.message)
+                                }
+                              }}
+                              className="w-7 h-7 flex items-center justify-center hover:bg-surface-container-high transition-colors font-bold"
+                              type="button"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+
+              {/* Footer */}
+              {cart && cart.items.length > 0 && (
+                <div className="px-6 py-5 border-t border-outline-variant bg-surface-container-low space-y-4">
+                  <div className="flex justify-between items-center text-body-lg font-bold">
+                    <span>Total Amount</span>
+                    <span className="text-primary text-headline-sm">${cart.totalAmount.toFixed(2)}</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setIsCartOpen(false)
+                      navigate('/checkout')
+                    }}
+                    className="w-full bg-primary hover:bg-on-primary-fixed-variant text-white py-4 rounded-xl font-bold text-body-md transition-all flex items-center justify-center gap-2 shadow-lg"
+                    type="button"
+                  >
+                    Proceed to Checkout
+                    <Icon>arrow_forward</Icon>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

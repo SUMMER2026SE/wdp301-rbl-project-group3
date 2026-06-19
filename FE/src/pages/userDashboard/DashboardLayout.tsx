@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
+import { Outlet, Link, useLocation, useNavigate, Navigate } from 'react-router-dom'
 import { useAuth } from '@hooks/useAuth'
 import {
   Bell,
@@ -39,8 +39,19 @@ const getInitials = (name?: string) => {
 export const DashboardLayout = () => {
   const location = useLocation()
   const navigate = useNavigate()
-  const { user, logout } = useAuth()
+  const { user, logout, loading } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  // Wait for auth to finish loading before making redirect decisions
+  if (loading) {
+    return <div className="flex h-screen items-center justify-center bg-surface"><div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>
+  }
+
+  // Redirect back-office users to the admin portal
+  const BACK_OFFICE_ROLES = ['admin', 'branch_manager', 'staff']
+  if (user && BACK_OFFICE_ROLES.includes(user.role)) {
+    return <Navigate to="/admin" replace />
+  }
 
   const displayName = user?.fullName || 'Customer'
   const roleLabel = user?.role || 'customer'

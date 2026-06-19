@@ -1,36 +1,44 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
 
-/**
- * Minimal Product model — phần đầy đủ do Developer A (UC15) sở hữu.
- * Chỉ khai báo các field cần thiết cho luồng cart & order của Developer B.
- */
+export type ProductStatus = 'active' | 'inactive';
+
 export interface IProduct extends Document {
-    _id: Types.ObjectId;
-    productName: string;
-    categoryId: Types.ObjectId;
-    price: number;
-    unit?: string;
-    barcode?: string;
-    status: boolean;
-    createdAt: Date;
-    updatedAt: Date;
+  _id: Types.ObjectId;
+  name: string;
+  sku: string;
+  description?: string;
+  categoryId?: Types.ObjectId;
+  unit: string;
+  salePrice: number;
+  imageUrl?: string;
+  status: ProductStatus;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const ProductSchema = new Schema<IProduct>(
-    {
-        productName: { type: String, required: true, trim: true },
-        categoryId: { type: Schema.Types.ObjectId, ref: 'Category', required: true },
-        price: { type: Number, required: true },
-        unit: { type: String },
-        barcode: { type: String, unique: true, sparse: true },
-        status: { type: Boolean, default: true },
+  {
+    name: { type: String, required: true, trim: true },
+    sku: { type: String, required: true, unique: true, uppercase: true, trim: true },
+    description: { type: String, trim: true },
+    categoryId: { type: Schema.Types.ObjectId, ref: 'Category' },
+    unit: { type: String, required: true, trim: true, default: 'item' },
+    salePrice: { type: Number, required: true, min: 0, default: 0 },
+    imageUrl: { type: String },
+    status: {
+      type: String,
+      enum: ['active', 'inactive'],
+      default: 'active',
     },
-    {
-        timestamps: true,
-        versionKey: false,
-    }
+  },
+  {
+    timestamps: true,
+    versionKey: false,
+  }
 );
 
+ProductSchema.index({ sku: 1 });
+ProductSchema.index({ name: 'text' });
 ProductSchema.index({ status: 1 });
 
 export const Product = mongoose.model<IProduct>('Product', ProductSchema);

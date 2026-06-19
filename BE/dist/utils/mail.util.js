@@ -20,11 +20,11 @@ const sendVerificationEmail = async (email, token) => {
     await transporter.sendMail({
         from: env_config_1.env.email.from,
         to: email,
-        subject: 'Xác thực email - PMAN-MART',
+        subject: 'Xác thực email - PMAN-Mart',
         html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #2d7a4f;">Xác thực Email của bạn</h2>
-        <p>Cảm ơn bạn đã đăng ký tài khoản PMAN-MART.</p>
+        <p>Cảm ơn bạn đã đăng ký tài khoản PMAN-Mart.</p>
         <p>Nhấn vào nút bên dưới để xác thực email:</p>
         <a href="${verifyUrl}" 
            style="display:inline-block; padding:12px 24px; background:#2d7a4f; color:#fff; text-decoration:none; border-radius:6px; margin:16px 0;">
@@ -43,7 +43,7 @@ const sendPasswordResetEmail = async (email, token) => {
     await transporter.sendMail({
         from: env_config_1.env.email.from,
         to: email,
-        subject: 'Đặt lại mật khẩu - PMAN-MART',
+        subject: 'Đặt lại mật khẩu - PMAN-Mart',
         html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #2d7a4f;">Đặt Lại Mật Khẩu</h2>
@@ -65,7 +65,7 @@ const sendOtpEmail = async (email, otp) => {
     await transporter.sendMail({
         from: env_config_1.env.email.from,
         to: email,
-        subject: 'Mã OTP Xác thực - PMAN-MART',
+        subject: 'Mã OTP Xác thực - PMAN-Mart',
         html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #2d7a4f;">Mã OTP Xác thực</h2>
