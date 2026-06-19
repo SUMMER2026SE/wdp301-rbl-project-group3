@@ -7,6 +7,7 @@ import categoryRoutes from '../modules/category/category.routes';
 import productRoutes from '../modules/product/product.routes';
 import inventoryRoutes from '../modules/inventory/inventory.routes';
 import orderRoutes from '../modules/order/order.routes';
+import statisticsRoutes from '../modules/statistics/statistics.routes';
 import cartRoutes from '../modules/cart/cart.routes';
 import promotionRoutes from '../modules/promotion/promotion.routes';
 import {
@@ -24,6 +25,7 @@ router.use('/categories', categoryRoutes);
 router.use('/products', productRoutes);
 router.use('/inventory', inventoryRoutes);
 router.use('/orders', orderRoutes);
+router.use('/statistics', statisticsRoutes);
 router.use('/cart', cartRoutes);
 router.use('/promotions', promotionRoutes);
 router.use('/settings', publicSystemSettingRoutes);
