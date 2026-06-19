@@ -16,7 +16,38 @@ const router = Router();
 // Tất cả routes thống kê đều yêu cầu đăng nhập
 router.use(authenticate);
 
-// ─── Admin — System-wide ────────────────────────────────────────────────────
+// ─── DASHBOARDS BY ROLE ───────────────────────────────────────────────────────
+
+router.get(
+  '/admin/dashboard',
+  authorize('admin'),
+  validate(trendQuerySchema),
+  statisticsController.getAdminDashboard
+);
+
+router.get(
+  '/branch/dashboard',
+  authorize('admin', 'branch_manager'),
+  validate(branchTrendQuerySchema),
+  statisticsController.getBranchDashboard
+);
+
+router.get(
+  '/staff/dashboard',
+  authorize('staff'),
+  validate(trendQuerySchema),
+  statisticsController.getStaffDashboard
+);
+
+router.get(
+  '/customer/dashboard',
+  authorize('customer'),
+  validate(trendQuerySchema),
+  statisticsController.getCustomerDashboard
+);
+
+// ─── LEGACY ROUTES (Preserved for compatibility) ──────────────────────────────
+
 router.get('/admin/overview', authorize('admin'), statisticsController.getAdminOverview);
 
 router.get(
@@ -40,7 +71,6 @@ router.get(
   statisticsController.getVoucherUsageTrend
 );
 
-// ─── Branch — admin (truyền branchId), branch_manager, staff (giới hạn) ───────
 router.get(
   '/branch/overview',
   authorize('admin', 'branch_manager', 'staff'),
@@ -55,7 +85,6 @@ router.get(
   statisticsController.getBranchVoucherUsageTrend
 );
 
-// ─── Personal — mọi role đã đăng nhập ─────────────────────────────────────────
 router.get('/me', validate(myStatsQuerySchema), statisticsController.getMyStatistics);
 
 export default router;

@@ -28,7 +28,52 @@ function queryStr(value: unknown): string | undefined {
 
 export class StatisticsController {
   // ═══════════════════════════════════════════════════════════════════════════
-  // ADMIN
+  // DASHBOARDS BY ROLE
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  getAdminDashboard = asyncHandler(async (req: Request, res: Response) => {
+    const caller = await buildCallerContext(req);
+    const from = queryStr(req.query.from);
+    const to = queryStr(req.query.to);
+    const groupBy = queryStr(req.query.groupBy) as GroupBy | undefined;
+
+    const result = await statisticsService.getAdminDashboard(caller, { from, to, groupBy });
+    sendSuccess(res, result, 'Admin dashboard retrieved');
+  });
+
+  getBranchDashboard = asyncHandler(async (req: Request, res: Response) => {
+    const caller = await buildCallerContext(req);
+    const branchId = queryStr(req.query.branchId);
+    const from = queryStr(req.query.from);
+    const to = queryStr(req.query.to);
+    const groupBy = queryStr(req.query.groupBy) as GroupBy | undefined;
+
+    const result = await statisticsService.getBranchDashboard(caller, branchId, { from, to, groupBy });
+    sendSuccess(res, result, 'Branch dashboard retrieved');
+  });
+
+  getStaffDashboard = asyncHandler(async (req: Request, res: Response) => {
+    const caller = await buildCallerContext(req);
+    const from = queryStr(req.query.from);
+    const to = queryStr(req.query.to);
+    const groupBy = queryStr(req.query.groupBy) as GroupBy | undefined;
+
+    const result = await statisticsService.getStaffDashboard(caller, { from, to, groupBy });
+    sendSuccess(res, result, 'Staff dashboard retrieved');
+  });
+
+  getCustomerDashboard = asyncHandler(async (req: Request, res: Response) => {
+    const caller = await buildCallerContext(req);
+    const from = queryStr(req.query.from);
+    const to = queryStr(req.query.to);
+    const groupBy = queryStr(req.query.groupBy) as GroupBy | undefined;
+
+    const result = await statisticsService.getCustomerDashboard(caller, { from, to, groupBy });
+    sendSuccess(res, result, 'Customer dashboard retrieved');
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // LEGACY ADMIN (Preserved for compatibility)
   // ═══════════════════════════════════════════════════════════════════════════
 
   getAdminOverview = asyncHandler(async (req: Request, res: Response) => {
@@ -67,7 +112,7 @@ export class StatisticsController {
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // BRANCH (admin with branchId, branch_manager, staff)
+  // LEGACY BRANCH (Preserved for compatibility)
   // ═══════════════════════════════════════════════════════════════════════════
 
   getBranchOverview = asyncHandler(async (req: Request, res: Response) => {
@@ -94,7 +139,7 @@ export class StatisticsController {
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // PERSONAL (mọi role)
+  // LEGACY PERSONAL (Preserved for compatibility)
   // ═══════════════════════════════════════════════════════════════════════════
 
   getMyStatistics = asyncHandler(async (req: Request, res: Response) => {

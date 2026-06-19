@@ -2,6 +2,10 @@ import { Types } from 'mongoose';
 import { User } from '../../models/user.model';
 import { Promotion } from '../../models/promotion.model';
 import { Voucher, VoucherStatus } from '../../models/voucher.model';
+import { Order } from '../../models/order.model';
+import { Product } from '../../models/product.model';
+import { Inventory } from '../../models/inventory.model';
+import { Branch } from '../../models/branch.model';
 
 export type GroupBy = 'day' | 'month';
 
@@ -13,6 +17,12 @@ export interface DateRange {
 
 export interface TrendPoint {
   date: string;
+  count: number;
+}
+
+export interface RevenueTrendPoint {
+  date: string;
+  revenue: number;
   count: number;
 }
 
@@ -45,7 +55,7 @@ function dateFormat(groupBy: GroupBy): string {
 
 // ─── Generic count-by-field helper ────────────────────────────────────────────
 async function countByField(
-  model: typeof User | typeof Promotion | typeof Voucher,
+  model: any,
   field: string,
   match: Record<string, unknown>
 ): Promise<Record<string, number>> {
@@ -300,6 +310,249 @@ export class StatisticsRepository {
     }
 
     return { data, total };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // NEW AGGREGATIONS FOR DASHBOARDS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async getTotalBranches(match: Record<string, unknown> = {}): Promise<number> {
+    return Branch.countDocuments(match).exec();
+  }
+
+  async getTotalProducts(match: Record<string, unknown> = {}): Promise<number> {
+    return Product.countDocuments(match).exec();
+  }
+
+  async getTotalOrders(match: Record<string, unknown> = {}): Promise<number> {
+    return Order.countDocuments(match).exec();
+  }
+
+  async getTotalRevenue(match: Record<string, unknown> = {}): Promise<number> {
+    const result = await Order.aggregate([
+      { $match: { ...match, status: 'delivered' } },
+      { $group: { _id: null, totalRevenue: { $sum: '$totalAmount' } } },
+    ]).exec();
+    return result.length > 0 ? result[0].totalRevenue : 0;
+  }
+
+  async getRevenueTrend(range: DateRange, match: Record<string, unknown> = {}): Promise<RevenueTrendPoint[]> {
+    const rows = await Order.aggregate([
+      {
+        $match: {
+          ...match,
+          status: 'delivered',
+          createdAt: { $gte: range.from, $lte: range.to },
+        },
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: dateFormat(range.groupBy), date: '$createdAt' } },
+          revenue: { $sum: '$totalAmount' },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]).exec();
+
+    return rows.map((row) => ({
+      date: row._id,
+      revenue: row.revenue,
+      count: row.count,
+    }));
+  }
+
+  async getRevenueByBranch(match: Record<string, unknown> = {}): Promise<any[]> {
+    const rows = await Order.aggregate([
+      { $match: { ...match, status: 'delivered' } },
+      { $group: { _id: '$branchId', revenue: { $sum: '$totalAmount' } } },
+      { $sort: { revenue: -1 } },
+      {
+        $lookup: {
+          from: 'branches',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'branch',
+        },
+      },
+      { $unwind: '$branch' },
+      {
+        $project: {
+          _id: 1,
+          branchName: '$branch.name',
+          revenue: 1,
+        },
+      },
+    ]).exec();
+    return rows;
+  }
+
+  async getTopSellingProducts(limit: number, match: Record<string, unknown> = {}): Promise<any[]> {
+    const rows = await Order.aggregate([
+      { $match: { ...match, status: 'delivered' } },
+      { $unwind: '$items' },
+      {
+        $group: {
+          _id: '$items.productId',
+          quantitySold: { $sum: '$items.quantity' },
+          revenue: { $sum: '$items.subtotal' },
+        },
+      },
+      { $sort: { quantitySold: -1 } },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: 'products',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'product',
+        },
+      },
+      { $unwind: '$product' },
+      {
+        $project: {
+          _id: 1,
+          name: '$product.name',
+          sku: '$product.sku',
+          quantitySold: 1,
+          revenue: 1,
+        },
+      },
+    ]).exec();
+    return rows;
+  }
+
+  async getLowStockProducts(limit: number, match: Record<string, unknown> = {}): Promise<any[]> {
+    const rows = await Inventory.aggregate([
+      { $match: { ...match, $expr: { $lte: ['$quantity', '$lowStockThreshold'] } } },
+      { $sort: { quantity: 1 } },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: 'products',
+          localField: 'productId',
+          foreignField: '_id',
+          as: 'product',
+        },
+      },
+      { $unwind: '$product' },
+      {
+        $lookup: {
+          from: 'branches',
+          localField: 'branchId',
+          foreignField: '_id',
+          as: 'branch',
+        },
+      },
+      { $unwind: { path: '$branch', preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          _id: 1,
+          productId: 1,
+          productName: '$product.name',
+          sku: '$product.sku',
+          branchId: 1,
+          branchName: '$branch.name',
+          quantity: 1,
+          lowStockThreshold: 1,
+        },
+      },
+    ]).exec();
+    return rows;
+  }
+
+  async getInventoryStats(match: Record<string, unknown> = {}): Promise<{ totalQuantity: number; totalValue: number }> {
+    const rows = await Inventory.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: null,
+          totalQuantity: { $sum: '$quantity' },
+          totalValue: { $sum: { $multiply: ['$quantity', '$averageCost'] } },
+        },
+      },
+    ]).exec();
+
+    return rows.length > 0
+      ? { totalQuantity: rows[0].totalQuantity, totalValue: rows[0].totalValue }
+      : { totalQuantity: 0, totalValue: 0 };
+  }
+
+  async getTopCustomers(limit: number, match: Record<string, unknown> = {}): Promise<any[]> {
+    const rows = await Order.aggregate([
+      { $match: { ...match, status: 'delivered' } },
+      {
+        $group: {
+          _id: '$customerId',
+          totalSpent: { $sum: '$totalAmount' },
+          ordersCount: { $sum: 1 },
+        },
+      },
+      { $sort: { totalSpent: -1 } },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      { $unwind: '$user' },
+      {
+        $project: {
+          _id: 1,
+          fullName: '$user.fullName',
+          email: '$user.email',
+          totalSpent: 1,
+          ordersCount: 1,
+        },
+      },
+    ]).exec();
+    return rows;
+  }
+
+  async getTopStaff(limit: number, match: Record<string, unknown> = {}): Promise<any[]> {
+    const rows = await Order.aggregate([
+      { $match: { ...match, status: 'delivered', confirmedBy: { $exists: true, $ne: null } } },
+      {
+        $group: {
+          _id: '$confirmedBy',
+          confirmedCount: { $sum: 1 },
+          revenueGenerated: { $sum: '$totalAmount' },
+        },
+      },
+      { $sort: { confirmedCount: -1 } },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      { $unwind: '$user' },
+      {
+        $project: {
+          _id: 1,
+          fullName: '$user.fullName',
+          email: '$user.email',
+          confirmedCount: 1,
+          revenueGenerated: 1,
+        },
+      },
+    ]).exec();
+    return rows;
+  }
+
+  async countServedCustomers(match: Record<string, unknown> = {}): Promise<number> {
+    const rows = await Order.aggregate([
+      { $match: { ...match, status: 'delivered' } },
+      { $group: { _id: '$customerId' } },
+      { $count: 'total' },
+    ]).exec();
+    return rows.length > 0 ? rows[0].total : 0;
   }
 }
 
