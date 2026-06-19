@@ -74,7 +74,248 @@ function calcUsageRate(byStatus: Record<string, number>): {
 
 export class StatisticsService {
   // ═══════════════════════════════════════════════════════════════════════════
-  // ADMIN — System-wide overview
+  // ADMIN DASHBOARD
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async getAdminDashboard(
+    caller: CallerContext,
+    params: { from?: string; to?: string; groupBy?: GroupBy }
+  ) {
+    this.assertRole(caller, ['admin']);
+    const range = resolveDateRange(params.from, params.to, params.groupBy);
+
+    const [
+      totalBranches,
+      totalStaff,
+      totalCustomers,
+      totalProducts,
+      totalOrders,
+      totalRevenue,
+      inventoryStats,
+      revenueTrend,
+      revenueByBranch,
+      topSellingProducts,
+      lowStockProducts,
+      topCustomers,
+      topStaff,
+      userRegistrationTrend,
+    ] = await Promise.all([
+      statisticsRepository.getTotalBranches(),
+      statisticsRepository.getTotalUsers({ role: { $in: ['staff', 'branch_manager'] } }),
+      statisticsRepository.getTotalUsers({ role: 'customer' }),
+      statisticsRepository.getTotalProducts(),
+      statisticsRepository.getTotalOrders(),
+      statisticsRepository.getTotalRevenue(),
+      statisticsRepository.getInventoryStats(),
+      statisticsRepository.getRevenueTrend(range),
+      statisticsRepository.getRevenueByBranch(),
+      statisticsRepository.getTopSellingProducts(5),
+      statisticsRepository.getLowStockProducts(10),
+      statisticsRepository.getTopCustomers(5),
+      statisticsRepository.getTopStaff(5),
+      statisticsRepository.userRegistrationTrend(range),
+    ]);
+
+    return {
+      cards: {
+        totalBranches,
+        totalStaff,
+        totalCustomers,
+        totalProducts,
+        totalOrders,
+        totalRevenue,
+        totalInventoryValue: inventoryStats.totalValue,
+        totalInventoryQuantity: inventoryStats.totalQuantity,
+      },
+      charts: {
+        revenueTrend: { range: { from: range.from, to: range.to, groupBy: range.groupBy }, data: revenueTrend },
+        revenueByBranch,
+        userRegistrationTrend: { range: { from: range.from, to: range.to, groupBy: range.groupBy }, data: userRegistrationTrend },
+      },
+      lists: {
+        topSellingProducts,
+        lowStockProducts,
+        topCustomers,
+        topStaff,
+      },
+      generatedAt: new Date(),
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // BRANCH MANAGER DASHBOARD
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async getBranchDashboard(
+    caller: CallerContext,
+    requestedBranchId?: string,
+    params: { from?: string; to?: string; groupBy?: GroupBy } = {}
+  ) {
+    this.assertRole(caller, ['admin', 'branch_manager']);
+    const branchId = this.resolveBranchId(caller, requestedBranchId);
+    const branchObjId = new Types.ObjectId(branchId);
+    const range = resolveDateRange(params.from, params.to, params.groupBy);
+
+    const branchMatch = { branchId: branchObjId };
+
+    const [
+      totalStaff,
+      totalCustomers,
+      totalProducts,
+      totalOrders,
+      totalRevenue,
+      inventoryStats,
+      revenueTrend,
+      topSellingProducts,
+      lowStockProducts,
+      topCustomers,
+      topStaff,
+    ] = await Promise.all([
+      statisticsRepository.getTotalUsers({ role: { $in: ['staff', 'branch_manager'] }, branchId: branchObjId }),
+      statisticsRepository.countServedCustomers({ branchId: branchObjId }),
+      statisticsRepository.getTotalProducts(branchMatch),
+      statisticsRepository.getTotalOrders(branchMatch),
+      statisticsRepository.getTotalRevenue(branchMatch),
+      statisticsRepository.getInventoryStats(branchMatch),
+      statisticsRepository.getRevenueTrend(range, branchMatch),
+      statisticsRepository.getTopSellingProducts(5, branchMatch),
+      statisticsRepository.getLowStockProducts(10, branchMatch),
+      statisticsRepository.getTopCustomers(5, branchMatch),
+      statisticsRepository.getTopStaff(5, branchMatch),
+    ]);
+
+    return {
+      cards: {
+        totalStaff,
+        totalCustomers, // based on distinct customers in branch orders
+        totalProducts, // number of distinct products in inventory
+        totalOrders,
+        totalRevenue,
+        totalInventoryValue: inventoryStats.totalValue,
+        totalInventoryQuantity: inventoryStats.totalQuantity,
+      },
+      charts: {
+        revenueTrend: { range: { from: range.from, to: range.to, groupBy: range.groupBy }, data: revenueTrend },
+      },
+      lists: {
+        topSellingProducts,
+        lowStockProducts,
+        topCustomers,
+        topStaff,
+      },
+      branchId,
+      generatedAt: new Date(),
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // STAFF DASHBOARD
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async getStaffDashboard(
+    caller: CallerContext,
+    params: { from?: string; to?: string; groupBy?: GroupBy } = {}
+  ) {
+    this.assertRole(caller, ['staff']);
+    if (!caller.branchId) {
+      throw new AppError('Your account is not assigned to any branch', 400);
+    }
+    const branchObjId = new Types.ObjectId(caller.branchId);
+    const userObjId = new Types.ObjectId(caller.userId);
+    const range = resolveDateRange(params.from, params.to, params.groupBy);
+
+    const branchMatch = { branchId: branchObjId };
+    const staffMatch = { branchId: branchObjId, confirmedBy: userObjId };
+
+    const [
+      totalProducts,
+      inventoryStats,
+      processedOrders,
+      revenueGenerated,
+      customersServed,
+      staffRevenueTrend,
+      topSellingProductsBranch,
+      lowStockProductsBranch,
+    ] = await Promise.all([
+      statisticsRepository.getTotalProducts(branchMatch),
+      statisticsRepository.getInventoryStats(branchMatch),
+      statisticsRepository.getTotalOrders(staffMatch),
+      statisticsRepository.getTotalRevenue(staffMatch),
+      statisticsRepository.countServedCustomers(staffMatch),
+      statisticsRepository.getRevenueTrend(range, staffMatch),
+      statisticsRepository.getTopSellingProducts(5, branchMatch),
+      statisticsRepository.getLowStockProducts(10, branchMatch),
+    ]);
+
+    return {
+      cards: {
+        totalProducts,
+        totalInventoryQuantity: inventoryStats.totalQuantity,
+        processedOrders,
+        revenueGenerated,
+        customersServed,
+      },
+      charts: {
+        revenueTrend: { range: { from: range.from, to: range.to, groupBy: range.groupBy }, data: staffRevenueTrend },
+      },
+      lists: {
+        topSellingProductsBranch,
+        lowStockProductsBranch,
+      },
+      generatedAt: new Date(),
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CUSTOMER DASHBOARD
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async getCustomerDashboard(
+    caller: CallerContext,
+    params: { from?: string; to?: string; groupBy?: GroupBy } = {}
+  ) {
+    this.assertRole(caller, ['customer']);
+    const userObjId = new Types.ObjectId(caller.userId);
+    const range = resolveDateRange(params.from, params.to, params.groupBy);
+
+    const customerMatch = { customerId: userObjId };
+
+    const [
+      totalOrders,
+      totalSpent,
+      spendTrend,
+      topBoughtProducts,
+      vouchersUsedCount,
+      recentVouchers,
+    ] = await Promise.all([
+      statisticsRepository.getTotalOrders(customerMatch),
+      statisticsRepository.getTotalRevenue(customerMatch),
+      statisticsRepository.getRevenueTrend(range, customerMatch),
+      statisticsRepository.getTopSellingProducts(5, customerMatch), // Reusing top selling logic for personal items
+      statisticsRepository.countVouchersUsedByUser(caller.userId),
+      statisticsRepository.listVouchersUsedByUser(caller.userId, 1, 5),
+    ]);
+
+    return {
+      cards: {
+        totalOrders,
+        totalSpent,
+        averageOrderValue: totalOrders > 0 ? totalSpent / totalOrders : 0,
+        totalVouchersUsed: vouchersUsedCount,
+      },
+      charts: {
+        spendTrend: { range: { from: range.from, to: range.to, groupBy: range.groupBy }, data: spendTrend },
+      },
+      lists: {
+        topBoughtProducts,
+        recentVouchersUsed: recentVouchers.data,
+      },
+      generatedAt: new Date(),
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // LEGACY ENDPOINTS (Preserved for compatibility)
   // ═══════════════════════════════════════════════════════════════════════════
 
   async getAdminOverview(caller: CallerContext) {
@@ -122,7 +363,6 @@ export class StatisticsService {
     };
   }
 
-  // ── User registration trend ──────────────────────────────────────────────
   async getUserRegistrationTrend(
     caller: CallerContext,
     params: { from?: string; to?: string; groupBy?: GroupBy }
@@ -142,7 +382,6 @@ export class StatisticsService {
     };
   }
 
-  // ── Top promotions by usage (system-wide) ────────────────────────────────
   async getTopPromotions(caller: CallerContext, limit: number) {
     this.assertRole(caller, ['admin']);
 
@@ -160,7 +399,6 @@ export class StatisticsService {
     };
   }
 
-  // ── Voucher usage trend (system-wide) ────────────────────────────────────
   async getVoucherUsageTrend(
     caller: CallerContext,
     params: { from?: string; to?: string; groupBy?: GroupBy }
@@ -172,10 +410,6 @@ export class StatisticsService {
 
     return { range: { from: range.from, to: range.to, groupBy: range.groupBy }, trend };
   }
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // BRANCH MANAGER / ADMIN (with branchId) / STAFF (limited) — Branch overview
-  // ═══════════════════════════════════════════════════════════════════════════
 
   async getBranchOverview(caller: CallerContext, requestedBranchId?: string) {
     this.assertRole(caller, ['admin', 'branch_manager', 'staff']);
@@ -209,12 +443,10 @@ export class StatisticsService {
       generatedAt: new Date(),
     };
 
-    // staff chỉ xem được thống kê promotion/voucher, không xem được thống kê nhân sự
     if (caller.role === 'staff') {
       return base;
     }
 
-    // admin & branch_manager: bổ sung thống kê nhân sự của branch
     const usersByRole = await statisticsRepository.countUsersByBranch(branchId);
 
     return {
@@ -226,7 +458,6 @@ export class StatisticsService {
     };
   }
 
-  // ── Branch voucher usage trend ───────────────────────────────────────────
   async getBranchVoucherUsageTrend(
     caller: CallerContext,
     requestedBranchId: string | undefined,
@@ -247,10 +478,6 @@ export class StatisticsService {
       trend,
     };
   }
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // PERSONAL (mọi role) — /me
-  // ═══════════════════════════════════════════════════════════════════════════
 
   async getMyStatistics(
     caller: CallerContext,
@@ -286,11 +513,6 @@ export class StatisticsService {
     }
   }
 
-  /**
-   * Xác định branchId thực sự sẽ dùng để truy vấn:
-   * - admin: có thể chỉ định bất kỳ branchId (bắt buộc truyền vào)
-   * - branch_manager / staff: luôn dùng branchId của chính mình, không cho chỉ định branch khác
-   */
   private resolveBranchId(caller: CallerContext, requestedBranchId?: string): string {
     if (caller.role === 'admin') {
       if (!requestedBranchId) {
@@ -299,7 +521,6 @@ export class StatisticsService {
       return requestedBranchId;
     }
 
-    // branch_manager / staff
     if (!caller.branchId) {
       throw new AppError('Your account is not assigned to any branch', 400);
     }
