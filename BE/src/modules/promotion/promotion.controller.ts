@@ -1,5 +1,10 @@
 import { Request, Response } from 'express';
-import { promotionService, CallerContext } from './promotion.service';
+import { promotionService } from './services/promotion.service';
+import { couponService } from './services/coupon.service';
+import { promotionValidationService } from './services/validation.service';
+import { promotionCalculationService } from './services/calculation.service';
+import { promotionUsageService } from './services/usage.service';
+import { CallerContext } from './types';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { sendSuccess } from '../../utils/response.util';
 import { User } from '../../models/user.model';
@@ -109,7 +114,7 @@ export class PromotionController {
     const caller = await buildCallerContext(req);
     const id = String(req.params.id);
     const { quantity } = req.body;
-    const result = await promotionService.generateVouchers(id, quantity, caller);
+    const result = await couponService.generateVouchers(id, quantity, caller);
     sendSuccess(res, result, result.message, 201);
   });
 
@@ -120,7 +125,7 @@ export class PromotionController {
     const page = queryStr(req.query.page);
     const limit = queryStr(req.query.limit);
 
-    const result = await promotionService.listVouchers(
+    const result = await couponService.listVouchers(
       id,
       {
         status: status as any,
@@ -135,15 +140,43 @@ export class PromotionController {
   disableVoucher = asyncHandler(async (req: Request, res: Response) => {
     const caller = await buildCallerContext(req);
     const voucherId = String(req.params.voucherId);
-    const result = await promotionService.disableVoucher(voucherId, caller);
+    const result = await couponService.disableVoucher(voucherId, caller);
     sendSuccess(res, { voucher: result }, 'Voucher disabled');
   });
 
-  // Public — lookup voucher trước khi apply
+  // Public — lookup voucher trước khi apply (validate và calculate discount)
   lookupVoucher = asyncHandler(async (req: Request, res: Response) => {
     const code = queryStr(req.query.code) ?? '';
-    const result = await promotionService.lookupVoucher(code);
-    sendSuccess(res, { voucher: result }, 'Voucher is valid');
+    const orderValue = Number(queryStr(req.query.orderValue)) || 0;
+    const branchId = queryStr(req.query.branchId);
+
+    const voucher = await promotionValidationService.validateVoucher(code, orderValue, branchId);
+    const discount = promotionCalculationService.calculateDiscount(voucher, orderValue);
+    
+    const response = await couponService.getVoucherResponse(voucher);
+    
+    sendSuccess(res, { voucher: response, discountAmount: discount }, 'Voucher is valid');
+  });
+
+  // Áp dụng voucher thực tế (khi thanh toán/tạo đơn hàng)
+  applyVoucher = asyncHandler(async (req: Request, res: Response) => {
+    const { userId } = await buildCallerContext(req);
+    const code = req.body.code;
+    const orderValue = Number(req.body.orderValue) || 0;
+    const branchId = req.body.branchId;
+    const orderId = req.body.orderId;
+
+    if (!orderId) {
+      throw new AppError('orderId is required to apply voucher', 400);
+    }
+
+    const voucher = await promotionValidationService.validateVoucher(code, orderValue, branchId);
+    const discount = promotionCalculationService.calculateDiscount(voucher, orderValue);
+    
+    const updatedVoucher = await promotionUsageService.applyVoucher(voucher._id.toString(), userId, orderId);
+    const response = await couponService.getVoucherResponse(updatedVoucher!);
+
+    sendSuccess(res, { voucher: response, discountAmount: discount }, 'Voucher applied successfully');
   });
 }
 

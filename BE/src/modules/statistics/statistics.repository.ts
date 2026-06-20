@@ -270,6 +270,24 @@ export class StatisticsRepository {
     return result;
   }
 
+  async getPromotionRevenue(match: Record<string, unknown> = {}): Promise<number> {
+    const rows = await Voucher.aggregate([
+      { $match: { ...match, status: 'used', orderId: { $exists: true, $ne: null } } },
+      {
+        $lookup: {
+          from: 'orders',
+          localField: 'orderId',
+          foreignField: '_id',
+          as: 'order',
+        },
+      },
+      { $unwind: '$order' },
+      { $match: { 'order.status': 'delivered' } }, // Only count revenue for delivered orders
+      { $group: { _id: null, revenue: { $sum: '$order.totalAmount' } } },
+    ]).exec();
+    return rows.length > 0 ? rows[0].revenue : 0;
+  }
+
   // ─── Personal voucher stats (cho /me) ─────────────────────────────────────
 
   async countVouchersUsedByUser(userId: string): Promise<number> {

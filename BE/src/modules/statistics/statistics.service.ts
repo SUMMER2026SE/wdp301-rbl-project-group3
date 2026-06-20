@@ -99,6 +99,8 @@ export class StatisticsService {
       topCustomers,
       topStaff,
       userRegistrationTrend,
+      promotionRevenue,
+      vouchersByStatus,
     ] = await Promise.all([
       statisticsRepository.getTotalBranches(),
       statisticsRepository.getTotalUsers({ role: { $in: ['staff', 'branch_manager'] } }),
@@ -114,6 +116,8 @@ export class StatisticsService {
       statisticsRepository.getTopCustomers(5),
       statisticsRepository.getTopStaff(5),
       statisticsRepository.userRegistrationTrend(range),
+      statisticsRepository.getPromotionRevenue(),
+      statisticsRepository.countVouchersByStatus(),
     ]);
 
     return {
@@ -124,6 +128,8 @@ export class StatisticsService {
         totalProducts,
         totalOrders,
         totalRevenue,
+        promotionRevenue,
+        vouchersUsed: vouchersByStatus['used'] || 0,
         totalInventoryValue: inventoryStats.totalValue,
         totalInventoryQuantity: inventoryStats.totalQuantity,
       },
@@ -170,6 +176,8 @@ export class StatisticsService {
       lowStockProducts,
       topCustomers,
       topStaff,
+      promotionRevenue,
+      vouchersByStatus,
     ] = await Promise.all([
       statisticsRepository.getTotalUsers({ role: { $in: ['staff', 'branch_manager'] }, branchId: branchObjId }),
       statisticsRepository.countServedCustomers({ branchId: branchObjId }),
@@ -182,6 +190,8 @@ export class StatisticsService {
       statisticsRepository.getLowStockProducts(10, branchMatch),
       statisticsRepository.getTopCustomers(5, branchMatch),
       statisticsRepository.getTopStaff(5, branchMatch),
+      statisticsRepository.getPromotionRevenue(branchMatch),
+      statisticsRepository.countVouchersByStatus(branchMatch),
     ]);
 
     return {
@@ -191,6 +201,8 @@ export class StatisticsService {
         totalProducts, // number of distinct products in inventory
         totalOrders,
         totalRevenue,
+        promotionRevenue,
+        vouchersUsed: vouchersByStatus['used'] || 0,
         totalInventoryValue: inventoryStats.totalValue,
         totalInventoryQuantity: inventoryStats.totalQuantity,
       },

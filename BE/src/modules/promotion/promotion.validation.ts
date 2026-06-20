@@ -99,8 +99,20 @@ export const voucherIdParamSchema = z.object({
 export const lookupVoucherSchema = z.object({
   query: z.object({
     code: z.string().min(1, 'Voucher code is required'),
+    orderValue: z.coerce.number().min(0).optional(),
+    branchId: mongoId.optional(),
   }),
 });
+
+export const applyVoucherSchema = z.object({
+  body: z.object({
+    code: z.string().min(1, 'Voucher code is required'),
+    orderValue: z.number().min(0),
+    branchId: mongoId.optional(),
+    orderId: mongoId,
+  }),
+});
+
 
 export const validate = <T extends z.ZodTypeAny>(schema: T) => {
   return (
