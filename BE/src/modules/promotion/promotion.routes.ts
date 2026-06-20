@@ -13,13 +13,15 @@ import {
   listVouchersSchema,
   voucherIdParamSchema,
   lookupVoucherSchema,
+  applyVoucherSchema,
 } from './promotion.validation';
 
 const router = Router();
 
-// ─── Public ───────────────────────────────────────────────────────────────────
+// ─── Public / Authenticated ─────────────────────────────────────────────────────
 router.get('/active', validate(listActivePromotionsSchema), promotionController.listActivePromotions);
 router.get('/vouchers/lookup', validate(lookupVoucherSchema), promotionController.lookupVoucher);
+router.post('/vouchers/apply', authenticate, validate(applyVoucherSchema), promotionController.applyVoucher);
 
 // ─── Admin & Branch Manager ───────────────────────────────────────────────────
 router.get('/', authenticate, authorize('admin', 'branch_manager'), validate(listPromotionsSchema), promotionController.listPromotions);

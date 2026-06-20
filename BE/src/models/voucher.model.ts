@@ -16,6 +16,7 @@ export interface IVoucher extends Document {
   status: VoucherStatus;
   usedBy?: Types.ObjectId;
   usedAt?: Date;
+  orderId?: Types.ObjectId;
   createdBy: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -49,6 +50,7 @@ const VoucherSchema = new Schema<IVoucher>(
     },
     usedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     usedAt: { type: Date },
+    orderId: { type: Schema.Types.ObjectId, ref: 'Order' },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },
   {

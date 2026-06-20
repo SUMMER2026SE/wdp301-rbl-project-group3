@@ -121,10 +121,10 @@ export class PromotionRepository {
     return Voucher.findByIdAndUpdate(id, { $set: { status } }, { new: true }).exec();
   }
 
-  async markVoucherUsed(id: string, userId: string): Promise<IVoucher | null> {
+  async markVoucherUsedWithOrder(id: string, userId: string, orderId: string): Promise<IVoucher | null> {
     return Voucher.findByIdAndUpdate(
       id,
-      { $set: { status: 'used', usedBy: new Types.ObjectId(userId), usedAt: new Date() } },
+      { $set: { status: 'used', usedBy: new Types.ObjectId(userId), usedAt: new Date(), orderId: new Types.ObjectId(orderId) } },
       { new: true }
     ).exec();
   }
