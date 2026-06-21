@@ -11,15 +11,39 @@ import {
 } from './branch.validation';
 
 const router = Router();
-const backOfficeRoles = ['admin', 'branch_manager', 'staff'] as const;
+const branchReaders = ['admin', 'branch_manager', 'staff'] as const;
 
 router.use(authenticate);
-router.use(authorize(...backOfficeRoles));
 
-router.get('/', validate(listBranchesSchema), branchController.getAll);
-router.get('/:id', validate(branchIdParamSchema), branchController.getById);
-router.post('/', validate(createBranchSchema), branchController.create);
-router.patch('/:id', validate(updateBranchSchema), branchController.update);
-router.delete('/:id', validate(branchIdParamSchema), branchController.deactivate);
+router.get(
+  '/',
+  authorize(...branchReaders),
+  validate(listBranchesSchema),
+  branchController.getAll
+);
+router.get(
+  '/:id',
+  authorize(...branchReaders),
+  validate(branchIdParamSchema),
+  branchController.getById
+);
+router.post(
+  '/',
+  authorize('admin'),
+  validate(createBranchSchema),
+  branchController.create
+);
+router.patch(
+  '/:id',
+  authorize('admin'),
+  validate(updateBranchSchema),
+  branchController.update
+);
+router.delete(
+  '/:id',
+  authorize('admin'),
+  validate(branchIdParamSchema),
+  branchController.deactivate
+);
 
 export default router;
