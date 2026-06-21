@@ -2,8 +2,28 @@ import { Types } from 'mongoose';
 import { branchService } from '../branch/branch.service';
 import { productService } from '../product/product.service';
 import { inventoryRepository } from './inventory.repository';
-import { IImportReceipt } from '../../models/importReceipt.model';
+import {
+  IImportReceipt,
+  IImportReceiptItem,
+} from '../../models/importReceipt.model';
 import { IInventory } from '../../models/inventory.model';
+import { AppError } from '../../middlewares/errorHandler.middleware';
+
+type ImportItemInput = {
+  productId: string;
+  quantity: number;
+  unitCost: number;
+};
+
+type InventorySnapshot = {
+  branchId: string;
+  productId: string;
+  existed: boolean;
+  quantity: number;
+  averageCost: number;
+  lastImportCost?: number;
+  lowStockThreshold: number;
+};
 
 export class InventoryService {
   async getInventory(filters: {
@@ -18,65 +38,37 @@ export class InventoryService {
     branchId: string;
     supplierName?: string;
     note?: string;
-    items: { productId: string; quantity: number; unitCost: number }[];
+    items: ImportItemInput[];
     createdBy: string;
   }): Promise<IImportReceipt> {
-    await branchService.getBranchById(data.branchId);
+    await this.ensureActiveBranch(data.branchId);
 
-    const items = [];
-    const inventorySnapshots = new Map<
-      string,
-      {
-        existed: boolean;
-        quantity: number;
-        averageCost: number;
-        lastImportCost?: number;
-        lowStockThreshold: number;
-      }
-    >();
-
-    for (const item of data.items) {
-      await productService.ensureProductExists(item.productId);
-      items.push({
-        productId: new Types.ObjectId(item.productId),
-        quantity: item.quantity,
-        unitCost: item.unitCost,
-        subtotal: item.quantity * item.unitCost,
-      });
-    }
+    const items = await this.prepareItems(data.items);
+    const inventorySnapshots = await this.captureInventorySnapshots(
+      data.items.map((item) => ({
+        branchId: data.branchId,
+        productId: item.productId,
+      }))
+    );
 
     const totalCost = items.reduce((sum, item) => sum + item.subtotal, 0);
 
     try {
       for (const item of data.items) {
-        if (!inventorySnapshots.has(item.productId)) {
-          const current = await inventoryRepository.findInventoryItem(data.branchId, item.productId);
-          inventorySnapshots.set(
-            item.productId,
-            current
-              ? {
-                  existed: true,
-                  quantity: current.quantity,
-                  averageCost: current.averageCost,
-                  lastImportCost: current.lastImportCost,
-                  lowStockThreshold: current.lowStockThreshold,
-                }
-              : {
-                  existed: false,
-                  quantity: 0,
-                  averageCost: 0,
-                  lowStockThreshold: 10,
-                }
-          );
-        }
-
-        await inventoryRepository.upsertStock({
+        const inventory = await inventoryRepository.upsertStock({
           branchId: data.branchId,
           productId: item.productId,
           quantityToAdd: item.quantity,
           unitCost: item.unitCost,
           updatedBy: data.createdBy,
         });
+        const receiptItem = items.find(
+          (entry) => entry.productId.toString() === item.productId
+        );
+        if (receiptItem) {
+          receiptItem.appliedInventoryQuantity = inventory.quantity;
+          receiptItem.appliedAverageCost = inventory.averageCost;
+        }
       }
 
       return await inventoryRepository.createImportReceipt({
@@ -89,13 +81,147 @@ export class InventoryService {
         createdBy: data.createdBy,
       });
     } catch (error) {
-      await this.restoreInventorySnapshots(data.branchId, inventorySnapshots, data.createdBy);
+      await this.restoreInventorySnapshots(inventorySnapshots, data.createdBy);
       throw error;
     }
   }
 
-  async getImportReceipts(filters: { branchId?: string }): Promise<IImportReceipt[]> {
+  async getImportReceipts(filters: {
+    branchId?: string;
+    status?: string;
+  }): Promise<IImportReceipt[]> {
     return inventoryRepository.findImportReceipts(filters);
+  }
+
+  async getImportReceiptById(id: string): Promise<IImportReceipt> {
+    const receipt = await inventoryRepository.findImportReceiptDetail(id);
+    if (!receipt) throw new AppError('Import receipt not found', 404);
+    return receipt;
+  }
+
+  async updateImportReceipt(
+    id: string,
+    data: {
+      branchId?: string;
+      supplierName?: string;
+      note?: string;
+      items?: ImportItemInput[];
+      updatedBy: string;
+    }
+  ): Promise<IImportReceipt> {
+    const receipt = await inventoryRepository.acquireImportReceiptForMutation(id);
+    if (!receipt) {
+      await this.throwImportReceiptMutationError(id);
+    }
+
+    const lockedReceipt = receipt!;
+    const currentBranchId = lockedReceipt.branchId.toString();
+    const nextBranchId = data.branchId || currentBranchId;
+    const currentItems: ImportItemInput[] = lockedReceipt.items.map((item) => ({
+      productId: item.productId.toString(),
+      quantity: item.quantity,
+      unitCost: item.unitCost,
+    }));
+    const nextItems = data.items || currentItems;
+    let snapshots = new Map<string, InventorySnapshot>();
+
+    try {
+      const preparedItems = await this.prepareItems(nextItems);
+      const stockChanged = Boolean(data.branchId || data.items);
+
+      if (stockChanged) {
+        await this.ensureActiveBranch(nextBranchId);
+        await this.ensureReceiptStockUnchanged(lockedReceipt);
+        snapshots = await this.captureInventorySnapshots([
+          ...currentItems.map((item) => ({
+            branchId: currentBranchId,
+            productId: item.productId,
+          })),
+          ...nextItems.map((item) => ({
+            branchId: nextBranchId,
+            productId: item.productId,
+          })),
+        ]);
+
+        await this.reverseReceiptStock(
+          id,
+          currentBranchId,
+          currentItems,
+          data.updatedBy
+        );
+        const appliedInventory = await this.applyImportedStock(
+          nextBranchId,
+          nextItems,
+          data.updatedBy
+        );
+        for (const item of preparedItems) {
+          const inventory = appliedInventory.get(item.productId.toString());
+          if (inventory) {
+            item.appliedInventoryQuantity = inventory.quantity;
+            item.appliedAverageCost = inventory.averageCost;
+          }
+        }
+      } else {
+        for (const item of preparedItems) {
+          const currentItem = lockedReceipt.items.find(
+            (entry) => entry.productId.toString() === item.productId.toString()
+          );
+          item.appliedInventoryQuantity = currentItem?.appliedInventoryQuantity;
+          item.appliedAverageCost = currentItem?.appliedAverageCost;
+        }
+      }
+
+      const updated = await inventoryRepository.updateImportReceipt(id, {
+        branchId: nextBranchId,
+        supplierName: data.supplierName ?? lockedReceipt.supplierName,
+        note: data.note ?? lockedReceipt.note,
+        items: preparedItems,
+        totalCost: preparedItems.reduce((sum, item) => sum + item.subtotal, 0),
+        updatedBy: data.updatedBy,
+      });
+
+      if (!updated) throw new AppError('Import receipt update conflict', 409);
+      return (await inventoryRepository.findImportReceiptDetail(id)) || updated;
+    } catch (error) {
+      if (snapshots.size > 0) {
+        await this.restoreInventorySnapshots(snapshots, data.updatedBy);
+      }
+      await inventoryRepository.releaseImportReceiptMutation(id);
+      throw error;
+    }
+  }
+
+  async cancelImportReceipt(id: string, cancelledBy: string): Promise<IImportReceipt> {
+    const receipt = await inventoryRepository.acquireImportReceiptForMutation(id);
+    if (!receipt) {
+      await this.throwImportReceiptMutationError(id);
+    }
+
+    const lockedReceipt = receipt!;
+    const branchId = lockedReceipt.branchId.toString();
+    const items: ImportItemInput[] = lockedReceipt.items.map((item) => ({
+      productId: item.productId.toString(),
+      quantity: item.quantity,
+      unitCost: item.unitCost,
+    }));
+    let snapshots = new Map<string, InventorySnapshot>();
+
+    try {
+      await this.ensureReceiptStockUnchanged(lockedReceipt);
+      snapshots = await this.captureInventorySnapshots(
+        items.map((item) => ({ branchId, productId: item.productId }))
+      );
+      await this.reverseReceiptStock(id, branchId, items, cancelledBy);
+      const cancelled = await inventoryRepository.cancelImportReceipt(id, cancelledBy);
+      if (!cancelled) throw new AppError('Import receipt cancellation conflict', 409);
+      return (await inventoryRepository.findImportReceiptDetail(id)) || cancelled;
+    } catch (error) {
+      if (snapshots.size > 0) {
+        await this.restoreInventorySnapshots(snapshots, cancelledBy);
+      }
+      await inventoryRepository.releaseImportReceiptMutation(id);
+      throw error;
+    }
   }
 
   private generateReceiptCode(): string {
@@ -105,35 +231,178 @@ export class InventoryService {
     return `IR-${stamp}-${random}`;
   }
 
-  private async restoreInventorySnapshots(
-    branchId: string,
-    snapshots: Map<
-      string,
-      {
-        existed: boolean;
-        quantity: number;
-        averageCost: number;
-        lastImportCost?: number;
-        lowStockThreshold: number;
+  private async prepareItems(
+    items: ImportItemInput[]
+  ): Promise<IImportReceiptItem[]> {
+    const preparedItems: IImportReceiptItem[] = [];
+    for (const item of items) {
+      const product = await productService.ensureProductExists(item.productId);
+      if (product.status !== 'active') {
+        throw new AppError(
+          `Inactive product ${item.productId} cannot be imported`,
+          409
+        );
       }
-    >,
+      preparedItems.push({
+        productId: new Types.ObjectId(item.productId),
+        quantity: item.quantity,
+        unitCost: item.unitCost,
+        subtotal: item.quantity * item.unitCost,
+      });
+    }
+    return preparedItems;
+  }
+
+  private async applyImportedStock(
+    branchId: string,
+    items: ImportItemInput[],
+    updatedBy: string
+  ): Promise<Map<string, IInventory>> {
+    const appliedInventory = new Map<string, IInventory>();
+    for (const item of items) {
+      const inventory = await inventoryRepository.upsertStock({
+        branchId,
+        productId: item.productId,
+        quantityToAdd: item.quantity,
+        unitCost: item.unitCost,
+        updatedBy,
+      });
+      appliedInventory.set(item.productId, inventory);
+    }
+    return appliedInventory;
+  }
+
+  private async reverseReceiptStock(
+    receiptId: string,
+    branchId: string,
+    items: ImportItemInput[],
     updatedBy: string
   ): Promise<void> {
-    for (const [productId, snapshot] of snapshots.entries()) {
+    for (const item of items) {
+      const replacementLastImportCost =
+        await inventoryRepository.findLatestActiveImportCost(
+          branchId,
+          item.productId,
+          receiptId
+        );
+      const updated = await inventoryRepository.reverseImportedStock({
+        branchId,
+        productId: item.productId,
+        quantityToRemove: item.quantity,
+        unitCost: item.unitCost,
+        updatedBy,
+        replacementLastImportCost,
+      });
+
+      if (!updated) {
+        throw new AppError(
+          `Cannot reverse imported stock for product ${item.productId}. The stock may already have been consumed.`,
+          409
+        );
+      }
+    }
+  }
+
+  private async captureInventorySnapshots(
+    locations: { branchId: string; productId: string }[]
+  ): Promise<Map<string, InventorySnapshot>> {
+    const snapshots = new Map<string, InventorySnapshot>();
+
+    for (const location of locations) {
+      const key = `${location.branchId}:${location.productId}`;
+      if (snapshots.has(key)) continue;
+
+      const current = await inventoryRepository.findInventoryItem(
+        location.branchId,
+        location.productId
+      );
+      snapshots.set(key, {
+        branchId: location.branchId,
+        productId: location.productId,
+        existed: Boolean(current),
+        quantity: current?.quantity || 0,
+        averageCost: current?.averageCost || 0,
+        lastImportCost: current?.lastImportCost,
+        lowStockThreshold: current?.lowStockThreshold || 10,
+      });
+    }
+
+    return snapshots;
+  }
+
+  private async restoreInventorySnapshots(
+    snapshots: Map<string, InventorySnapshot>,
+    updatedBy: string
+  ): Promise<void> {
+    for (const snapshot of snapshots.values()) {
       if (!snapshot.existed) {
-        await inventoryRepository.deleteInventoryItem(branchId, productId);
+        await inventoryRepository.deleteInventoryItem(
+          snapshot.branchId,
+          snapshot.productId
+        );
         continue;
       }
 
       await inventoryRepository.restoreInventoryItem({
-        branchId,
-        productId,
+        branchId: snapshot.branchId,
+        productId: snapshot.productId,
         quantity: snapshot.quantity,
         averageCost: snapshot.averageCost,
         lastImportCost: snapshot.lastImportCost,
         lowStockThreshold: snapshot.lowStockThreshold,
         updatedBy,
       });
+    }
+  }
+
+  private async throwImportReceiptMutationError(id: string): Promise<never> {
+    const existing = await inventoryRepository.findImportReceiptById(id);
+    if (!existing) throw new AppError('Import receipt not found', 404);
+    if (existing.status === 'cancelled') {
+      throw new AppError('Cancelled import receipts cannot be modified', 409);
+    }
+    throw new AppError('Import receipt is being modified by another request', 409);
+  }
+
+  private async ensureActiveBranch(branchId: string): Promise<void> {
+    const branch = await branchService.getBranchById(branchId);
+    if (branch.status !== 'active') {
+      throw new AppError('Cannot import stock into an inactive branch', 409);
+    }
+  }
+
+  private async ensureReceiptStockUnchanged(receipt: IImportReceipt): Promise<void> {
+    const branchId = receipt.branchId.toString();
+
+    for (const item of receipt.items) {
+      if (
+        item.appliedInventoryQuantity === undefined ||
+        item.appliedAverageCost === undefined
+      ) {
+        throw new AppError(
+          'This legacy import receipt cannot safely change stock because no inventory checkpoint is available',
+          409
+        );
+      }
+
+      const inventory = await inventoryRepository.findInventoryItem(
+        branchId,
+        item.productId.toString()
+      );
+      const averageCostMatches =
+        inventory &&
+        Math.abs(inventory.averageCost - item.appliedAverageCost) < 0.000001;
+
+      if (
+        !inventory ||
+        inventory.quantity !== item.appliedInventoryQuantity ||
+        !averageCostMatches
+      ) {
+        throw new AppError(
+          `Import receipt cannot be modified because inventory for product ${item.productId.toString()} has changed`,
+          409
+        );
+      }
     }
   }
 }

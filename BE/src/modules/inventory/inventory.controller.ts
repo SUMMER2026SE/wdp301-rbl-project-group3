@@ -24,8 +24,35 @@ export class InventoryController {
   getImportReceipts = asyncHandler(async (req: Request, res: Response) => {
     const receipts = await inventoryService.getImportReceipts({
       branchId: req.query.branchId as string | undefined,
+      status: req.query.status as string | undefined,
     });
     sendSuccess(res, { receipts }, 'Import receipts retrieved');
+  });
+
+  getImportReceiptById = asyncHandler(async (req: Request, res: Response) => {
+    const receipt = await inventoryService.getImportReceiptById(
+      String(req.params.id)
+    );
+    sendSuccess(res, { receipt }, 'Import receipt retrieved');
+  });
+
+  updateImportReceipt = asyncHandler(async (req: Request, res: Response) => {
+    const receipt = await inventoryService.updateImportReceipt(
+      String(req.params.id),
+      {
+        ...req.body,
+        updatedBy: req.user!.userId,
+      }
+    );
+    sendSuccess(res, { receipt }, 'Import receipt updated and stock reconciled');
+  });
+
+  cancelImportReceipt = asyncHandler(async (req: Request, res: Response) => {
+    const receipt = await inventoryService.cancelImportReceipt(
+      String(req.params.id),
+      req.user!.userId
+    );
+    sendSuccess(res, { receipt }, 'Import receipt cancelled and stock reversed');
   });
 }
 
