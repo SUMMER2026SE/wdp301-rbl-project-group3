@@ -9,6 +9,10 @@ export class InventoryController {
       branchId: req.query.branchId as string | undefined,
       productId: req.query.productId as string | undefined,
       lowStock: req.query.lowStock === 'true',
+      actor: {
+        userId: req.user!.userId,
+        role: req.user!.role,
+      },
     });
     sendSuccess(res, { inventory }, 'Inventory retrieved');
   });
@@ -17,6 +21,10 @@ export class InventoryController {
     const receipt = await inventoryService.createImportReceipt({
       ...req.body,
       createdBy: req.user!.userId,
+      actor: {
+        userId: req.user!.userId,
+        role: req.user!.role,
+      },
     });
     sendSuccess(res, { receipt }, 'Import receipt created and stock updated', 201);
   });
@@ -25,13 +33,21 @@ export class InventoryController {
     const receipts = await inventoryService.getImportReceipts({
       branchId: req.query.branchId as string | undefined,
       status: req.query.status as string | undefined,
+      actor: {
+        userId: req.user!.userId,
+        role: req.user!.role,
+      },
     });
     sendSuccess(res, { receipts }, 'Import receipts retrieved');
   });
 
   getImportReceiptById = asyncHandler(async (req: Request, res: Response) => {
     const receipt = await inventoryService.getImportReceiptById(
-      String(req.params.id)
+      String(req.params.id),
+      {
+        userId: req.user!.userId,
+        role: req.user!.role,
+      }
     );
     sendSuccess(res, { receipt }, 'Import receipt retrieved');
   });
@@ -42,6 +58,10 @@ export class InventoryController {
       {
         ...req.body,
         updatedBy: req.user!.userId,
+        actor: {
+          userId: req.user!.userId,
+          role: req.user!.role,
+        },
       }
     );
     sendSuccess(res, { receipt }, 'Import receipt updated and stock reconciled');
@@ -50,7 +70,11 @@ export class InventoryController {
   cancelImportReceipt = asyncHandler(async (req: Request, res: Response) => {
     const receipt = await inventoryService.cancelImportReceipt(
       String(req.params.id),
-      req.user!.userId
+      req.user!.userId,
+      {
+        userId: req.user!.userId,
+        role: req.user!.role,
+      }
     );
     sendSuccess(res, { receipt }, 'Import receipt cancelled and stock reversed');
   });

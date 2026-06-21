@@ -8,6 +8,8 @@ import {
 } from '../../models/importReceipt.model';
 import { IInventory } from '../../models/inventory.model';
 import { AppError } from '../../middlewares/errorHandler.middleware';
+import { User } from '../../models/user.model';
+import { UserRole } from '../../types/common.types';
 
 type ImportItemInput = {
   productId: string;
@@ -25,13 +27,27 @@ type InventorySnapshot = {
   lowStockThreshold: number;
 };
 
+type InventoryActor = {
+  userId: string;
+  role: UserRole;
+};
+
 export class InventoryService {
   async getInventory(filters: {
     branchId?: string;
     productId?: string;
     lowStock?: boolean;
+    actor: InventoryActor;
   }): Promise<IInventory[]> {
-    return inventoryRepository.findInventory(filters);
+    const branchId = await this.resolveAccessibleBranch(
+      filters.actor,
+      filters.branchId
+    );
+    return inventoryRepository.findInventory({
+      branchId,
+      productId: filters.productId,
+      lowStock: filters.lowStock,
+    });
   }
 
   async createImportReceipt(data: {
@@ -40,7 +56,9 @@ export class InventoryService {
     note?: string;
     items: ImportItemInput[];
     createdBy: string;
+    actor: InventoryActor;
   }): Promise<IImportReceipt> {
+    await this.resolveAccessibleBranch(data.actor, data.branchId);
     await this.ensureActiveBranch(data.branchId);
 
     const items = await this.prepareItems(data.items);
@@ -89,11 +107,26 @@ export class InventoryService {
   async getImportReceipts(filters: {
     branchId?: string;
     status?: string;
+    actor: InventoryActor;
   }): Promise<IImportReceipt[]> {
-    return inventoryRepository.findImportReceipts(filters);
+    const branchId = await this.resolveAccessibleBranch(
+      filters.actor,
+      filters.branchId
+    );
+    return inventoryRepository.findImportReceipts({
+      branchId,
+      status: filters.status,
+    });
   }
 
-  async getImportReceiptById(id: string): Promise<IImportReceipt> {
+  async getImportReceiptById(
+    id: string,
+    actor: InventoryActor
+  ): Promise<IImportReceipt> {
+    const rawReceipt = await inventoryRepository.findImportReceiptById(id);
+    if (!rawReceipt) throw new AppError('Import receipt not found', 404);
+    await this.resolveAccessibleBranch(actor, rawReceipt.branchId.toString());
+
     const receipt = await inventoryRepository.findImportReceiptDetail(id);
     if (!receipt) throw new AppError('Import receipt not found', 404);
     return receipt;
@@ -107,8 +140,19 @@ export class InventoryService {
       note?: string;
       items?: ImportItemInput[];
       updatedBy: string;
+      actor: InventoryActor;
     }
   ): Promise<IImportReceipt> {
+    const existingReceipt = await inventoryRepository.findImportReceiptById(id);
+    if (!existingReceipt) throw new AppError('Import receipt not found', 404);
+    await this.resolveAccessibleBranch(
+      data.actor,
+      existingReceipt.branchId.toString()
+    );
+    if (data.branchId) {
+      await this.resolveAccessibleBranch(data.actor, data.branchId);
+    }
+
     const receipt = await inventoryRepository.acquireImportReceiptForMutation(id);
     if (!receipt) {
       await this.throwImportReceiptMutationError(id);
@@ -126,6 +170,8 @@ export class InventoryService {
     let snapshots = new Map<string, InventorySnapshot>();
 
     try {
+      await this.resolveAccessibleBranch(data.actor, currentBranchId);
+      await this.resolveAccessibleBranch(data.actor, nextBranchId);
       const preparedItems = await this.prepareItems(nextItems);
       const stockChanged = Boolean(data.branchId || data.items);
 
@@ -191,7 +237,18 @@ export class InventoryService {
     }
   }
 
-  async cancelImportReceipt(id: string, cancelledBy: string): Promise<IImportReceipt> {
+  async cancelImportReceipt(
+    id: string,
+    cancelledBy: string,
+    actor: InventoryActor
+  ): Promise<IImportReceipt> {
+    const existingReceipt = await inventoryRepository.findImportReceiptById(id);
+    if (!existingReceipt) throw new AppError('Import receipt not found', 404);
+    await this.resolveAccessibleBranch(
+      actor,
+      existingReceipt.branchId.toString()
+    );
+
     const receipt = await inventoryRepository.acquireImportReceiptForMutation(id);
     if (!receipt) {
       await this.throwImportReceiptMutationError(id);
@@ -207,6 +264,7 @@ export class InventoryService {
     let snapshots = new Map<string, InventorySnapshot>();
 
     try {
+      await this.resolveAccessibleBranch(actor, branchId);
       await this.ensureReceiptStockUnchanged(lockedReceipt);
       snapshots = await this.captureInventorySnapshots(
         items.map((item) => ({ branchId, productId: item.productId }))
@@ -369,6 +427,33 @@ export class InventoryService {
     if (branch.status !== 'active') {
       throw new AppError('Cannot import stock into an inactive branch', 409);
     }
+  }
+
+  private async resolveAccessibleBranch(
+    actor: InventoryActor,
+    requestedBranchId?: string
+  ): Promise<string | undefined> {
+    if (actor.role === 'admin') return requestedBranchId;
+
+    const user = await User.findById(actor.userId)
+      .select('branchId status')
+      .lean()
+      .exec();
+
+    if (!user || user.status !== 'active') {
+      throw new AppError('Active staff account required', 403);
+    }
+
+    if (!user.branchId) {
+      throw new AppError('No branch is assigned to this account', 403);
+    }
+
+    const assignedBranchId = user.branchId.toString();
+    if (requestedBranchId && requestedBranchId !== assignedBranchId) {
+      throw new AppError('You cannot access another branch', 403);
+    }
+
+    return assignedBranchId;
   }
 
   private async ensureReceiptStockUnchanged(receipt: IImportReceipt): Promise<void> {
