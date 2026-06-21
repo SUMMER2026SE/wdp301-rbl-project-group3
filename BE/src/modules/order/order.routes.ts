@@ -2,17 +2,22 @@ import { Router } from 'express';
 import { orderController } from './order.controller';
 import { authenticate } from '../../middlewares/auth.middleware';
 import { authorize } from '../../middlewares/role.middleware';
-import { listOrdersSchema, orderIdParamSchema, updateOrderStatusSchema, validate } from './order.validation';
+import { listOrdersSchema, orderIdParamSchema, updateOrderStatusSchema, myOrderIdParamSchema, myOrdersSchema, cancelOrderSchema, validate } from './order.validation';
 
 const router = Router();
-const backOfficeRoles = ['admin', 'branch_manager', 'staff'] as const;
+const backOffice = authorize('admin', 'branch_manager', 'staff');
+const customerOnly = authorize('customer');
 
 router.use(authenticate);
-router.use(authorize(...backOfficeRoles));
 
-router.get('/', validate(listOrdersSchema), orderController.getAll);
-router.patch('/:id/confirm', validate(orderIdParamSchema), orderController.confirm);
-router.patch('/:id/status', validate(updateOrderStatusSchema), orderController.updateStatus);
-router.get('/:id', validate(orderIdParamSchema), orderController.getById);
+router.get('/my', customerOnly, validate(myOrdersSchema), orderController.getMyOrders);
+router.get('/my/:orderId/tracking', customerOnly, validate(myOrderIdParamSchema), orderController.trackMyOrder);
+router.patch('/my/:orderId/cancel', customerOnly, validate(cancelOrderSchema), orderController.cancelMyOrder);
+router.get('/my/:orderId', customerOnly, validate(myOrderIdParamSchema), orderController.getMyOrderById);
+
+router.get('/', backOffice, validate(listOrdersSchema), orderController.getAll);
+router.patch('/:id/confirm', backOffice, validate(orderIdParamSchema), orderController.confirm);
+router.patch('/:id/status', backOffice, validate(updateOrderStatusSchema), orderController.updateStatus);
+router.get('/:id', backOffice, validate(orderIdParamSchema), orderController.getById);
 
 export default router;
