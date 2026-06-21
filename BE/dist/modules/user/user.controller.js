@@ -14,7 +14,9 @@ class UserController {
         });
         this.updateProfile = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
             const userId = req.user.userId;
-            const updated = await user_service_1.userService.updateProfile(userId, req.body);
+            // Chỉ lấy đúng các field được phép từ body
+            const { fullName, phone, address } = req.body;
+            const updated = await user_service_1.userService.updateProfile(userId, { fullName, phone, address });
             (0, response_util_1.sendSuccess)(res, { user: updated }, 'Profile updated');
         });
         this.updateAvatar = (0, asyncHandler_1.asyncHandler)(async (req, res) => {

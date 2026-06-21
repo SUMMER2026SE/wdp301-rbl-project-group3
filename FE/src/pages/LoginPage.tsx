@@ -43,6 +43,8 @@ export const LoginPage = () => {
   const [selectedRole, setSelectedRole] = useState<UserRole>('customer')
   const [error, setError] = useState('')
 
+  const BACK_OFFICE_ROLES = ['admin', 'branch_manager', 'staff']
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError('')
@@ -53,8 +55,13 @@ export const LoginPage = () => {
     }
 
     try {
-      await login({ email, password })
-      navigate('/')
+      const response = await login({ email, password })
+      const role = response?.data?.user?.role
+      if (role && BACK_OFFICE_ROLES.includes(role)) {
+        navigate('/admin')
+      } else {
+        navigate('/')
+      }
     } catch (err) {
       setError(getErrorMessage(err, 'Login failed'))
     }
