@@ -7,9 +7,9 @@ const inventory_repository_1 = require("../inventory/inventory.repository");
 const order_repository_1 = require("./order.repository");
 const allowedTransitions = {
     pending: ['confirmed', 'cancelled'],
-    confirmed: ['preparing', 'cancelled'],
-    preparing: ['delivering', 'cancelled'],
-    delivering: ['delivered'],
+    confirmed: ['pending', 'preparing', 'cancelled'],
+    preparing: ['confirmed', 'delivering', 'cancelled'],
+    delivering: ['preparing', 'delivered', 'cancelled'],
     delivered: [],
     cancelled: [],
 };
@@ -57,14 +57,19 @@ class OrderService {
         const update = { status };
         let stockDecreased = false;
         let stockIncreased = false;
-        if (status === 'confirmed') {
+        const isProcessingState = (s) => ['confirmed', 'preparing', 'delivering'].includes(s);
+        // If moving from pending to a processing state, decrease stock
+        if (order.status === 'pending' && isProcessingState(status)) {
             await this.ensureStockAvailable(order);
             await this.decreaseOrderStock(order, staffId);
             stockDecreased = true;
-            update.confirmedBy = staffId;
-            update.confirmedAt = new Date();
+            if (status === 'confirmed') {
+                update.confirmedBy = staffId;
+                update.confirmedAt = new Date();
+            }
         }
-        if (status === 'cancelled' && ['confirmed', 'preparing'].includes(order.status)) {
+        // If moving from a processing state back to pending or to cancelled, increase/restore stock
+        if (isProcessingState(order.status) && (status === 'pending' || status === 'cancelled')) {
             await this.increaseOrderStock(order, staffId);
             stockIncreased = true;
         }
