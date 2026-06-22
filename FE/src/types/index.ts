@@ -141,6 +141,7 @@ export interface PlaceOrderInput {
   note?: string
   paymentMethod: 'COD' | 'banking' | 'momo' | 'vnpay'
   selectedItemIds?: string[]
+  voucherCode?: string
 }
 
 export interface OrdersListResponse {
@@ -285,3 +286,51 @@ export interface Category {
   createdAt: string
   updatedAt: string
 }
+
+export interface Promotion {
+  id: string
+  name: string
+  description?: string
+  discountType: 'percentage' | 'fixed_amount'
+  discountValue: number
+  maxDiscountAmount?: number
+  minOrderAmount?: number
+  scope: 'global' | 'branch'
+  branchId?: string
+  startDate: string
+  endDate: string
+  status: 'draft' | 'active' | 'inactive' | 'expired'
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Voucher {
+  id: string
+  code: string
+  promotionId: string
+  discountType: 'percentage' | 'fixed_amount'
+  discountValue: number
+  maxDiscountAmount?: number
+  minOrderAmount?: number
+  branchId?: string
+  expiresAt: string
+  status: 'active' | 'used' | 'expired' | 'disabled'
+  createdAt: string
+}
+
+export interface VoucherLookupResponse {
+  voucher: Voucher
+  discountAmount: number;
+}
+
+export interface ActivePromotionsResponse {
+  data: Promotion[]
+  pagination: {
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+  }
+}
+
+
