@@ -254,6 +254,12 @@ export interface AdminOrder {
   updatedAt: string
 }
 
-
-
-
+export interface Category {
+  _id: string
+  name: string
+  code: string
+  description?: string
+  status: 'active' | 'inactive'
+  createdAt: string
+  updatedAt: string
+}
