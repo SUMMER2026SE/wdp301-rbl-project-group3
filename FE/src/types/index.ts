@@ -93,23 +93,45 @@ export interface Product {
 export interface OrderItem {
   productId: string
   productName: string
+  sku?: string
+  unit?: string
+  imageUrl?: string | null
   quantity: number
-  price: number
+  price?: number
+  unitPrice?: number
   subtotal: number
 }
 
+export type OrderStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'preparing'
+  | 'delivering'
+  | 'delivered'
+  | 'cancelled'
+
 export interface Order {
   orderId: string
-  status: 'pending' | 'processing' | 'completed' | 'cancelled'
-  paymentMethod: 'COD' | 'banking' | 'momo' | 'vnpay'
-  paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded'
-  shippingAddress: string
-  phoneNumber: string
-  note?: string
-  orderDate: string
+  code?: string
+  status: OrderStatus
+  branch?: {
+    branchId: string
+    name?: string
+    code?: string
+    address?: string
+    phone?: string | null
+  }
+  paymentMethod?: 'COD' | 'banking' | 'momo' | 'vnpay'
+  paymentStatus?: 'pending' | 'paid' | 'failed' | 'refunded'
+  shippingAddress?: string
+  deliveryAddress?: string | null
+  phoneNumber?: string
+  note?: string | null
+  orderDate?: string
   items: OrderItem[]
   totalAmount: number
   createdAt: string
+  updatedAt?: string
 }
 
 export interface PlaceOrderInput {
