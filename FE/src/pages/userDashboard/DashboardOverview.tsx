@@ -1,5 +1,12 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '@hooks/useAuth'
+
+const formatVND = (num: number) => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+  }).format(num)
+}
 import {
   ArrowRight,
   CheckCircle,
@@ -57,7 +64,7 @@ const stats: StatCard[] = [
   },
   {
     title: 'Total Spent',
-    value: '$1,234',
+    value: '1.234.000 đ',
     helper: 'Across 24 orders',
     icon: TrendingUp,
     tone: 'bg-secondary-container text-white',
@@ -69,21 +76,21 @@ const recentOrders: RecentOrder[] = [
   {
     id: 'ORD-001',
     date: '2026-05-24',
-    total: 125.5,
+    total: 270000,
     status: 'completed',
     items: 5,
   },
   {
     id: 'ORD-002',
     date: '2026-05-23',
-    total: 89.99,
+    total: 90000,
     status: 'processing',
     items: 3,
   },
   {
     id: 'ORD-003',
     date: '2026-05-20',
-    total: 234,
+    total: 490000,
     status: 'pending',
     items: 8,
   },
@@ -212,7 +219,7 @@ export const DashboardOverview = () => {
                       {order.date} · {order.items} items
                     </p>
                   </div>
-                  <p className="text-lg font-black text-primary">${order.total.toFixed(2)}</p>
+                  <p className="text-lg font-black text-primary">{formatVND(order.total)}</p>
                 </div>
               )
             })}

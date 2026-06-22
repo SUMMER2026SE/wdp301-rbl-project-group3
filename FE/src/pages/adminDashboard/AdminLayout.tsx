@@ -12,6 +12,7 @@ import {
   Layers,
   X,
   UserCheck,
+  Users,
 } from 'lucide-react'
 
 type NavItem = {
@@ -76,6 +77,15 @@ export const AdminLayout = () => {
       icon: <MapPin size={20} />,
     },
   ]
+
+  if (user?.role === 'admin') {
+    navItems.push({
+      path: '/admin/users',
+      label: 'Thành viên',
+      description: 'Quản lý người dùng',
+      icon: <Users size={20} />,
+    })
+  }
 
   const handleLogout = async () => {
     try {

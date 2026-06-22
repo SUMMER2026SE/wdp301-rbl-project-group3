@@ -1,5 +1,12 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+
+const formatVND = (num: number) => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+  }).format(num)
+}
 import {
   CheckCircle,
   Clock,
@@ -30,19 +37,19 @@ const orders: Order[] = [
   {
     id: 'ORD-001',
     date: '2026-05-24',
-    total: 125.5,
+    total: 270000,
     status: 'completed',
     items: [
       {
         name: 'Fresh Organic Tomato',
         quantity: 2,
-        price: 1.2,
+        price: 30000,
         image: '/assets/winmart/tomatoes.png',
       },
       {
         name: 'Premium Ribeye Steak',
         quantity: 1,
-        price: 8.5,
+        price: 210000,
         image: '/assets/winmart/ribeye.png',
       },
     ],
@@ -50,13 +57,13 @@ const orders: Order[] = [
   {
     id: 'ORD-002',
     date: '2026-05-23',
-    total: 89.99,
+    total: 90000,
     status: 'processing',
     items: [
       {
         name: 'Whole Organic Milk',
         quantity: 3,
-        price: 2.1,
+        price: 30000,
         image: '/assets/winmart/milk.png',
       },
     ],
@@ -64,19 +71,19 @@ const orders: Order[] = [
   {
     id: 'ORD-003',
     date: '2026-05-20',
-    total: 234,
+    total: 490000,
     status: 'pending',
     items: [
       {
         name: 'Fresh Whole Sea Bass',
         quantity: 1,
-        price: 12.5,
+        price: 310000,
         image: '/assets/winmart/sea-bass.png',
       },
       {
         name: 'Young Green Asparagus',
         quantity: 2,
-        price: 3.5,
+        price: 90000,
         image: '/assets/winmart/asparagus.png',
       },
     ],
@@ -256,7 +263,7 @@ export const OrdersPage = () => {
                     <StatusIcon size={14} />
                     {meta.label}
                   </span>
-                  <p className="text-xl font-black text-primary">${order.total.toFixed(2)}</p>
+                  <p className="text-xl font-black text-primary">{formatVND(order.total)}</p>
                 </div>
               </div>
 
@@ -273,11 +280,11 @@ export const OrdersPage = () => {
                     <div className="min-w-0">
                       <p className="truncate text-sm font-bold text-on-surface">{item.name}</p>
                       <p className="mt-1 text-sm text-on-surface-variant">
-                        Qty {item.quantity} x ${item.price.toFixed(2)}
+                        Qty {item.quantity} x {formatVND(item.price)}
                       </p>
                     </div>
                     <p className="text-sm font-black text-on-surface">
-                      ${(item.quantity * item.price).toFixed(2)}
+                      {formatVND(item.quantity * item.price)}
                     </p>
                   </div>
                 ))}
