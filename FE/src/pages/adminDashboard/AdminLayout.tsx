@@ -80,6 +80,12 @@ export const AdminLayout = () => {
 
   if (user?.role === 'admin') {
     navItems.push({
+      path: '/admin/categories',
+      label: 'Danh mục',
+      description: 'Quản lý danh mục sản phẩm',
+      icon: <Layers size={20} />,
+    })
+    navItems.push({
       path: '/admin/users',
       label: 'Thành viên',
       description: 'Quản lý người dùng',
