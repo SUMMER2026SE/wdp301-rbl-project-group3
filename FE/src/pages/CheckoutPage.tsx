@@ -2,6 +2,13 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useCart } from '@/contexts/CartContext'
 import { orderService } from '@/services/orderService'
+
+const formatVND = (num: number) => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+  }).format(num)
+}
 import {
   ArrowLeft,
   MapPin,
@@ -98,7 +105,7 @@ export const CheckoutPage = () => {
           <div className="bg-surface-container-high rounded-xl p-4 mb-6 text-left space-y-2 text-sm text-on-surface">
             <div className="flex justify-between">
               <span className="text-on-surface-variant font-bold">Total Amount:</span>
-              <span className="font-black text-primary">${successOrder.totalAmount.toFixed(2)}</span>
+              <span className="font-black text-primary">{formatVND(successOrder.totalAmount)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-on-surface-variant font-bold">Payment Method:</span>
@@ -319,11 +326,11 @@ export const CheckoutPage = () => {
                         <div className="flex-1 min-w-0">
                           <h4 className="font-bold text-sm truncate">{item.product.name}</h4>
                           <p className="text-[12px] text-on-surface-variant mt-0.5">
-                            Qty {item.quantity} x ${item.product.price.toFixed(2)}
+                            Qty {item.quantity} x {formatVND(item.product.price)}
                           </p>
                         </div>
                         <span className="font-bold text-sm text-on-surface">
-                          ${item.subtotal.toFixed(2)}
+                          {formatVND(item.subtotal)}
                         </span>
                       </div>
                     )
@@ -333,7 +340,7 @@ export const CheckoutPage = () => {
                 <div className="border-t border-outline-variant/30 pt-4 space-y-2 text-sm">
                   <div className="flex justify-between text-on-surface-variant">
                     <span>Subtotal ({cart.totalItems} items)</span>
-                    <span>${cart.totalAmount.toFixed(2)}</span>
+                    <span>{formatVND(cart.totalAmount)}</span>
                   </div>
                   <div className="flex justify-between text-on-surface-variant">
                     <span>Shipping Fee</span>
@@ -341,7 +348,7 @@ export const CheckoutPage = () => {
                   </div>
                   <div className="flex justify-between text-body-lg font-bold border-t border-outline-variant/30 pt-3">
                     <span>Total Amount</span>
-                    <span className="text-primary text-headline-sm">${cart.totalAmount.toFixed(2)}</span>
+                    <span className="text-primary text-headline-sm">{formatVND(cart.totalAmount)}</span>
                   </div>
                 </div>
 
@@ -357,7 +364,7 @@ export const CheckoutPage = () => {
                     </>
                   ) : (
                     <>
-                      Place Order (${cart.totalAmount.toFixed(2)})
+                      Place Order ({formatVND(cart.totalAmount)})
                     </>
                   )}
                 </button>

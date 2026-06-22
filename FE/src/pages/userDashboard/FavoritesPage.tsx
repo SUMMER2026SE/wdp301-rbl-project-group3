@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { Grid, Heart, List, ShoppingCart, Star, Trash2 } from 'lucide-react'
 
+const formatVND = (num: number) => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+  }).format(num)
+}
+
 type Product = {
   id: string
   name: string
@@ -16,8 +23,8 @@ const favorites: Product[] = [
   {
     id: '1',
     name: 'Fresh Organic Tomato',
-    price: 1.2,
-    originalPrice: 1.6,
+    price: 30000,
+    originalPrice: 40000,
     image: '/assets/winmart/tomatoes.png',
     inStock: true,
     rating: 4.8,
@@ -26,8 +33,8 @@ const favorites: Product[] = [
   {
     id: '2',
     name: 'Premium Ribeye Steak',
-    price: 8.5,
-    originalPrice: 10,
+    price: 210000,
+    originalPrice: 250000,
     image: '/assets/winmart/ribeye.png',
     inStock: true,
     rating: 4.9,
@@ -36,7 +43,7 @@ const favorites: Product[] = [
   {
     id: '3',
     name: 'Organic Bunch Carrots',
-    price: 2.45,
+    price: 60000,
     image: '/assets/winmart/carrots.png',
     inStock: false,
     rating: 4.7,
@@ -154,11 +161,11 @@ export const FavoritesPage = () => {
 
               <div className="mt-4 flex items-baseline gap-2">
                 <span className="text-xl font-black text-primary">
-                  ${product.price.toFixed(2)}
+                  {formatVND(product.price)}
                 </span>
                 {product.originalPrice ? (
                   <span className="text-sm text-on-surface-variant line-through">
-                    ${product.originalPrice.toFixed(2)}
+                    {formatVND(product.originalPrice)}
                   </span>
                 ) : null}
               </div>
