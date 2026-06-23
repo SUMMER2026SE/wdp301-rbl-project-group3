@@ -7,16 +7,17 @@ export class CartController {
     // UC07 — POST /api/cart/items
     addToCart = asyncHandler(async (req: Request, res: Response) => {
         const userId = req.user!.userId;
-        const { productId, quantity } = req.body;
+        const { productId, quantity, branchId } = req.body;
 
-        const cart = await cartService.addToCart(userId, productId, quantity);
+        const cart = await cartService.addToCart(userId, productId, quantity, branchId);
         sendSuccess(res, cart, 'Item added to cart', 201);
     });
 
     // UC08 — GET /api/cart
     getCart = asyncHandler(async (req: Request, res: Response) => {
         const userId = req.user!.userId;
-        const cart = await cartService.getCart(userId);
+        const branchId = req.query.branchId as string | undefined;
+        const cart = await cartService.getCart(userId, branchId);
         sendSuccess(res, cart, 'Cart retrieved successfully');
     });
 
@@ -24,9 +25,9 @@ export class CartController {
     updateItem = asyncHandler(async (req: Request, res: Response) => {
         const userId = req.user!.userId;
         const itemId = req.params['itemId'] as string;
-        const { quantity } = req.body;
+        const { quantity, branchId } = req.body;
 
-        const cart = await cartService.updateItemQuantity(userId, itemId, quantity);
+        const cart = await cartService.updateItemQuantity(userId, itemId, quantity, branchId);
         sendSuccess(res, cart, 'Cart item updated');
     });
 
@@ -34,8 +35,9 @@ export class CartController {
     removeItem = asyncHandler(async (req: Request, res: Response) => {
         const userId = req.user!.userId;
         const itemId = req.params['itemId'] as string;
+        const branchId = req.query.branchId as string | undefined;
 
-        const cart = await cartService.removeItem(userId, itemId);
+        const cart = await cartService.removeItem(userId, itemId, branchId);
         sendSuccess(res, cart, 'Item removed from cart');
     });
 
