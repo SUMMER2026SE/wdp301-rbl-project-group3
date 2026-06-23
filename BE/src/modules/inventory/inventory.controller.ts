@@ -78,6 +78,44 @@ export class InventoryController {
     );
     sendSuccess(res, { receipt }, 'Import receipt cancelled and stock reversed');
   });
+
+  createInventory = asyncHandler(async (req: Request, res: Response) => {
+    const inventory = await inventoryService.createInventory({
+      ...req.body,
+      createdBy: req.user!.userId,
+      actor: {
+        userId: req.user!.userId,
+        role: req.user!.role,
+      },
+    });
+    sendSuccess(res, { inventory }, 'Inventory item created successfully', 201);
+  });
+
+  updateInventory = asyncHandler(async (req: Request, res: Response) => {
+    const inventory = await inventoryService.updateInventory(
+      String(req.params.id),
+      {
+        ...req.body,
+        updatedBy: req.user!.userId,
+        actor: {
+          userId: req.user!.userId,
+          role: req.user!.role,
+        },
+      }
+    );
+    sendSuccess(res, { inventory }, 'Inventory item updated successfully');
+  });
+
+  deleteInventory = asyncHandler(async (req: Request, res: Response) => {
+    await inventoryService.deleteInventory(
+      String(req.params.id),
+      {
+        userId: req.user!.userId,
+        role: req.user!.role,
+      }
+    );
+    sendSuccess(res, null, 'Inventory item deleted successfully');
+  });
 }
 
 export const inventoryController = new InventoryController();

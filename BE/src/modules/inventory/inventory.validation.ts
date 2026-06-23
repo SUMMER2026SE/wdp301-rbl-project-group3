@@ -68,4 +68,33 @@ export const updateImportReceiptSchema = z.object({
     }),
 });
 
+export const inventoryIdParamSchema = z.object({
+  params: z.object({
+    id: objectId,
+  }),
+});
+
+export const createInventorySchema = z.object({
+  body: z.object({
+    branchId: objectId,
+    productId: objectId,
+    quantity: z.number().int().min(0).default(0),
+    averageCost: z.number().min(0).default(0),
+    lowStockThreshold: z.number().int().min(0).default(10),
+  }),
+});
+
+export const updateInventorySchema = z.object({
+  params: z.object({
+    id: objectId,
+  }),
+  body: z.object({
+    quantity: z.number().int().min(0).optional(),
+    averageCost: z.number().min(0).optional(),
+    lowStockThreshold: z.number().int().min(0).optional(),
+  }).refine((body) => Object.keys(body).length > 0, {
+    message: 'At least one field is required',
+  }),
+});
+
 export { validate };
