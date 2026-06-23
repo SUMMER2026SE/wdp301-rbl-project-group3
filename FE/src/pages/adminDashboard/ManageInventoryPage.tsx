@@ -17,7 +17,8 @@ import {
 import { inventoryService } from '@services/inventoryService'
 import { branchService } from '@services/branchService'
 import { productService } from '@services/productService'
-import type { Inventory, ImportReceipt, Branch, Product } from '@/types'
+import { categoryService } from '@services/categoryService'
+import type { Inventory, ImportReceipt, Branch, Product, Category } from '@/types'
 
 const formatVND = (num: number) => {
   return new Intl.NumberFormat('vi-VN', {
@@ -32,6 +33,7 @@ export const ManageInventoryPage = () => {
   // Master data
   const [branches, setBranches] = useState<Branch[]>([])
   const [products, setProducts] = useState<Product[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [selectedBranchId, setSelectedBranchId] = useState<string>('')
   
   // Tab 1: Stock states
@@ -79,10 +81,11 @@ export const ManageInventoryPage = () => {
     unit: 'item',
     description: '',
     imageUrl: '',
+    categoryId: '',
     status: 'active' as 'active' | 'inactive'
   })
 
-  // Fetch branches on mount
+  // Fetch branches and categories on mount
   useEffect(() => {
     const fetchBranches = async () => {
       try {
@@ -99,7 +102,20 @@ export const ManageInventoryPage = () => {
         console.error('Failed to load branches:', err)
       }
     }
+
+    const fetchCategories = async () => {
+      try {
+        const response = await categoryService.getCategories({ status: 'active' })
+        if (response.success) {
+          setCategories(response.data)
+        }
+      } catch (err: any) {
+        console.error('Failed to load categories:', err)
+      }
+    }
+
     fetchBranches()
+    fetchCategories()
   }, [])
 
   // Reset page to 1 when search query changes
@@ -284,6 +300,7 @@ export const ManageInventoryPage = () => {
   // Click edit button
   const handleEditClick = (product: Product) => {
     setEditingProduct(product)
+    const catId = product.categoryId ? (typeof product.categoryId === 'object' ? (product.categoryId as any)._id : String(product.categoryId)) : ''
     setProductForm({
       name: product.productName || product.name || '',
       sku: product.sku || '',
@@ -291,6 +308,7 @@ export const ManageInventoryPage = () => {
       unit: product.unit || 'item',
       description: product.description || '',
       imageUrl: product.imageUrl || '',
+      categoryId: catId,
       status: (product.status === 'active' || product.status === true) ? 'active' : 'inactive'
     })
     setImageFile(null)
@@ -311,6 +329,7 @@ export const ManageInventoryPage = () => {
       unit: 'item',
       description: '',
       imageUrl: '',
+      categoryId: '',
       status: 'active'
     })
   }
@@ -366,6 +385,7 @@ export const ManageInventoryPage = () => {
         salePrice: productForm.salePrice,
         unit: productForm.unit || 'item',
         description: productForm.description.trim(),
+        categoryId: productForm.categoryId || undefined,
         status: productForm.status
       }
 
@@ -393,6 +413,7 @@ export const ManageInventoryPage = () => {
           unit: 'item',
           description: '',
           imageUrl: '',
+          categoryId: '',
           status: 'active'
         })
         setImageFile(null)
@@ -468,6 +489,7 @@ export const ManageInventoryPage = () => {
                   unit: 'item',
                   description: '',
                   imageUrl: '',
+                  categoryId: '',
                   status: 'active'
                 })
                 setProductError(null)
@@ -828,6 +850,7 @@ export const ManageInventoryPage = () => {
                       <th className="p-4 font-bold text-on-surface-variant">Ảnh</th>
                       <th className="p-4 font-bold text-on-surface-variant">Mã SKU</th>
                       <th className="p-4 font-bold text-on-surface-variant">Tên Sản phẩm</th>
+                      <th className="p-4 font-bold text-on-surface-variant">Danh mục</th>
                       <th className="p-4 font-bold text-on-surface-variant">Đơn vị</th>
                       <th className="p-4 font-bold text-on-surface-variant text-right">Giá Bán Niêm Yết</th>
                       <th className="p-4 font-bold text-on-surface-variant text-center">Trạng thái bán</th>
@@ -838,6 +861,8 @@ export const ManageInventoryPage = () => {
                   <tbody className="divide-y divide-outline-variant/60">
                     {products.map((product, idx) => {
                       const isActive = product.status === 'active' || product.status === true
+                      const catId = product.categoryId ? (typeof product.categoryId === 'object' ? (product.categoryId as any)._id : String(product.categoryId)) : ''
+                      const matchedCat = categories.find(c => c._id === catId)
                       return (
                         <tr key={product._id} className="hover:bg-surface-container-low/20 transition-colors">
                           <td className="p-4 text-center font-semibold text-on-surface-variant">
@@ -861,6 +886,9 @@ export const ManageInventoryPage = () => {
                           </td>
                           <td className="p-4 font-bold text-on-surface max-w-xs truncate">
                             {product.productName}
+                          </td>
+                          <td className="p-4 text-on-surface-variant font-medium">
+                            {matchedCat ? matchedCat.name : <span className="italic opacity-40 text-xs">Chưa phân loại</span>}
                           </td>
                           <td className="p-4 text-on-surface-variant">
                             {product.unit || 'item'}
@@ -1272,6 +1300,26 @@ export const ManageInventoryPage = () => {
                     <option value="inactive">Dừng bán</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Danh mục sản phẩm */}
+              <div className="space-y-1.5">
+                <label htmlFor="prod-category" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                  Danh mục sản phẩm
+                </label>
+                <select
+                  id="prod-category"
+                  value={productForm.categoryId}
+                  onChange={(e) => setProductForm({ ...productForm, categoryId: e.target.value })}
+                  className="w-full bg-surface-container-low border-none rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary text-sm font-semibold transition-all"
+                >
+                  <option value="">-- Chọn danh mục sản phẩm --</option>
+                  {categories.map((cat) => (
+                    <option key={cat._id} value={cat._id}>
+                      {cat.name} ({cat.code})
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Tải ảnh hoặc Nhập Link ảnh */}

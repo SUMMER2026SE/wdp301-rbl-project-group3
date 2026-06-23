@@ -40,6 +40,8 @@ const ImportReceiptItemSchema = new mongoose_1.Schema({
     quantity: { type: Number, required: true, min: 1 },
     unitCost: { type: Number, required: true, min: 0 },
     subtotal: { type: Number, required: true, min: 0 },
+    appliedInventoryQuantity: { type: Number, min: 0 },
+    appliedAverageCost: { type: Number, min: 0 },
 }, { _id: false });
 const ImportReceiptSchema = new mongoose_1.Schema({
     code: { type: String, required: true, unique: true, trim: true },
@@ -49,11 +51,21 @@ const ImportReceiptSchema = new mongoose_1.Schema({
     items: { type: [ImportReceiptItemSchema], required: true },
     totalCost: { type: Number, required: true, min: 0 },
     createdBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },
+    updatedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
+    status: {
+        type: String,
+        enum: ['active', 'adjusting', 'cancelled'],
+        default: 'active',
+    },
+    mutationLockedAt: { type: Date },
+    cancelledBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
+    cancelledAt: { type: Date },
 }, {
     timestamps: true,
     versionKey: false,
 });
 ImportReceiptSchema.index({ code: 1 });
 ImportReceiptSchema.index({ branchId: 1, createdAt: -1 });
+ImportReceiptSchema.index({ status: 1 });
 exports.ImportReceipt = mongoose_1.default.model('ImportReceipt', ImportReceiptSchema);
 //# sourceMappingURL=importReceipt.model.js.map

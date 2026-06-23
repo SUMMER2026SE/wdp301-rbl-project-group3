@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, useMemo, type MouseEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@hooks/useAuth'
 import { useCart } from '@/contexts/CartContext'
 import { productService } from '@services/productService'
-import type { Product } from '@/types'
+import { branchService } from '@services/branchService'
+import { categoryService } from '@services/categoryService'
+import type { Product, Branch, Category as DbCategory } from '@/types'
 import {
   ArrowRight,
   Camera,
@@ -32,6 +34,7 @@ import {
   WalletCards,
   Zap,
   LogOut,
+  X,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -116,6 +119,22 @@ const iconMap: Record<string, LucideIcon> = {
   shopping_cart: ShoppingCart,
   social_leaderboard: Trophy,
   star: Star,
+  close: X,
+}
+
+const categoryIconMap: Record<string, string> = {
+  'DO-UONG': 'local_drink',
+  'THUC-AN-NHE': 'bakery_dining',
+  'FRUITS': 'eco',
+  'MEAT': 'restaurant',
+  'DAIRY': 'egg',
+  'COOKING': 'outdoor_grill',
+  'Beverages': 'local_drink',
+  'Snacks & Bakery': 'bakery_dining',
+  'Fruits & Vegetables': 'eco',
+  'Fresh Meat & Seafood': 'restaurant',
+  'Dairy & Eggs': 'egg',
+  'Cooking Essentials': 'outdoor_grill',
 }
 
 const categories: Category[] = [
@@ -134,8 +153,8 @@ const flashSaleProducts: FlashSaleProduct[] = [
     alt: 'Fresh organic tomatoes on the vine',
     title: 'Fresh Organic Tomato',
     unit: '500g / box',
-    price: '$1.20',
-    originalPrice: '$1.60',
+    price: '30.000 đ',
+    originalPrice: '40.000 đ',
   },
   {
     discount: '-15%',
@@ -143,8 +162,8 @@ const flashSaleProducts: FlashSaleProduct[] = [
     alt: 'Premium ribeye steak with rosemary',
     title: 'Premium Ribeye Steak',
     unit: '300g / pack',
-    price: '$8.50',
-    originalPrice: '$10.00',
+    price: '210.000 đ',
+    originalPrice: '250.000 đ',
   },
   {
     discount: '-40%',
@@ -152,8 +171,8 @@ const flashSaleProducts: FlashSaleProduct[] = [
     alt: 'Mixed berry bowl',
     title: 'Mixed Berry Bowl',
     unit: '250g / box',
-    price: '$4.20',
-    originalPrice: '$7.00',
+    price: '100.000 đ',
+    originalPrice: '170.000 đ',
   },
   {
     discount: '-10%',
@@ -161,8 +180,8 @@ const flashSaleProducts: FlashSaleProduct[] = [
     alt: 'Whole organic milk bottle',
     title: 'Whole Organic Milk',
     unit: '1L / bottle',
-    price: '$2.10',
-    originalPrice: '$2.35',
+    price: '50.000 đ',
+    originalPrice: '55.000 đ',
   },
   {
     discount: '-20%',
@@ -170,8 +189,8 @@ const flashSaleProducts: FlashSaleProduct[] = [
     alt: 'Artisan sourdough loaf',
     title: 'Artisan Sourdough',
     unit: '450g / loaf',
-    price: '$3.60',
-    originalPrice: '$4.50',
+    price: '90.000 đ',
+    originalPrice: '110.000 đ',
   },
 ]
 
@@ -183,7 +202,7 @@ const recommendedProducts: RecommendedProduct[] = [
     reviews: '120',
     title: 'Organic Bunch Carrots',
     unit: '/ kg',
-    price: '$2.45',
+    price: '60.000 đ',
     hasFavorite: true,
   },
   {
@@ -193,7 +212,7 @@ const recommendedProducts: RecommendedProduct[] = [
     reviews: '85',
     title: 'Pure Alpine Sparkle',
     unit: '750ml / bottle',
-    price: '$1.99',
+    price: '50.000 đ',
   },
   {
     image: '/assets/winmart/asparagus.png',
@@ -202,7 +221,7 @@ const recommendedProducts: RecommendedProduct[] = [
     reviews: '240',
     title: 'Young Green Asparagus',
     unit: '250g / bunch',
-    price: '$3.50',
+    price: '90.000 đ',
   },
   {
     image: '/assets/winmart/greek-yogurt.png',
@@ -211,7 +230,7 @@ const recommendedProducts: RecommendedProduct[] = [
     reviews: '310',
     title: 'Velvet Greek Yogurt',
     unit: '500g / tub',
-    price: '$4.15',
+    price: '100.000 đ',
   },
   {
     image: '/assets/winmart/sea-bass.png',
@@ -220,7 +239,7 @@ const recommendedProducts: RecommendedProduct[] = [
     reviews: '42',
     title: 'Fresh Whole Sea Bass',
     unit: '/ kg',
-    price: '$12.50',
+    price: '310.000 đ',
   },
 ]
 
@@ -261,81 +280,136 @@ const Icon = ({ children, className = '', filled = false }: IconProps) => {
   )
 }
 
-const FlashSaleCard = ({ product, onAddToCart }: { product: FlashSaleProduct; onAddToCart?: () => void }) => (
-  <article className="bg-surface-container-lowest rounded-xl p-4 soft-lift group hover:scale-[0.98] transition-all cursor-pointer relative border border-transparent hover:border-primary/20">
-    <div className="absolute top-2 left-2 bg-secondary-fixed text-on-secondary-fixed text-[10px] font-bold px-2 py-1 rounded-full z-10">
-      {product.discount}
-    </div>
-    <div className="aspect-square bg-surface-container-low rounded-lg mb-4 overflow-hidden">
-      <img
-        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-        src={product.image}
-        alt={product.alt}
-      />
-    </div>
-    <h3 className="font-label-lg text-label-lg mb-1 truncate">{product.title}</h3>
-    <p className="text-[12px] text-on-surface-variant mb-3">{product.unit}</p>
-    <div className="flex justify-between items-center">
-      <div className="flex flex-col">
-        <span className="text-secondary font-bold text-headline-sm">{product.price}</span>
-        <span className="text-[10px] line-through text-on-surface-variant opacity-60">
-          {product.originalPrice}
-        </span>
-      </div>
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          onAddToCart?.()
-        }}
-        className="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center beveled-btn hover:bg-primary hover:text-white transition-colors"
-        type="button"
-        aria-label={`Add ${product.title} to cart`}
-      >
-        <Icon>add_shopping_cart</Icon>
-      </button>
-    </div>
-  </article>
-)
+const getCategoryKeywords = (label: string): string[] => {
+  switch (label) {
+    case 'Fruits & Vegetables':
+      return ['tomato', 'carrot', 'asparagus', 'fruit', 'vegetable', 'onion', 'potato', 'cabbage', 'apple', 'banana', 'orange', 'lemon', 'berry', 'berries', 'citrus']
+    case 'Fresh Meat & Seafood':
+      return ['steak', 'ribeye', 'meat', 'beef', 'pork', 'chicken', 'fish', 'bass', 'salmon', 'seafood', 'shrimp']
+    case 'Dairy & Eggs':
+      return ['milk', 'egg', 'yogurt', 'cheese', 'butter', 'dairy']
+    case 'Beverages':
+    case 'Drinks':
+      return ['water', 'sparkle', 'drink', 'juice', 'soda', 'coke', 'tea', 'coffee']
+    case 'Snacks & Bakery':
+    case 'Snacks':
+      return ['sourdough', 'bread', 'croissant', 'snack', 'bakery', 'cake', 'cookie', 'chip']
+    case 'Cooking Essentials':
+      return ['oil', 'salt', 'sauce', 'pepper', 'sugar', 'vinegar', 'spice']
+    case 'Fresh Food':
+      return ['tomato', 'carrot', 'asparagus', 'fruit', 'vegetable', 'onion', 'potato', 'cabbage', 'apple', 'banana', 'orange', 'lemon', 'berry', 'berries', 'citrus', 'steak', 'ribeye', 'meat', 'beef', 'pork', 'chicken', 'fish', 'bass', 'salmon', 'seafood', 'shrimp']
+    default:
+      return []
+  }
+}
 
-const RecommendedCard = ({ product, onAddToCart }: { product: RecommendedProduct; onAddToCart?: () => void }) => (
-  <article className="bg-surface-container-lowest rounded-xl p-4 soft-lift border border-transparent hover:border-primary/20 group transition-all">
-    <div className="aspect-square bg-surface-container-low rounded-lg mb-4 relative overflow-hidden">
-      <img className="w-full h-full object-cover" src={product.image} alt={product.alt} />
-      {product.hasFavorite ? (
+const formatVND = (num: number) => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+  }).format(num)
+}
+
+const FlashSaleCard = ({ product, onAddToCart }: { product: any; onAddToCart?: () => void }) => {
+  const isDbProduct = '_id' in product
+  const title = isDbProduct ? product.productName : product.title
+  const price = isDbProduct ? formatVND(product.price) : product.price
+  const originalPrice = isDbProduct ? formatVND(product.price * 1.25) : product.originalPrice
+  const discount = isDbProduct ? '-20%' : product.discount
+  const unit = isDbProduct ? (product.unit || 'unit') : product.unit
+  const image = isDbProduct
+    ? (product.imageUrl || productImageMap[title] || '/assets/winmart/tomatoes.png')
+    : product.image
+
+  return (
+    <article className="bg-surface-container-lowest rounded-xl p-4 soft-lift group hover:scale-[0.98] transition-all cursor-pointer relative border border-transparent hover:border-primary/20">
+      <div className="absolute top-2 left-2 bg-secondary-fixed text-on-secondary-fixed text-[10px] font-bold px-2 py-1 rounded-full z-10">
+        {discount}
+      </div>
+      <div className="aspect-square bg-surface-container-low rounded-lg mb-4 overflow-hidden">
+        <img
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+          src={image}
+          alt={title}
+        />
+      </div>
+      <h3 className="font-label-lg text-label-lg mb-1 truncate" title={title}>{title}</h3>
+      <p className="text-[12px] text-on-surface-variant mb-3">{unit}</p>
+      <div className="flex justify-between items-center">
+        <div className="flex flex-col">
+          <span className="text-secondary font-bold text-headline-sm">{price}</span>
+          <span className="text-[10px] line-through text-on-surface-variant opacity-60">
+            {originalPrice}
+          </span>
+        </div>
         <button
-          className="absolute bottom-2 right-2 bg-white/90 p-2 rounded-full shadow-md text-primary opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0"
+          onClick={(e) => {
+            e.stopPropagation()
+            onAddToCart?.()
+          }}
+          className="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center beveled-btn hover:bg-primary hover:text-white transition-colors"
           type="button"
-          aria-label={`Favorite ${product.title}`}
+          aria-label={`Add ${title} to cart`}
         >
-          <Icon>favorite</Icon>
+          <Icon>add_shopping_cart</Icon>
         </button>
-      ) : null}
-    </div>
-    <div className="flex items-center gap-1 mb-1">
-      <Icon className="text-tertiary w-[14px] h-[14px]" filled>
-        star
-      </Icon>
-      <span className="text-[12px] font-bold">{product.rating}</span>
-      <span className="text-[12px] text-on-surface-variant opacity-60">({product.reviews})</span>
-    </div>
-    <h3 className="font-label-lg text-label-lg mb-1 truncate">{product.title}</h3>
-    <p className="text-[12px] text-on-surface-variant mb-4">{product.unit}</p>
-    <div className="flex justify-between items-center">
-      <span className="text-primary font-bold text-headline-sm">{product.price}</span>
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          onAddToCart?.()
-        }}
-        className="flex items-center justify-center gap-1 bg-primary text-white px-3 py-1.5 rounded-lg text-[12px] font-bold beveled-btn hover:bg-primary-container transition-all"
-        type="button"
-        aria-label={`Add ${product.title} to cart`}
-      >
-        <Icon className="w-[18px] h-[18px]">add</Icon> Add
-      </button>
-    </div>
-  </article>
-)
+      </div>
+    </article>
+  )
+}
+
+const RecommendedCard = ({ product, onAddToCart }: { product: any; onAddToCart?: () => void }) => {
+  const isDbProduct = '_id' in product
+  const title = isDbProduct ? product.productName : product.title
+  const price = isDbProduct ? formatVND(product.price) : product.price
+  const unit = isDbProduct ? (product.unit || 'unit') : product.unit
+  const image = isDbProduct
+    ? (product.imageUrl || productImageMap[title] || '/assets/winmart/tomatoes.png')
+    : product.image
+  const rating = isDbProduct ? '4.8' : product.rating
+  const reviews = isDbProduct ? '15' : product.reviews
+  const hasFavorite = isDbProduct ? true : product.hasFavorite
+
+  return (
+    <article className="bg-surface-container-lowest rounded-xl p-4 soft-lift border border-transparent hover:border-primary/20 group transition-all">
+      <div className="aspect-square bg-surface-container-low rounded-lg mb-4 relative overflow-hidden">
+        <img className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" src={image} alt={title} />
+        {hasFavorite ? (
+          <button
+            className="absolute bottom-2 right-2 bg-white/90 p-2 rounded-full shadow-md text-primary opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0"
+            type="button"
+            aria-label={`Favorite ${title}`}
+          >
+            <Icon>favorite</Icon>
+          </button>
+        ) : null}
+      </div>
+      <div className="flex items-center gap-1 mb-1">
+        <Icon className="text-tertiary w-[14px] h-[14px]" filled>
+          star
+        </Icon>
+        <span className="text-[12px] font-bold">{rating}</span>
+        <span className="text-[12px] text-on-surface-variant opacity-60">({reviews})</span>
+      </div>
+      <h3 className="font-label-lg text-label-lg mb-1 truncate" title={title}>{title}</h3>
+      <p className="text-[12px] text-on-surface-variant mb-4">{unit}</p>
+      <div className="flex justify-between items-center">
+        <span className="text-primary font-bold text-headline-sm">{price}</span>
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onAddToCart?.()
+          }}
+          className="flex items-center justify-center gap-1 bg-primary text-white px-3 py-1.5 rounded-lg text-[12px] font-bold beveled-btn hover:bg-primary-container transition-all"
+          type="button"
+          aria-label={`Add ${title} to cart`}
+        >
+          <Icon className="w-[18px] h-[18px]">add</Icon> Add
+        </button>
+      </div>
+    </article>
+  )
+}
 
 export const HomePage = () => {
   const navigate = useNavigate()
@@ -346,20 +420,120 @@ export const HomePage = () => {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [dbProducts, setDbProducts] = useState<Product[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState<string | DbCategory>('All')
+  const [hasLoadedProducts, setHasLoadedProducts] = useState(false)
+  const [dbCategories, setDbCategories] = useState<DbCategory[]>([])
+
+  // Branch states
+  const [branches, setBranches] = useState<Branch[]>([])
+  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null)
+  const [isBranchModalOpen, setIsBranchModalOpen] = useState(false)
+  const [branchSearch, setBranchSearch] = useState('')
+
+  const fetchDbProducts = async (keyword?: string, branchId?: string) => {
+    setHasLoadedProducts(false)
+    try {
+      const activeBranchId = branchId || selectedBranch?._id
+      const res = await productService.getProducts({ 
+        keyword, 
+        status: 'active',
+        branchId: activeBranchId
+      })
+      if (res.success) {
+        setDbProducts(res.data)
+      }
+    } catch (err) {
+      console.error('Failed to fetch products:', err)
+    } finally {
+      setHasLoadedProducts(true)
+    }
+  }
+
+  const fetchBranches = async () => {
+    try {
+      const res = await branchService.getBranches({ status: 'active' })
+      if (res.success && res.data) {
+        setBranches(res.data)
+        let activeBranch = res.data[0]
+        const savedBranchStr = localStorage.getItem('selectedBranch')
+        if (savedBranchStr) {
+          try {
+            const parsed = JSON.parse(savedBranchStr)
+            const found = res.data.find((b) => b._id === parsed._id)
+            if (found) {
+              activeBranch = found
+            }
+          } catch (e) {
+            console.error('Failed to parse saved branch', e)
+          }
+        }
+        setSelectedBranch(activeBranch)
+        localStorage.setItem('selectedBranch', JSON.stringify(activeBranch))
+        fetchDbProducts(searchQuery, activeBranch?._id)
+      }
+    } catch (err) {
+      console.error('Failed to fetch branches:', err)
+    }
+  }
+
+  const fetchCategories = async () => {
+    try {
+      const res = await categoryService.getCategories({ status: 'active' })
+      if (res.success && res.data) {
+        setDbCategories(res.data)
+      }
+    } catch (err) {
+      console.error('Failed to fetch categories:', err)
+    }
+  }
 
   useEffect(() => {
-    const fetchDbProducts = async () => {
-      try {
-        const res = await productService.getProducts()
-        if (res.success) {
-          setDbProducts(res.data)
-        }
-      } catch (err) {
-        console.error('Failed to fetch products:', err)
-      }
-    }
-    fetchDbProducts()
+    fetchBranches()
+    fetchCategories()
   }, [])
+
+  const filteredBranches = useMemo(() => {
+    const kw = branchSearch.trim().toLowerCase()
+    if (!kw) return branches
+    return branches.filter(
+      (b) =>
+        b.name.toLowerCase().includes(kw) ||
+        (b.address && b.address.toLowerCase().includes(kw)) ||
+        (b.code && b.code.toLowerCase().includes(kw))
+    )
+  }, [branches, branchSearch])
+
+  const handleSelectBranch = (branch: Branch) => {
+    setSelectedBranch(branch)
+    localStorage.setItem('selectedBranch', JSON.stringify(branch))
+    setIsBranchModalOpen(false)
+    fetchDbProducts(searchQuery, branch._id)
+  }
+
+  const filteredRecommendedProducts = useMemo(() => {
+    if (hasLoadedProducts && dbProducts.length === 0) return []
+
+    if (selectedCategory === 'All') return dbProducts.length > 0 ? dbProducts : recommendedProducts
+
+    if (typeof selectedCategory === 'object' && selectedCategory !== null) {
+      return dbProducts.filter((product) => product.categoryId === selectedCategory._id)
+    }
+
+    const keywords = getCategoryKeywords(selectedCategory)
+    const filteredDb = dbProducts.filter((product) => {
+      const name = (product.productName || product.name || '').toLowerCase()
+      return keywords.some((kw) => name.includes(kw))
+    })
+
+    if (filteredDb.length > 0) return filteredDb
+
+    // Fallback filter on recommendedProducts
+    return recommendedProducts.filter((product) => {
+      const name = product.title.toLowerCase()
+      return keywords.some((kw) => name.includes(kw))
+    })
+  }, [dbProducts, selectedCategory, hasLoadedProducts])
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -427,8 +601,13 @@ export const HomePage = () => {
               <span className="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">
                 Deliver from
               </span>
-              <div className="flex items-center text-primary font-bold cursor-pointer">
-                <span className="text-body-md">PMAN-Mart Nguyen Hue</span>
+              <div 
+                onClick={() => setIsBranchModalOpen(true)}
+                className="flex items-center text-primary font-bold cursor-pointer hover:opacity-80 transition-all"
+              >
+                <span className="text-body-md truncate max-w-[180px]">
+                  {selectedBranch ? selectedBranch.name : 'Chọn chi nhánh'}
+                </span>
                 <Icon>expand_more</Icon>
               </div>
             </div>
@@ -437,13 +616,24 @@ export const HomePage = () => {
           <div className="order-3 w-full md:order-none md:flex-1 md:max-w-2xl relative group">
             <input
               className="w-full bg-surface-container-low border-none rounded-full py-3 px-6 pl-12 focus:ring-2 focus:ring-primary transition-all"
-              placeholder="What are you looking for today?"
+              placeholder="What are you looking for today? (Press Enter to search)"
               type="text"
               aria-label="Search products"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  fetchDbProducts(searchQuery)
+                }
+              }}
             />
-            <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">
-              search
-            </Icon>
+            <button
+              onClick={() => fetchDbProducts(searchQuery)}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
+              type="button"
+            >
+              <Icon>search</Icon>
+            </button>
           </div>
 
           <div className="ml-auto hidden sm:flex items-center gap-3 md:gap-6">
@@ -539,20 +729,43 @@ export const HomePage = () => {
               <p className="text-label-md text-on-surface-variant">Shop by Department</p>
             </div>
             <nav className="flex flex-col gap-1" aria-label="Product categories">
-              {categories.map((category) => (
-                <a
-                  key={category.label}
-                  className={
-                    category.active
-                      ? 'flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary-container text-on-primary-container font-bold transition-all scale-[0.98]'
-                      : 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:bg-primary-container/10 hover:text-primary transition-all'
-                  }
-                  href="/"
-                >
-                  <Icon className="w-5 h-5">{category.icon}</Icon>
-                  {category.label}
-                </a>
-              ))}
+              <button
+                onClick={() => setSelectedCategory('All')}
+                className={
+                  selectedCategory === 'All'
+                    ? 'flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary-container text-on-primary-container font-bold transition-all scale-[0.98] text-left w-full'
+                    : 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:bg-primary-container/10 hover:text-primary transition-all text-left w-full'
+                }
+                type="button"
+              >
+                <Icon className="w-5 h-5">shop</Icon>
+                All Departments
+              </button>
+              {(dbCategories.length > 0 ? dbCategories : categories).map((category) => {
+                const isDb = '_id' in category
+                const label = isDb ? (category as DbCategory).name : (category as any).label
+                const code = isDb ? (category as DbCategory).code : (category as any).label
+                const iconName = isDb ? (categoryIconMap[code] || categoryIconMap[label] || 'eco') : (category as any).icon
+                const active = typeof selectedCategory === 'object' && selectedCategory !== null
+                  ? (isDb && selectedCategory._id === (category as DbCategory)._id)
+                  : (!isDb && selectedCategory === label)
+
+                return (
+                  <button
+                    key={isDb ? (category as DbCategory)._id : label}
+                    onClick={() => setSelectedCategory(category as any)}
+                    className={
+                      active
+                        ? 'flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary-container text-on-primary-container font-bold transition-all scale-[0.98] text-left w-full'
+                        : 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:bg-primary-container/10 hover:text-primary transition-all text-left w-full'
+                    }
+                    type="button"
+                  >
+                    <Icon className="w-5 h-5">{iconName}</Icon>
+                    {label}
+                  </button>
+                )
+              })}
             </nav>
           </aside>
 
@@ -611,30 +824,37 @@ export const HomePage = () => {
             </a>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-gutter-md">
-            {flashSaleProducts.map((product) => {
-              const dbProduct = dbProducts.find((p) => p.productName === product.title)
-              return (
-                <FlashSaleCard
-                  key={product.title}
-                  product={product}
-                  onAddToCart={async () => {
-                    if (!isAuthenticated) {
-                      navigate('/login')
-                      return
-                    }
-                    if (dbProduct) {
-                      try {
-                        await addToCart(dbProduct._id, 1)
-                      } catch (err: any) {
-                        alert(err.message || 'Failed to add to cart')
+            {hasLoadedProducts && dbProducts.length === 0 ? (
+              <div className="col-span-full text-center py-12 text-on-surface-variant bg-surface-container-low rounded-xl border border-outline-variant/30">
+                <p className="text-sm font-bold">Không có sản phẩm Flash Sale nào tại chi nhánh này</p>
+              </div>
+            ) : (
+              (dbProducts.length > 0 ? dbProducts.slice(0, 5) : flashSaleProducts).map((product) => {
+                const isDbProduct = '_id' in product
+                const actualProduct = isDbProduct ? product : dbProducts.find((p) => p.productName === product.title)
+                return (
+                  <FlashSaleCard
+                    key={isDbProduct ? product._id : product.title}
+                    product={product}
+                    onAddToCart={async () => {
+                      if (!isAuthenticated) {
+                        navigate('/login')
+                        return
                       }
-                    } else {
-                      alert('Product not available in database!')
-                    }
-                  }}
-                />
-              )
-            })}
+                      if (actualProduct) {
+                        try {
+                          await addToCart(actualProduct._id, 1)
+                        } catch (err: any) {
+                          alert(err.message || 'Failed to add to cart')
+                        }
+                      } else {
+                        alert('Product not available in database!')
+                      }
+                    }}
+                  />
+                )
+              })
+            )}
           </div>
         </section>
 
@@ -684,11 +904,12 @@ export const HomePage = () => {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <h2 className="font-headline-md text-headline-md">Recommended for You</h2>
             <div className="flex gap-2 overflow-x-auto pb-1">
-              {filterTabs.map((tab, index) => (
+              {filterTabs.map((tab) => (
                 <button
                   key={tab}
+                  onClick={() => setSelectedCategory(tab)}
                   className={
-                    index === 0
+                    selectedCategory === tab
                       ? 'px-6 py-2 rounded-full bg-primary text-white font-bold text-label-lg transition-all'
                       : 'px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant font-bold text-label-lg hover:bg-primary-container/20 hover:text-primary transition-all'
                   }
@@ -701,30 +922,37 @@ export const HomePage = () => {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-gutter-md">
-            {recommendedProducts.map((product) => {
-              const dbProduct = dbProducts.find((p) => p.productName === product.title)
-              return (
-                <RecommendedCard
-                  key={product.title}
-                  product={product}
-                  onAddToCart={async () => {
-                    if (!isAuthenticated) {
-                      navigate('/login')
-                      return
-                    }
-                    if (dbProduct) {
-                      try {
-                        await addToCart(dbProduct._id, 1)
-                      } catch (err: any) {
-                        alert(err.message || 'Failed to add to cart')
+            {hasLoadedProducts && filteredRecommendedProducts.length === 0 ? (
+              <div className="col-span-full text-center py-12 text-on-surface-variant bg-surface-container-low rounded-xl border border-outline-variant/30">
+                <p className="text-sm font-bold">Không có sản phẩm nào được gợi ý tại chi nhánh này</p>
+              </div>
+            ) : (
+              filteredRecommendedProducts.map((product) => {
+                const isDbProduct = '_id' in product
+                const actualProduct = isDbProduct ? product : dbProducts.find((p) => p.productName === product.title)
+                return (
+                  <RecommendedCard
+                    key={isDbProduct ? product._id : product.title}
+                    product={product}
+                    onAddToCart={async () => {
+                      if (!isAuthenticated) {
+                        navigate('/login')
+                        return
                       }
-                    } else {
-                      alert('Product not available in database!')
-                    }
-                  }}
-                />
-              )
-            })}
+                      if (actualProduct) {
+                        try {
+                          await addToCart(actualProduct._id, 1)
+                        } catch (err: any) {
+                          alert(err.message || 'Failed to add to cart')
+                        }
+                      } else {
+                        alert('Product not available in database!')
+                      }
+                    }}
+                  />
+                )
+              })
+            )}
           </div>
         </section>
       </main>
@@ -756,7 +984,7 @@ export const HomePage = () => {
             <div>
               <p className="text-label-lg font-bold whitespace-nowrap">{cart.totalItems} items in cart</p>
               <p className="text-[12px] text-on-surface-variant">
-                Estimated Total: <span className="text-primary font-bold">${cart.totalAmount.toFixed(2)}</span>
+                Estimated Total: <span className="text-primary font-bold">{formatVND(cart.totalAmount)}</span>
               </p>
             </div>
           </div>
@@ -1010,6 +1238,97 @@ export const HomePage = () => {
                     <Icon>arrow_forward</Icon>
                   </button>
                 </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Branch Selection Modal */}
+      {isBranchModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in">
+          <div className="bg-surface-container-lowest max-w-lg w-full rounded-2xl border border-outline-variant shadow-2xl overflow-hidden flex flex-col max-h-[85vh] text-on-surface">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-outline-variant p-5 bg-surface-container-low">
+              <div>
+                <h3 className="text-lg font-black text-primary flex items-center gap-2">
+                  <Icon className="text-primary">location_on</Icon>
+                  Chọn chi nhánh mua hàng
+                </h3>
+                <p className="text-xs text-on-surface-variant mt-1">
+                  Chọn chi nhánh gần nhất để đặt hàng nhanh hơn
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsBranchModalOpen(false)}
+                className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container-high transition-colors cursor-pointer"
+              >
+                <Icon>close</Icon>
+              </button>
+            </div>
+
+            {/* Search Bar */}
+            <div className="p-5 border-b border-outline-variant/30 bg-surface-container-lowest">
+              <div className="relative">
+                <Icon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant/60">search</Icon>
+                <input
+                  type="text"
+                  value={branchSearch}
+                  onChange={(e) => setBranchSearch(e.target.value)}
+                  placeholder="Tìm theo tên chi nhánh, mã code hoặc địa chỉ..."
+                  className="w-full bg-surface-container-low border border-outline/30 rounded-full py-3 pl-12 pr-6 focus:ring-2 focus:ring-primary focus:bg-surface transition-all text-sm outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Branches List */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-3 bg-surface-container-lowest">
+              {filteredBranches.length === 0 ? (
+                <div className="text-center py-10 text-on-surface-variant">
+                  <MapPin className="mx-auto mb-3 text-on-surface-variant/40" size={40} />
+                  <p className="text-sm font-bold">Không tìm thấy chi nhánh nào</p>
+                  <p className="text-xs mt-1">Vui lòng thử từ khóa khác.</p>
+                </div>
+              ) : (
+                filteredBranches.map((branch) => {
+                  const isSelected = selectedBranch?._id === branch._id
+                  return (
+                    <div
+                      key={branch._id}
+                      onClick={() => handleSelectBranch(branch)}
+                      className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 flex items-center justify-between gap-4 ${
+                        isSelected
+                          ? 'border-primary bg-primary/5'
+                          : 'border-outline-variant/40 hover:border-primary/30 hover:bg-surface-container-low'
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
+                            isSelected ? 'bg-primary text-white' : 'bg-surface-container-highest text-on-surface-variant'
+                          }`}>
+                            {branch.code}
+                          </span>
+                          <h4 className="font-black text-sm truncate text-on-surface">{branch.name}</h4>
+                        </div>
+                        <p className="text-xs text-on-surface-variant mt-1.5 line-clamp-2 leading-relaxed">
+                          Địa chỉ: {branch.address}
+                        </p>
+                        {branch.phone && (
+                          <p className="text-[10px] text-on-surface-variant mt-1">
+                            SĐT: {branch.phone}
+                          </p>
+                        )}
+                      </div>
+                      <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${
+                        isSelected ? 'border-primary bg-primary' : 'border-outline'
+                      }`}>
+                        {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                      </div>
+                    </div>
+                  )
+                })
               )}
             </div>
           </div>

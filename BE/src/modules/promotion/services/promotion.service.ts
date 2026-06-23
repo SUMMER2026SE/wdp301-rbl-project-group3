@@ -1,18 +1,9 @@
 import { Types } from 'mongoose';
-import { promotionRepository, PromotionFilter } from './promotion.repository';
-import { IPromotion, PromotionStatus } from '../../models/promotion.model';
-import { IVoucher } from '../../models/voucher.model';
-import { AppError } from '../../middlewares/errorHandler.middleware';
-import { UserRole } from '../../types/common.types';
-
-function generateVoucherCode(prefix = 'VC'): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = prefix;
-  for (let i = 0; i < 8; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return code;
-}
+import { promotionRepository, PromotionFilter } from '../promotion.repository';
+import { Promotion, IPromotion, PromotionStatus } from '../../../models/promotion.model';
+import { Voucher } from '../../../models/voucher.model';
+import { AppError } from '../../../middlewares/errorHandler.middleware';
+import { CallerContext } from '../types';
 
 function toPromotionResponse(p: IPromotion) {
   return {
@@ -34,30 +25,6 @@ function toPromotionResponse(p: IPromotion) {
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,
   };
-}
-
-function toVoucherResponse(v: IVoucher) {
-  return {
-    id: v._id.toString(),
-    code: v.code,
-    promotionId: v.promotionId.toString(),
-    discountType: v.discountType,
-    discountValue: v.discountValue,
-    maxDiscountAmount: v.maxDiscountAmount,
-    minOrderAmount: v.minOrderAmount,
-    branchId: v.branchId?.toString(),
-    expiresAt: v.expiresAt,
-    status: v.status,
-    usedBy: v.usedBy?.toString(),
-    usedAt: v.usedAt,
-    createdAt: v.createdAt,
-  };
-}
-
-export interface CallerContext {
-  userId: string;
-  role: UserRole;
-  branchId?: string;
 }
 
 export class PromotionService {
@@ -166,26 +133,78 @@ export class PromotionService {
     };
   }
 
-  async listActivePromotions(filter: { branchId?: string; page?: number; limit?: number }) {
+  async listActivePromotions(
+    filter: { branchId?: string; page?: number; limit?: number; onlyClaimed?: boolean },
+    caller: CallerContext
+  ) {
     const now = new Date();
-    const { data } = await promotionRepository.findPromotions({
+    const query: any = {
       status: 'active',
-      branchId: filter.branchId,
-      page: filter.page,
-      limit: filter.limit,
-    });
+      startDate: { $lte: now },
+      endDate: { $gte: now },
+    };
 
-    const filtered = data.filter((p) => p.startDate <= now && p.endDate >= now);
+    if (filter.branchId) {
+      query.$or = [
+        { scope: 'global' },
+        { scope: 'branch', branchId: new Types.ObjectId(filter.branchId) },
+      ];
+    } else {
+      query.scope = 'global';
+    }
+
     const page = filter.page ?? 1;
     const limit = filter.limit ?? 20;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      Promotion.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).exec(),
+      Promotion.countDocuments(query).exec(),
+    ]);
+
+    const callerUserId = caller.userId;
+
+    const dataWithVouchers = await Promise.all(
+      data.map(async (p) => {
+        const queryVoucher: any = { promotionId: p._id, status: 'active', expiresAt: { $gt: now } };
+        const vouchers = await Voucher.find(queryVoucher).exec();
+
+        const vouchersList = vouchers.map((v) => {
+          const userClaim = v.claims?.find(
+            (c) => c.userId.toString() === callerUserId
+          );
+          return {
+            code: v.code,
+            isClaimed: !!userClaim,
+            claimStatus: userClaim ? userClaim.status : null,
+          };
+        });
+
+        let filteredVouchers = vouchersList;
+        if (filter.onlyClaimed) {
+          filteredVouchers = vouchersList.filter(
+            (v) => v.isClaimed && v.claimStatus === 'active'
+          );
+        }
+
+        const promoRes = toPromotionResponse(p);
+        return {
+          ...promoRes,
+          vouchers: filteredVouchers.map((v) => v.code),
+          vouchersDetail: filteredVouchers,
+        };
+      })
+    );
+
+    const finalData = dataWithVouchers.filter((p) => p.vouchers.length > 0);
 
     return {
-      data: filtered.map(toPromotionResponse),
+      data: finalData,
       pagination: {
-        total: filtered.length,
+        total: finalData.length,
         page,
         limit,
-        totalPages: Math.ceil(filtered.length / limit),
+        totalPages: Math.ceil(finalData.length / limit),
       },
     };
   }
@@ -305,129 +324,6 @@ export class PromotionService {
     });
 
     return toPromotionResponse(updated!);
-  }
-
-  async generateVouchers(promotionId: string, quantity: number, caller: CallerContext) {
-    if (quantity < 1 || quantity > 500) {
-      throw new AppError('Quantity must be between 1 and 500', 400);
-    }
-
-    const promotion = await promotionRepository.findPromotionById(promotionId);
-    if (!promotion) throw new AppError('Promotion not found', 404);
-
-    this.assertCanManage(promotion, caller);
-
-    if (promotion.status === 'expired') {
-      throw new AppError('Cannot generate vouchers for an expired promotion', 400);
-    }
-
-    if (promotion.status === 'inactive') {
-      throw new AppError('Cannot generate vouchers for an inactive promotion', 400);
-    }
-
-    if (promotion.usageLimit !== undefined) {
-      const existing = await promotionRepository.countActiveVouchersByPromotion(promotionId);
-      const remaining = promotion.usageLimit - promotion.usageCount - existing;
-      if (quantity > remaining) {
-        throw new AppError(
-          `Cannot generate ${quantity} vouchers. Only ${remaining} slots remaining based on usage limit.`,
-          400
-        );
-      }
-    }
-
-    const generatedCodes = new Set<string>();
-    const maxAttempts = quantity * 5;
-    let attempts = 0;
-
-    while (generatedCodes.size < quantity && attempts < maxAttempts) {
-      generatedCodes.add(generateVoucherCode('VC'));
-      attempts++;
-    }
-
-    if (generatedCodes.size < quantity) {
-      throw new AppError('Failed to generate unique voucher codes. Please try again.', 500);
-    }
-
-    const voucherData = Array.from(generatedCodes).map((code) => ({
-      code,
-      promotionId: promotion._id,
-      discountType: promotion.discountType,
-      discountValue: promotion.discountValue,
-      maxDiscountAmount: promotion.maxDiscountAmount,
-      minOrderAmount: promotion.minOrderAmount,
-      branchId: promotion.branchId,
-      expiresAt: promotion.endDate,
-      status: 'active' as const,
-      createdBy: new Types.ObjectId(caller.userId),
-    }));
-
-    const vouchers = await promotionRepository.createManyVouchers(voucherData);
-    return {
-      message: `${vouchers.length} vouchers generated successfully`,
-      data: vouchers.map(toVoucherResponse),
-    };
-  }
-
-  async listVouchers(
-    promotionId: string,
-    filter: { status?: 'active' | 'used' | 'expired' | 'disabled'; page?: number; limit?: number },
-    caller: CallerContext
-  ) {
-    const promotion = await promotionRepository.findPromotionById(promotionId);
-    if (!promotion) throw new AppError('Promotion not found', 404);
-
-    this.assertCanManage(promotion, caller);
-
-    const { data, total } = await promotionRepository.findVouchersByPromotion({
-      promotionId,
-      status: filter.status,
-      page: filter.page,
-      limit: filter.limit,
-    });
-
-    const page = filter.page ?? 1;
-    const limit = filter.limit ?? 50;
-
-    return {
-      data: data.map(toVoucherResponse),
-      pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
-    };
-  }
-
-  async disableVoucher(voucherId: string, caller: CallerContext) {
-    const voucher = await promotionRepository.findVoucherById(voucherId);
-    if (!voucher) throw new AppError('Voucher not found', 404);
-
-    const promotion = await promotionRepository.findPromotionById(
-      voucher.promotionId.toString()
-    );
-    if (!promotion) throw new AppError('Promotion not found', 404);
-
-    this.assertCanManage(promotion, caller);
-
-    if (voucher.status !== 'active') {
-      throw new AppError(`Voucher is already ${voucher.status}`, 400);
-    }
-
-    const updated = await promotionRepository.updateVoucherStatus(voucherId, 'disabled');
-    return toVoucherResponse(updated!);
-  }
-
-  async lookupVoucher(code: string) {
-    const voucher = await promotionRepository.findVoucherByCode(code);
-    if (!voucher) throw new AppError('Voucher not found or invalid', 404);
-
-    if (voucher.status !== 'active') {
-      throw new AppError(`Voucher is ${voucher.status}`, 400);
-    }
-
-    if (voucher.expiresAt < new Date()) {
-      await promotionRepository.updateVoucherStatus(voucher._id.toString(), 'expired');
-      throw new AppError('Voucher has expired', 400);
-    }
-
-    return toVoucherResponse(voucher);
   }
 }
 

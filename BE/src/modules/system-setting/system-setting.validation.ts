@@ -53,4 +53,18 @@ export const updateSettingSchema = z.object({
   }),
 });
 
+export const bulkUpdateSettingsSchema = z.object({
+  body: z.object({
+    settings: z
+      .array(
+        z.object({
+          key: settingKey,
+          value: z.union([z.string().max(500), z.number(), z.boolean()]),
+        })
+      )
+      .min(1)
+      .max(50),
+  }),
+});
+
 export { validate };

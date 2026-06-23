@@ -73,13 +73,20 @@ export const listActivePromotionsSchema = z.object({
     branchId: mongoId.optional(),
     page: z.coerce.number().int().min(1).optional(),
     limit: z.coerce.number().int().min(1).max(100).optional(),
+    onlyClaimed: z.preprocess((val) => val === 'true', z.boolean()).optional(),
+  }),
+});
+
+export const claimVoucherSchema = z.object({
+  body: z.object({
+    code: z.string().min(1, 'Mã voucher không được để trống').trim().toUpperCase(),
   }),
 });
 
 export const generateVouchersSchema = z.object({
   params: z.object({ id: mongoId }),
   body: z.object({
-    quantity: z.number().int().min(1).max(500),
+    code: z.string().min(2).max(50).trim().toUpperCase(),
   }),
 });
 
@@ -99,8 +106,20 @@ export const voucherIdParamSchema = z.object({
 export const lookupVoucherSchema = z.object({
   query: z.object({
     code: z.string().min(1, 'Voucher code is required'),
+    orderValue: z.coerce.number().min(0).optional(),
+    branchId: mongoId.optional(),
   }),
 });
+
+export const applyVoucherSchema = z.object({
+  body: z.object({
+    code: z.string().min(1, 'Voucher code is required'),
+    orderValue: z.number().min(0),
+    branchId: mongoId.optional(),
+    orderId: mongoId,
+  }),
+});
+
 
 export const validate = <T extends z.ZodTypeAny>(schema: T) => {
   return (

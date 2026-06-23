@@ -3,7 +3,7 @@ import type { ApiResponse, Product } from '@/types'
 
 export const productService = {
   // Get products (active or all, filterable by keyword)
-  getProducts: async (params?: { keyword?: string; status?: string; page?: number; limit?: number }): Promise<ApiResponse<Product[]> & { pagination?: any }> => {
+  getProducts: async (params?: { keyword?: string; status?: string; page?: number; limit?: number; branchId?: string }): Promise<ApiResponse<Product[]> & { pagination?: any }> => {
     const response = await apiClient.get('/api/products', { params })
     const raw = response.data
     // BE wraps array inside: { success, data: { products: [...] } }
@@ -29,6 +29,7 @@ export const productService = {
     unit?: string
     description?: string
     imageUrl?: string
+    categoryId?: string
     status?: 'active' | 'inactive'
     image?: File
   }): Promise<ApiResponse<Product>> => {
@@ -42,6 +43,7 @@ export const productService = {
       formData.append('salePrice', String(productData.salePrice))
       if (productData.unit) formData.append('unit', productData.unit)
       if (productData.description) formData.append('description', productData.description)
+      if (productData.categoryId) formData.append('categoryId', productData.categoryId)
       if (productData.status) formData.append('status', productData.status)
       formData.append('image', productData.image)
 
@@ -73,6 +75,7 @@ export const productService = {
       unit?: string
       description?: string
       imageUrl?: string
+      categoryId?: string
       status?: 'active' | 'inactive'
       image?: File
     }
@@ -87,6 +90,7 @@ export const productService = {
       if (productData.salePrice !== undefined) formData.append('salePrice', String(productData.salePrice))
       if (productData.unit !== undefined) formData.append('unit', productData.unit)
       if (productData.description !== undefined) formData.append('description', productData.description)
+      if (productData.categoryId !== undefined) formData.append('categoryId', productData.categoryId)
       if (productData.status !== undefined) formData.append('status', productData.status)
       formData.append('image', productData.image)
 

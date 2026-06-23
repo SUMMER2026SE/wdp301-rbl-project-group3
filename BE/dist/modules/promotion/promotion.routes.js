@@ -6,9 +6,11 @@ const auth_middleware_1 = require("../../middlewares/auth.middleware");
 const role_middleware_1 = require("../../middlewares/role.middleware");
 const promotion_validation_1 = require("./promotion.validation");
 const router = (0, express_1.Router)();
-// ─── Public ───────────────────────────────────────────────────────────────────
-router.get('/active', (0, promotion_validation_1.validate)(promotion_validation_1.listActivePromotionsSchema), promotion_controller_1.promotionController.listActivePromotions);
+// ─── Public / Authenticated ─────────────────────────────────────────────────────
+router.get('/active', auth_middleware_1.authenticate, (0, promotion_validation_1.validate)(promotion_validation_1.listActivePromotionsSchema), promotion_controller_1.promotionController.listActivePromotions);
 router.get('/vouchers/lookup', (0, promotion_validation_1.validate)(promotion_validation_1.lookupVoucherSchema), promotion_controller_1.promotionController.lookupVoucher);
+router.post('/vouchers/apply', auth_middleware_1.authenticate, (0, promotion_validation_1.validate)(promotion_validation_1.applyVoucherSchema), promotion_controller_1.promotionController.applyVoucher);
+router.post('/vouchers/claim', auth_middleware_1.authenticate, (0, promotion_validation_1.validate)(promotion_validation_1.claimVoucherSchema), promotion_controller_1.promotionController.claimVoucher);
 // ─── Admin & Branch Manager ───────────────────────────────────────────────────
 router.get('/', auth_middleware_1.authenticate, (0, role_middleware_1.authorize)('admin', 'branch_manager'), (0, promotion_validation_1.validate)(promotion_validation_1.listPromotionsSchema), promotion_controller_1.promotionController.listPromotions);
 router.post('/', auth_middleware_1.authenticate, (0, role_middleware_1.authorize)('admin', 'branch_manager'), (0, promotion_validation_1.validate)(promotion_validation_1.createPromotionSchema), promotion_controller_1.promotionController.createPromotion);

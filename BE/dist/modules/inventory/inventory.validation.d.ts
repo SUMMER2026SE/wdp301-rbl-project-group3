@@ -1,5 +1,10 @@
 import { z } from 'zod';
 import { validate } from '../auth/auth.validation';
+export declare const importReceiptIdParamSchema: z.ZodObject<{
+    params: z.ZodObject<{
+        id: z.ZodString;
+    }, z.core.$strip>;
+}, z.core.$strip>;
 export declare const listInventorySchema: z.ZodObject<{
     query: z.ZodObject<{
         branchId: z.ZodOptional<z.ZodString>;
@@ -13,6 +18,10 @@ export declare const listInventorySchema: z.ZodObject<{
 export declare const listImportReceiptsSchema: z.ZodObject<{
     query: z.ZodObject<{
         branchId: z.ZodOptional<z.ZodString>;
+        status: z.ZodOptional<z.ZodEnum<{
+            active: "active";
+            cancelled: "cancelled";
+        }>>;
     }, z.core.$strip>;
 }, z.core.$strip>;
 export declare const createImportReceiptSchema: z.ZodObject<{
@@ -25,6 +34,21 @@ export declare const createImportReceiptSchema: z.ZodObject<{
             quantity: z.ZodNumber;
             unitCost: z.ZodNumber;
         }, z.core.$strip>>;
+    }, z.core.$strip>;
+}, z.core.$strip>;
+export declare const updateImportReceiptSchema: z.ZodObject<{
+    params: z.ZodObject<{
+        id: z.ZodString;
+    }, z.core.$strip>;
+    body: z.ZodObject<{
+        branchId: z.ZodOptional<z.ZodString>;
+        supplierName: z.ZodOptional<z.ZodString>;
+        note: z.ZodOptional<z.ZodString>;
+        items: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            productId: z.ZodString;
+            quantity: z.ZodNumber;
+            unitCost: z.ZodNumber;
+        }, z.core.$strip>>>;
     }, z.core.$strip>;
 }, z.core.$strip>;
 export { validate };

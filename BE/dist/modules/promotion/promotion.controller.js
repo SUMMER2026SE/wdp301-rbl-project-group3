@@ -1,7 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.promotionController = exports.PromotionController = void 0;
-const promotion_service_1 = require("./promotion.service");
+const promotion_service_1 = require("./services/promotion.service");
+const coupon_service_1 = require("./services/coupon.service");
+const validation_service_1 = require("./services/validation.service");
+const calculation_service_1 = require("./services/calculation.service");
+const usage_service_1 = require("./services/usage.service");
 const asyncHandler_1 = require("../../utils/asyncHandler");
 const response_util_1 = require("../../utils/response.util");
 const user_model_1 = require("../../models/user.model");
@@ -53,11 +57,14 @@ class PromotionController {
             const branchId = queryStr(req.query.branchId);
             const page = queryStr(req.query.page);
             const limit = queryStr(req.query.limit);
+            const onlyClaimed = queryStr(req.query.onlyClaimed) === 'true';
+            const caller = await buildCallerContext(req);
             const result = await promotion_service_1.promotionService.listActivePromotions({
                 branchId,
                 page: page ? Number(page) : undefined,
                 limit: limit ? Number(limit) : undefined,
-            });
+                onlyClaimed,
+            }, caller);
             (0, response_util_1.sendSuccess)(res, result, 'Active promotions retrieved');
         });
         this.getPromotion = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
@@ -94,8 +101,8 @@ class PromotionController {
         this.generateVouchers = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
             const caller = await buildCallerContext(req);
             const id = String(req.params.id);
-            const { quantity } = req.body;
-            const result = await promotion_service_1.promotionService.generateVouchers(id, quantity, caller);
+            const { code } = req.body;
+            const result = await coupon_service_1.couponService.generateVouchers(id, code, caller);
             (0, response_util_1.sendSuccess)(res, result, result.message, 201);
         });
         this.listVouchers = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
@@ -104,7 +111,7 @@ class PromotionController {
             const status = queryStr(req.query.status);
             const page = queryStr(req.query.page);
             const limit = queryStr(req.query.limit);
-            const result = await promotion_service_1.promotionService.listVouchers(id, {
+            const result = await coupon_service_1.couponService.listVouchers(id, {
                 status: status,
                 page: page ? Number(page) : undefined,
                 limit: limit ? Number(limit) : undefined,
@@ -114,14 +121,42 @@ class PromotionController {
         this.disableVoucher = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
             const caller = await buildCallerContext(req);
             const voucherId = String(req.params.voucherId);
-            const result = await promotion_service_1.promotionService.disableVoucher(voucherId, caller);
+            const result = await coupon_service_1.couponService.disableVoucher(voucherId, caller);
             (0, response_util_1.sendSuccess)(res, { voucher: result }, 'Voucher disabled');
         });
-        // Public — lookup voucher trước khi apply
+        // Public — lookup voucher trước khi apply (validate và calculate discount)
         this.lookupVoucher = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
             const code = queryStr(req.query.code) ?? '';
-            const result = await promotion_service_1.promotionService.lookupVoucher(code);
-            (0, response_util_1.sendSuccess)(res, { voucher: result }, 'Voucher is valid');
+            const orderValue = Number(queryStr(req.query.orderValue)) || 0;
+            const branchId = queryStr(req.query.branchId);
+            const caller = await buildCallerContext(req).catch(() => null);
+            const userId = caller?.userId;
+            const voucher = await validation_service_1.promotionValidationService.validateVoucher(code, orderValue, branchId, userId);
+            const discount = calculation_service_1.promotionCalculationService.calculateDiscount(voucher, orderValue);
+            const response = await coupon_service_1.couponService.getVoucherResponse(voucher);
+            (0, response_util_1.sendSuccess)(res, { voucher: response, discountAmount: discount }, 'Voucher is valid');
+        });
+        // Áp dụng voucher thực tế (khi thanh toán/tạo đơn hàng)
+        this.applyVoucher = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
+            const { userId } = await buildCallerContext(req);
+            const code = req.body.code;
+            const orderValue = Number(req.body.orderValue) || 0;
+            const branchId = req.body.branchId;
+            const orderId = req.body.orderId;
+            if (!orderId) {
+                throw new errorHandler_middleware_1.AppError('orderId is required to apply voucher', 400);
+            }
+            const voucher = await validation_service_1.promotionValidationService.validateVoucher(code, orderValue, branchId, userId);
+            const discount = calculation_service_1.promotionCalculationService.calculateDiscount(voucher, orderValue);
+            const updatedVoucher = await usage_service_1.promotionUsageService.applyVoucher(voucher._id.toString(), userId, orderId);
+            const response = await coupon_service_1.couponService.getVoucherResponse(updatedVoucher);
+            (0, response_util_1.sendSuccess)(res, { voucher: response, discountAmount: discount }, 'Voucher applied successfully');
+        });
+        this.claimVoucher = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
+            const caller = await buildCallerContext(req);
+            const { code } = req.body;
+            const result = await coupon_service_1.couponService.claimVoucher(code, caller);
+            (0, response_util_1.sendSuccess)(res, result, 'Voucher claimed successfully');
         });
     }
 }

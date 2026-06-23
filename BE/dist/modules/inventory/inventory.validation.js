@@ -1,10 +1,30 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validate = exports.createImportReceiptSchema = exports.listImportReceiptsSchema = exports.listInventorySchema = void 0;
+exports.validate = exports.updateImportReceiptSchema = exports.createImportReceiptSchema = exports.listImportReceiptsSchema = exports.listInventorySchema = exports.importReceiptIdParamSchema = void 0;
 const zod_1 = require("zod");
 const auth_validation_1 = require("../auth/auth.validation");
 Object.defineProperty(exports, "validate", { enumerable: true, get: function () { return auth_validation_1.validate; } });
 const objectId = zod_1.z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid ObjectId');
+const importItemSchema = zod_1.z.object({
+    productId: objectId,
+    quantity: zod_1.z.number().int().min(1),
+    unitCost: zod_1.z.number().min(0),
+});
+const uniqueImportItems = (items, context) => {
+    const productIds = items.map((item) => item.productId);
+    if (new Set(productIds).size !== productIds.length) {
+        context.addIssue({
+            code: zod_1.z.ZodIssueCode.custom,
+            message: 'Each product can appear only once in an import receipt',
+            path: ['items'],
+        });
+    }
+};
+exports.importReceiptIdParamSchema = zod_1.z.object({
+    params: zod_1.z.object({
+        id: objectId,
+    }),
+});
 exports.listInventorySchema = zod_1.z.object({
     query: zod_1.z.object({
         branchId: objectId.optional(),
@@ -15,6 +35,7 @@ exports.listInventorySchema = zod_1.z.object({
 exports.listImportReceiptsSchema = zod_1.z.object({
     query: zod_1.z.object({
         branchId: objectId.optional(),
+        status: zod_1.z.enum(['active', 'cancelled']).optional(),
     }),
 });
 exports.createImportReceiptSchema = zod_1.z.object({
@@ -22,13 +43,22 @@ exports.createImportReceiptSchema = zod_1.z.object({
         branchId: objectId,
         supplierName: zod_1.z.string().max(150).optional(),
         note: zod_1.z.string().max(500).optional(),
-        items: zod_1.z
-            .array(zod_1.z.object({
-            productId: objectId,
-            quantity: zod_1.z.number().int().min(1),
-            unitCost: zod_1.z.number().min(0),
-        }))
-            .min(1),
+        items: zod_1.z.array(importItemSchema).min(1).superRefine(uniqueImportItems),
+    }),
+});
+exports.updateImportReceiptSchema = zod_1.z.object({
+    params: zod_1.z.object({
+        id: objectId,
+    }),
+    body: zod_1.z
+        .object({
+        branchId: objectId.optional(),
+        supplierName: zod_1.z.string().max(150).optional(),
+        note: zod_1.z.string().max(500).optional(),
+        items: zod_1.z.array(importItemSchema).min(1).superRefine(uniqueImportItems).optional(),
+    })
+        .refine((body) => Object.keys(body).length > 0, {
+        message: 'At least one field is required',
     }),
 });
 //# sourceMappingURL=inventory.validation.js.map

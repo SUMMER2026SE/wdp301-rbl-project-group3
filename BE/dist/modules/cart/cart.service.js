@@ -6,15 +6,15 @@ const errorHandler_middleware_1 = require("../../middlewares/errorHandler.middle
 const product_model_1 = require("../../models/product.model");
 function buildCartResponse(cart) {
     const items = cart.items
-        .filter((item) => item.productId && item.productId.status !== false)
+        .filter((item) => item.productId && item.productId.status !== 'inactive')
         .map((item) => {
         const product = item.productId;
-        const price = product?.price ?? 0;
+        const price = product?.salePrice ?? 0;
         return {
             itemId: item._id.toString(),
             product: {
                 id: product?._id?.toString() ?? '',
-                name: product?.productName ?? 'Unknown',
+                name: product?.name ?? 'Unknown',
                 price,
                 unit: product?.unit,
             },

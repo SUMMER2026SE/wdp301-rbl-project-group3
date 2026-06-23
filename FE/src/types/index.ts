@@ -93,23 +93,45 @@ export interface Product {
 export interface OrderItem {
   productId: string
   productName: string
+  sku?: string
+  unit?: string
+  imageUrl?: string | null
   quantity: number
-  price: number
+  price?: number
+  unitPrice?: number
   subtotal: number
 }
 
+export type OrderStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'preparing'
+  | 'delivering'
+  | 'delivered'
+  | 'cancelled'
+
 export interface Order {
   orderId: string
-  status: 'pending' | 'processing' | 'completed' | 'cancelled'
-  paymentMethod: 'COD' | 'banking' | 'momo' | 'vnpay'
-  paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded'
-  shippingAddress: string
-  phoneNumber: string
-  note?: string
-  orderDate: string
+  code?: string
+  status: OrderStatus
+  branch?: {
+    branchId: string
+    name?: string
+    code?: string
+    address?: string
+    phone?: string | null
+  }
+  paymentMethod?: 'COD' | 'banking' | 'momo' | 'vnpay'
+  paymentStatus?: 'pending' | 'paid' | 'failed' | 'refunded'
+  shippingAddress?: string
+  deliveryAddress?: string | null
+  phoneNumber?: string
+  note?: string | null
+  orderDate?: string
   items: OrderItem[]
   totalAmount: number
   createdAt: string
+  updatedAt?: string
 }
 
 export interface PlaceOrderInput {
@@ -119,6 +141,7 @@ export interface PlaceOrderInput {
   note?: string
   paymentMethod: 'COD' | 'banking' | 'momo' | 'vnpay'
   selectedItemIds?: string[]
+  voucherCode?: string
 }
 
 export interface OrdersListResponse {
@@ -254,6 +277,69 @@ export interface AdminOrder {
   updatedAt: string
 }
 
+export interface Category {
+  _id: string
+  name: string
+  code: string
+  description?: string
+  status: 'active' | 'inactive'
+  createdAt: string
+  updatedAt: string
+}
 
+export interface PromotionVoucherDetail {
+  code: string
+  isClaimed: boolean
+  claimStatus: 'active' | 'used' | null
+}
+
+export interface Promotion {
+  id: string
+  name: string
+  description?: string
+  discountType: 'percentage' | 'fixed_amount'
+  discountValue: number
+  maxDiscountAmount?: number
+  minOrderAmount?: number
+  scope: 'global' | 'branch'
+  branchId?: string
+  startDate: string
+  endDate: string
+  status: 'draft' | 'active' | 'inactive' | 'expired'
+  usageLimit?: number
+  vouchers?: string[]
+  vouchersDetail?: PromotionVoucherDetail[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Voucher {
+  id: string
+  code: string
+  promotionId: string
+  discountType: 'percentage' | 'fixed_amount'
+  discountValue: number
+  maxDiscountAmount?: number
+  minOrderAmount?: number
+  branchId?: string
+  expiresAt: string
+  status: 'active' | 'used' | 'expired' | 'disabled'
+  createdAt: string
+}
+
+export interface VoucherLookupResponse {
+  voucher: Voucher
+  discountAmount: number;
+}
+
+export interface ActivePromotionsResponse {
+  data: Promotion[]
+  pagination: {
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+  }
+}
 
 

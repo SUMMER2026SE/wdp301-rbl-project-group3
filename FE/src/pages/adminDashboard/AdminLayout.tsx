@@ -12,6 +12,8 @@ import {
   Layers,
   X,
   UserCheck,
+  Users,
+  Ticket,
 } from 'lucide-react'
 
 type NavItem = {
@@ -75,7 +77,28 @@ export const AdminLayout = () => {
       description: 'Quản lý cửa hàng',
       icon: <MapPin size={20} />,
     },
+    {
+      path: '/admin/promotions',
+      label: 'Khuyến mãi',
+      description: 'Quản lý ưu đãi & voucher',
+      icon: <Ticket size={20} />,
+    },
   ]
+
+  if (user?.role === 'admin') {
+    navItems.push({
+      path: '/admin/categories',
+      label: 'Danh mục',
+      description: 'Quản lý danh mục sản phẩm',
+      icon: <Layers size={20} />,
+    })
+    navItems.push({
+      path: '/admin/users',
+      label: 'Thành viên',
+      description: 'Quản lý người dùng',
+      icon: <Users size={20} />,
+    })
+  }
 
   const handleLogout = async () => {
     try {

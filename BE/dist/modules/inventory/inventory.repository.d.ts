@@ -36,6 +36,14 @@ export declare class InventoryRepository {
         unitCost: number;
         updatedBy: string;
     }): Promise<IInventory>;
+    reverseImportedStock(params: {
+        branchId: string;
+        productId: string;
+        quantityToRemove: number;
+        unitCost: number;
+        updatedBy: string;
+        replacementLastImportCost?: number;
+    }): Promise<IInventory | null>;
     createImportReceipt(data: {
         code: string;
         branchId: string;
@@ -47,7 +55,22 @@ export declare class InventoryRepository {
     }): Promise<IImportReceipt>;
     findImportReceipts(filters: {
         branchId?: string;
+        status?: string;
     }): Promise<IImportReceipt[]>;
+    findImportReceiptById(id: string): Promise<IImportReceipt | null>;
+    acquireImportReceiptForMutation(id: string): Promise<IImportReceipt | null>;
+    releaseImportReceiptMutation(id: string): Promise<void>;
+    findImportReceiptDetail(id: string): Promise<IImportReceipt | null>;
+    updateImportReceipt(id: string, data: {
+        branchId: string;
+        supplierName?: string;
+        note?: string;
+        items: IImportReceiptItem[];
+        totalCost: number;
+        updatedBy: string;
+    }): Promise<IImportReceipt | null>;
+    cancelImportReceipt(id: string, cancelledBy: string): Promise<IImportReceipt | null>;
+    findLatestActiveImportCost(branchId: string, productId: string, excludeReceiptId?: string): Promise<number | undefined>;
 }
 export declare const inventoryRepository: InventoryRepository;
 //# sourceMappingURL=inventory.repository.d.ts.map
