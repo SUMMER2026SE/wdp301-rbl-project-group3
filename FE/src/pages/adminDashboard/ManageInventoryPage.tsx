@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { 
   Package, 
   Plus, 
@@ -12,7 +12,16 @@ import {
   AlertTriangle, 
   PlusCircle, 
   Trash2,
-  Pencil
+  Pencil,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  Box,
+  RefreshCw,
+  Download,
+  Filter,
+  Calendar,
+  Minus
 } from 'lucide-react'
 import { inventoryService } from '@services/inventoryService'
 import { branchService } from '@services/branchService'
@@ -47,6 +56,11 @@ export const ManageInventoryPage = () => {
   const [receiptsList, setReceiptsList] = useState<ImportReceipt[]>([])
   const [receiptsLoading, setReceiptsLoading] = useState(false)
   const [receiptsError, setReceiptsError] = useState<string | null>(null)
+  const [receiptsSearch, setReceiptsSearch] = useState('')
+  const [startDate, setStartDate] = useState<string>('')
+  const [endDate, setEndDate] = useState<string>('')
+  const [showDateFilter, setShowDateFilter] = useState(false)
+  const [autoRefresh, setAutoRefresh] = useState(false)
   
   // Create Receipt Modal
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
@@ -56,9 +70,12 @@ export const ManageInventoryPage = () => {
   const [importBranchId, setImportBranchId] = useState('')
   const [supplierName, setSupplierName] = useState('')
   const [importNote, setImportNote] = useState('')
-  const [importItems, setImportItems] = useState<{ productId: string; quantity: number; unitCost: number }[]>([
-    { productId: '', quantity: 1, unitCost: 0 }
-  ])
+  const [importItems, setImportItems] = useState<{ productId: string; quantity: number; unitCost: number }[]>([])
+
+  // Optimized Stock-In autocomplete & historical lookup states
+  const [activeProducts, setActiveProducts] = useState<Product[]>([])
+  const [importBranchInventory, setImportBranchInventory] = useState<Inventory[]>([])
+  const [productSearchQuery, setProductSearchQuery] = useState('')
 
   // Tab 3: Catalog states
   const [catalogLoading, setCatalogLoading] = useState(false)
@@ -84,6 +101,7 @@ export const ManageInventoryPage = () => {
     categoryId: '',
     status: 'active' as 'active' | 'inactive'
   })
+
 
   // Fetch branches and categories on mount
   useEffect(() => {
@@ -221,16 +239,212 @@ export const ManageInventoryPage = () => {
     }
   }, [activeTab, selectedBranchId])
 
+  // Fetch target branch inventory for cost suggestions
+  useEffect(() => {
+    const fetchImportBranchInventory = async () => {
+      if (!isImportModalOpen || !importBranchId) return
+      try {
+        const response = await inventoryService.getInventory({ branchId: importBranchId })
+        if (response.success) {
+          setImportBranchInventory(response.data)
+        }
+      } catch (err) {
+        console.error('Failed to load target branch inventory:', err)
+      }
+    }
+    fetchImportBranchInventory()
+  }, [importBranchId, isImportModalOpen])
+
+  // Fetch all active products quietly for autocomplete when modal opens
+  useEffect(() => {
+    const fetchActiveProducts = async () => {
+      if (!isImportModalOpen) return
+      try {
+        const response = await productService.getProducts({ limit: 1000, status: 'active' })
+        if (response.success) {
+          setActiveProducts(response.data)
+        }
+      } catch (err) {
+        console.error('Failed to load active products:', err)
+      }
+    }
+    fetchActiveProducts()
+  }, [isImportModalOpen])
+
+  // Autocomplete search suggestions for import modal
+  const searchSuggestions = useMemo(() => {
+    if (!productSearchQuery.trim()) return []
+    const query = productSearchQuery.toLowerCase()
+    return activeProducts.filter((p) => {
+      const isProductActive = p.status === 'active' || p.status === true
+      if (!isProductActive) return false
+      const nameMatch = (p.productName || p.name || '').toLowerCase().includes(query)
+      const skuMatch = (p.sku || '').toLowerCase().includes(query)
+      return nameMatch || skuMatch
+    })
+  }, [productSearchQuery, activeProducts])
+  
+  // Auto-refresh for stock tab
+  useEffect(() => {
+    if (!autoRefresh || activeTab !== 'stock') return
+    
+    const intervalId = setInterval(() => {
+      fetchInventory()
+    }, 30000) // Refresh every 30 seconds
+    
+    return () => clearInterval(intervalId)
+  }, [autoRefresh, activeTab, selectedBranchId, filterLowStock])
+  
+  // Calculate inventory statistics
+  const inventoryStats = useMemo(() => {
+    // Filter stock locally based on stockSearch keyword
+    const filtered = inventoryList.filter((item) => {
+      if (!stockSearch.trim()) return true
+      const keyword = stockSearch.toLowerCase()
+      const nameMatch = item.productId?.productName?.toLowerCase().includes(keyword) || item.productId?.name?.toLowerCase().includes(keyword)
+      const skuMatch = item.productId?.sku?.toLowerCase().includes(keyword)
+      return nameMatch || skuMatch
+    })
+    
+    const totalProducts = filtered.length
+    const lowStockItems = filtered.filter(item => item.quantity <= item.lowStockThreshold).length
+    const totalValue = filtered.reduce((sum, item) => sum + (item.quantity * item.averageCost), 0)
+    const outOfStock = filtered.filter(item => item.quantity === 0).length
+    
+    return {
+      totalProducts,
+      lowStockItems,
+      totalValue,
+      outOfStock,
+      filtered
+    }
+  }, [inventoryList, stockSearch])
+  
+  const filteredStock = inventoryStats.filtered
+  
+  // Calculate receipts statistics  
+  const receiptsStats = useMemo(() => {
+    const filteredByDate = receiptsList.filter(rec => {
+      if (receiptsSearch.trim()) {
+        const keyword = receiptsSearch.toLowerCase()
+        const codeMatch = rec.code?.toLowerCase().includes(keyword)
+        const supplierMatch = rec.supplierName?.toLowerCase().includes(keyword)
+        if (!(codeMatch || supplierMatch)) return false
+      }
+      
+      if (startDate || endDate) {
+        const recDate = new Date(rec.createdAt)
+        if (startDate && recDate < new Date(startDate)) return false
+        if (endDate) {
+          const endDateTime = new Date(endDate)
+          endDateTime.setHours(23, 59, 59, 999)
+          if (recDate > endDateTime) return false
+        }
+      }
+      
+      return true
+    })
+    
+    const totalReceipts = filteredByDate.length
+    const totalValue = filteredByDate.reduce((sum, rec) => sum + rec.totalCost, 0)
+    const totalItems = filteredByDate.reduce((sum, rec) => sum + rec.items.length, 0)
+    
+    return {
+      totalReceipts,
+      totalValue,
+      totalItems,
+      filtered: filteredByDate
+    }
+  }, [receiptsList, receiptsSearch, startDate, endDate])
+  
+  // Export receipts to CSV
+  const exportReceiptsToCSV = () => {
+    const headers = ['Mã phiếu', 'Chi nhánh', 'Nhà cung cấp', 'Tổng giá trị', 'Người tạo', 'Ngày nhập']
+    const rows = receiptsStats.filtered.map(rec => {
+      const branchName = typeof rec.branchId === 'object' ? rec.branchId.name : 'N/A'
+      const creatorName = typeof rec.createdBy === 'object' ? rec.createdBy.fullName : 'System'
+      
+      return [
+        rec.code,
+        branchName,
+        rec.supplierName || 'N/A',
+        rec.totalCost,
+        creatorName,
+        new Date(rec.createdAt).toLocaleString()
+      ]
+    })
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n')
+    
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `import_receipts_${new Date().toISOString().split('T')[0]}.csv`
+    link.click()
+  }
+  
+  // Export stock to CSV
+  const exportStockToCSV = () => {
+    const headers = ['STT', 'Mã SKU', 'Tên sản phẩm', 'Đơn vị', 'Số lượng tồn', 'Giá vốn TB', 'Giá nhập gần nhất', 'Trạng thái']
+    const rows = filteredStock.map((item, idx) => {
+      const isLow = item.quantity <= item.lowStockThreshold
+      
+      return [
+        idx + 1,
+        item.productId?.sku || 'N/A',
+        item.productId?.productName || item.productId?.name || 'N/A',
+        item.productId?.unit || 'item',
+        item.quantity,
+        item.averageCost ?? 0,
+        item.lastImportCost ?? 0,
+        isLow ? 'Cảnh báo hết' : 'Đủ hàng'
+      ]
+    })
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n')
+    
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    const branchName = branches.find(b => b._id === selectedBranchId)?.name || 'branch'
+    link.download = `inventory_${branchName}_${new Date().toISOString().split('T')[0]}.csv`
+    link.click()
+  }
+
   // --- ACTIONS ---
   
-  // Add item row in import builder
-  const addImportItemRow = () => {
-    setImportItems([...importItems, { productId: '', quantity: 1, unitCost: 0 }])
+  // Quick Add Product to Import List
+  const handleQuickAddProduct = (product: Product) => {
+    const existingIndex = importItems.findIndex(item => item.productId === product._id)
+    if (existingIndex > -1) {
+      // Increment quantity
+      const updated = [...importItems]
+      updated[existingIndex].quantity += 1
+      setImportItems(updated)
+    } else {
+      // Look up historical price in target branch stock
+      const historicalItem = importBranchInventory.find(
+        inv => {
+          const invProdId = typeof inv.productId === 'object' ? inv.productId?._id : inv.productId
+          return invProdId === product._id
+        }
+      )
+      // Suggest cost sequence: lastImportCost -> averageCost -> price -> salePrice -> 0
+      const suggestedCost = historicalItem?.lastImportCost ?? historicalItem?.averageCost ?? product.price ?? product.salePrice ?? 0
+
+      setImportItems([...importItems, { productId: product._id, quantity: 1, unitCost: suggestedCost }])
+    }
+    setProductSearchQuery('') // Clear search box
   }
 
   // Remove item row in import builder
   const removeImportItemRow = (index: number) => {
-    if (importItems.length === 1) return
     const updated = [...importItems]
     updated.splice(index, 1)
     setImportItems(updated)
@@ -246,19 +460,63 @@ export const ManageInventoryPage = () => {
     setImportItems(updated)
   }
 
+  // Clear all import items
+  const handleClearImportItems = () => {
+    setImportItems([])
+  }
+
   // Submit new import receipt
   const handleImportSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validation 1: Check branch selection
     if (!importBranchId) {
-      setImportError('Vui lòng chọn chi nhánh nhập hàng.')
+      setImportError('❌ Vui lòng chọn chi nhánh nhập hàng.')
+      return
+    }
+
+    // Validation 1.5: Check if list has items
+    if (importItems.length === 0) {
+      setImportError('❌ Vui lòng tìm và chọn ít nhất một sản phẩm để nhập kho.')
       return
     }
     
-    // Check if any product is empty
+    // Validation 2: Check if any product is empty
     const hasEmptyProduct = importItems.some((item) => !item.productId)
     if (hasEmptyProduct) {
-      setImportError('Vui lòng chọn đầy đủ sản phẩm cho mỗi dòng nhập.')
+      setImportError('❌ Vui lòng chọn đầy đủ sản phẩm cho mỗi dòng nhập.')
       return
+    }
+    
+    // Validation 3: Check for duplicate products
+    const productIds = importItems.map(item => item.productId)
+    const hasDuplicates = productIds.some((id, index) => productIds.indexOf(id) !== index)
+    if (hasDuplicates) {
+      setImportError('❌ Không được chọn trùng sản phẩm. Vui lòng gộp số lượng hoặc xóa dòng trùng.')
+      return
+    }
+    
+    // Validation 4: Check quantity > 0
+    const hasInvalidQuantity = importItems.some((item) => item.quantity <= 0)
+    if (hasInvalidQuantity) {
+      setImportError('❌ Số lượng nhập phải lớn hơn 0.')
+      return
+    }
+    
+    // Validation 5: Check unitCost >= 0
+    const hasInvalidCost = importItems.some((item) => item.unitCost < 0)
+    if (hasInvalidCost) {
+      setImportError('❌ Giá vốn không được âm.')
+      return
+    }
+    
+    // Validation 6: Warning for zero cost
+    const hasZeroCost = importItems.some((item) => item.unitCost === 0)
+    if (hasZeroCost) {
+      const confirmZero = window.confirm(
+        '⚠️ Một số sản phẩm có giá vốn = 0đ. Đây có thể là hàng khuyến mãi/tặng.\n\nBạn có chắc chắn muốn tiếp tục?'
+      )
+      if (!confirmZero) return
     }
 
     try {
@@ -279,7 +537,7 @@ export const ManageInventoryPage = () => {
         setImportSuccess(true)
         setSupplierName('')
         setImportNote('')
-        setImportItems([{ productId: '', quantity: 1, unitCost: 0 }])
+        setImportItems([])
         setTimeout(() => {
           setImportSuccess(false)
           setIsImportModalOpen(false)
@@ -287,11 +545,11 @@ export const ManageInventoryPage = () => {
           fetchInventory() // refresh stock
         }, 1500)
       } else {
-        setImportError(res.message || 'Không thể tạo phiếu nhập kho.')
+        setImportError('❌ ' + (res.message || 'Không thể tạo phiếu nhập kho.'))
       }
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || 'Lỗi hệ thống khi tạo phiếu nhập kho.'
-      setImportError(msg)
+      setImportError('❌ ' + msg)
     } finally {
       setImportLoading(false)
     }
@@ -334,45 +592,148 @@ export const ManageInventoryPage = () => {
     })
   }
 
+
   // Toggle activation status (Dừng bán / Mở bán lại)
   const handleToggleProductStatus = async (product: Product) => {
     const isActive = product.status === 'active' || product.status === true
-    const actionText = isActive ? 'dừng bán' : 'mở bán lại'
+    const productName = product.productName || product.name || 'sản phẩm này'
     
-    if (window.confirm(`Bạn có chắc chắn muốn ${actionText} sản phẩm "${product.productName || product.name}" không?`)) {
-      try {
-        setCatalogLoading(true)
-        setCatalogError(null)
-        
-        let res
-        if (isActive) {
-          // Inactive means calling delete API
-          res = await productService.deleteProduct(product._id)
-        } else {
-          // Active means calling PATCH API with status active
-          res = await productService.updateProduct(product._id, { status: 'active' })
-        }
-        
-        if (res.success) {
-          fetchProducts() // refresh catalog list
-        } else {
-          setCatalogError(res.message || `Không thể ${actionText} sản phẩm.`)
-        }
-      } catch (err: any) {
-        const msg = err.response?.data?.message || err.message || `Lỗi khi thực hiện thao tác ${actionText}.`
-        setCatalogError(msg)
-      } finally {
-        setCatalogLoading(false)
+    // Different confirm messages based on action
+    let confirmMessage = ''
+    if (isActive) {
+      confirmMessage = `⚠️ DỪNG BÁN SẢN PHẨM\n\n` +
+        `Sản phẩm: ${productName}\n` +
+        `SKU: ${product.sku}\n\n` +
+        `Hành động này sẽ:\n` +
+        `• Ẩn sản phẩm khỏi danh sách bán hàng\n` +
+        `• Khách hàng không thể đặt mua sản phẩm này\n` +
+        `• Sản phẩm vẫn tồn tại trong hệ thống và có thể kích hoạt lại\n\n` +
+        `Bạn có chắc chắn muốn DỪNG BÁN sản phẩm này?`
+    } else {
+      confirmMessage = `✅ MỞ LẠI SẢN PHẨM\n\n` +
+        `Sản phẩm: ${productName}\n` +
+        `SKU: ${product.sku}\n\n` +
+        `Hành động này sẽ:\n` +
+        `• Kích hoạt lại sản phẩm trong hệ thống\n` +
+        `• Sản phẩm sẽ xuất hiện trong danh sách bán hàng\n` +
+        `• Khách hàng có thể đặt mua sản phẩm này\n\n` +
+        `Bạn có chắc chắn muốn MỞ BÁN LẠI sản phẩm này?`
+    }
+    
+    if (!window.confirm(confirmMessage)) {
+      return
+    }
+    
+    try {
+      setCatalogLoading(true)
+      setCatalogError(null)
+      
+      let res
+      if (isActive) {
+        // Inactive means calling delete API
+        res = await productService.deleteProduct(product._id)
+      } else {
+        // Active means calling PATCH API with status active
+        res = await productService.updateProduct(product._id, { status: 'active' })
       }
+      
+      if (res.success) {
+        fetchProducts() // refresh catalog list
+      } else {
+        setCatalogError('❌ ' + (res.message || `Không thể ${isActive ? 'dừng bán' : 'mở bán lại'} sản phẩm.`))
+      }
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || `Lỗi khi thực hiện thao tác ${isActive ? 'dừng bán' : 'mở bán lại'}.`
+      setCatalogError('❌ ' + msg)
+    } finally {
+      setCatalogLoading(false)
     }
   }
 
   // Submit new or edited master product
   const handleProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!productForm.name.trim() || !productForm.sku.trim()) {
-      setProductError('Tên sản phẩm và SKU là bắt buộc.')
+    
+    // Validation 1: Required fields
+    if (!productForm.name.trim()) {
+      setProductError('❌ Tên sản phẩm là bắt buộc.')
       return
+    }
+    
+    if (!productForm.sku.trim()) {
+      setProductError('❌ Mã SKU là bắt buộc.')
+      return
+    }
+    
+    // Validation 2: SKU format (chỉ cho phép chữ, số, gạch ngang và gạch dưới)
+    const skuPattern = /^[A-Z0-9_-]+$/
+    if (!skuPattern.test(productForm.sku.trim())) {
+      setProductError('❌ Mã SKU chỉ được chứa chữ IN HOA, số, gạch ngang (-) và gạch dưới (_).')
+      return
+    }
+    
+    // Validation 3: SKU length
+    if (productForm.sku.trim().length < 3) {
+      setProductError('❌ Mã SKU phải có ít nhất 3 ký tự.')
+      return
+    }
+    
+    if (productForm.sku.trim().length > 50) {
+      setProductError('❌ Mã SKU không được quá 50 ký tự.')
+      return
+    }
+    
+    // Validation 4: Product name length
+    if (productForm.name.trim().length < 3) {
+      setProductError('❌ Tên sản phẩm phải có ít nhất 3 ký tự.')
+      return
+    }
+    
+    if (productForm.name.trim().length > 200) {
+      setProductError('❌ Tên sản phẩm không được quá 200 ký tự.')
+      return
+    }
+    
+    // Validation 5: Price validation
+    if (productForm.salePrice < 0) {
+      setProductError('❌ Giá bán không được âm.')
+      return
+    }
+    
+    if (productForm.salePrice === 0) {
+      const confirmZeroPrice = window.confirm(
+        '⚠️ Giá bán đang là 0đ. Sản phẩm này sẽ là hàng miễn phí.\n\nBạn có chắc chắn muốn tiếp tục?'
+      )
+      if (!confirmZeroPrice) return
+    }
+    
+    // Validation 6: Category selection
+    if (!productForm.categoryId) {
+      const confirmNoCategory = window.confirm(
+        '⚠️ Bạn chưa chọn danh mục cho sản phẩm này.\n\nSản phẩm không có danh mục sẽ khó quản lý và tìm kiếm.\n\nBạn có muốn tiếp tục không?'
+      )
+      if (!confirmNoCategory) return
+    }
+    
+    // Validation 7: Description length
+    if (productForm.description.trim().length > 1000) {
+      setProductError('❌ Mô tả sản phẩm không được quá 1000 ký tự.')
+      return
+    }
+    
+    // Validation 8: Image validation (nếu là file upload)
+    if (imageFile) {
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+      if (!validTypes.includes(imageFile.type)) {
+        setProductError('❌ Chỉ chấp nhận file ảnh định dạng JPG, PNG hoặc WEBP.')
+        return
+      }
+      
+      const maxSize = 5 * 1024 * 1024 // 5MB
+      if (imageFile.size > maxSize) {
+        setProductError('❌ Kích thước ảnh không được vượt quá 5MB.')
+        return
+      }
     }
 
     try {
@@ -424,24 +785,15 @@ export const ManageInventoryPage = () => {
           fetchProducts() // refresh catalog list
         }, 1500)
       } else {
-        setProductError(res.message || (editingProduct ? 'Không thể cập nhật sản phẩm.' : 'Không thể tạo sản phẩm.'))
+        setProductError('❌ ' + (res.message || (editingProduct ? 'Không thể cập nhật sản phẩm.' : 'Không thể tạo sản phẩm.')))
       }
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || (editingProduct ? 'Lỗi khi cập nhật sản phẩm.' : 'Lỗi khi tạo sản phẩm.')
-      setProductError(msg)
+      setProductError('❌ ' + msg)
     } finally {
       setProductLoading(false)
     }
   }
-
-  // Filter stock locally based on stockSearch keyword
-  const filteredStock = inventoryList.filter((item) => {
-    if (!stockSearch.trim()) return true
-    const keyword = stockSearch.toLowerCase()
-    const nameMatch = item.productId?.productName?.toLowerCase().includes(keyword) || item.productId?.name?.toLowerCase().includes(keyword)
-    const skuMatch = item.productId?.sku?.toLowerCase().includes(keyword)
-    return nameMatch || skuMatch
-  })
 
   // Calculate total cost of current import builder items
   const importTotalCost = importItems.reduce((acc, curr) => {
@@ -463,19 +815,65 @@ export const ManageInventoryPage = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          {activeTab === 'stock' && (
+            <>
+              <button
+                onClick={() => {
+                  fetchInventory()
+                }}
+                disabled={stockLoading}
+                className="flex items-center gap-2 rounded-lg bg-surface-container-low border border-outline px-4 py-2 text-sm font-bold hover:bg-surface-container-high transition-colors disabled:opacity-50"
+              >
+                <RefreshCw size={16} className={stockLoading ? 'animate-spin' : ''} />
+                Làm mới
+              </button>
+              
+              <button
+                onClick={() => setAutoRefresh(!autoRefresh)}
+                className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-bold transition-colors ${
+                  autoRefresh 
+                    ? 'bg-primary text-white border-primary' 
+                    : 'bg-surface-container-low border-outline hover:bg-surface-container-high'
+                }`}
+              >
+                {autoRefresh ? 'Tự động: Bật' : 'Tự động: Tắt'}
+              </button>
+              
+              <button
+                onClick={exportStockToCSV}
+                disabled={filteredStock.length === 0}
+                className="flex items-center gap-2 rounded-lg bg-surface-container-low border border-outline px-4 py-2 text-sm font-bold hover:bg-surface-container-high transition-colors disabled:opacity-50"
+              >
+                <Download size={16} />
+                Xuất Excel
+              </button>
+            </>
+          )}
           {activeTab === 'import' && (
-            <button
-              onClick={() => {
-                setImportError(null)
-                setImportSuccess(false)
-                setIsImportModalOpen(true)
-              }}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white transition-all hover:bg-opacity-90 active:scale-95 shadow-md hover:shadow-lg"
-              type="button"
-            >
-              <PlusCircle size={18} />
-              Tạo phiếu nhập kho
-            </button>
+            <>
+              <button
+                onClick={exportReceiptsToCSV}
+                disabled={receiptsStats.filtered.length === 0}
+                className="flex items-center gap-2 rounded-lg bg-surface-container-low border border-outline px-4 py-2 text-sm font-bold hover:bg-surface-container-high transition-colors disabled:opacity-50"
+              >
+                <Download size={16} />
+                Xuất Excel
+              </button>
+              <button
+                onClick={() => {
+                  setImportError(null)
+                  setImportSuccess(false)
+                  setImportItems([])
+                  setProductSearchQuery('')
+                  setIsImportModalOpen(true)
+                }}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white transition-all hover:bg-opacity-90 active:scale-95 shadow-md hover:shadow-lg"
+                type="button"
+              >
+                <PlusCircle size={18} />
+                Tạo phiếu nhập kho
+              </button>
+            </>
           )}
           {activeTab === 'catalog' && (
             <button
@@ -505,6 +903,113 @@ export const ManageInventoryPage = () => {
           )}
         </div>
       </section>
+      
+      {/* ── STATISTICS CARDS - Show for Stock and Import tabs ── */}
+      {activeTab === 'stock' && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="rounded-xl border border-outline-variant bg-gradient-to-br from-blue-50 to-blue-100/50 p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-blue-700">
+                  Tổng SP trong kho
+                </p>
+                <p className="mt-1 text-2xl font-black text-blue-900">{inventoryStats.totalProducts}</p>
+              </div>
+              <div className="rounded-full bg-blue-200 p-3">
+                <Box size={24} className="text-blue-700" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="rounded-xl border border-outline-variant bg-gradient-to-br from-amber-50 to-amber-100/50 p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-amber-700">
+                  Cảnh báo hết hàng
+                </p>
+                <p className="mt-1 text-2xl font-black text-amber-900">{inventoryStats.lowStockItems}</p>
+              </div>
+              <div className="rounded-full bg-amber-200 p-3">
+                <AlertTriangle size={24} className="text-amber-700" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="rounded-xl border border-outline-variant bg-gradient-to-br from-rose-50 to-rose-100/50 p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-rose-700">
+                  Hết hàng
+                </p>
+                <p className="mt-1 text-2xl font-black text-rose-900">{inventoryStats.outOfStock}</p>
+              </div>
+              <div className="rounded-full bg-rose-200 p-3">
+                <TrendingDown size={24} className="text-rose-700" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="rounded-xl border border-outline-variant bg-gradient-to-br from-purple-50 to-purple-100/50 p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-purple-700">
+                  Giá trị tồn kho
+                </p>
+                <p className="mt-1 text-lg font-black text-purple-900">{formatVND(inventoryStats.totalValue)}</p>
+              </div>
+              <div className="rounded-full bg-purple-200 p-3">
+                <DollarSign size={24} className="text-purple-700" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {activeTab === 'import' && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="rounded-xl border border-outline-variant bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-emerald-700">
+                  Tổng phiếu nhập
+                </p>
+                <p className="mt-1 text-2xl font-black text-emerald-900">{receiptsStats.totalReceipts}</p>
+              </div>
+              <div className="rounded-full bg-emerald-200 p-3">
+                <History size={24} className="text-emerald-700" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="rounded-xl border border-outline-variant bg-gradient-to-br from-indigo-50 to-indigo-100/50 p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-indigo-700">
+                  Tổng sản phẩm nhập
+                </p>
+                <p className="mt-1 text-2xl font-black text-indigo-900">{receiptsStats.totalItems}</p>
+              </div>
+              <div className="rounded-full bg-indigo-200 p-3">
+                <Package size={24} className="text-indigo-700" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="rounded-xl border border-outline-variant bg-gradient-to-br from-purple-50 to-purple-100/50 p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-purple-700">
+                  Tổng giá trị nhập
+                </p>
+                <p className="mt-1 text-lg font-black text-purple-900">{formatVND(receiptsStats.totalValue)}</p>
+              </div>
+              <div className="rounded-full bg-purple-200 p-3">
+                <TrendingUp size={24} className="text-purple-700" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── TAB SELECTOR ── */}
       <div className="border-b border-outline-variant flex gap-6 text-sm font-medium">
@@ -700,22 +1205,94 @@ export const ManageInventoryPage = () => {
       {/* ── TAB 2: IMPORT RECEIPTS HISTORY ── */}
       {activeTab === 'import' && (
         <div className="space-y-4 animate-in fade-in duration-200">
-          {/* Branch Selector for imports */}
-          <section className="flex flex-col gap-4 md:flex-row md:items-center bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant shadow-sm">
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-bold text-on-surface-variant whitespace-nowrap">Lọc theo chi nhánh:</span>
-              <select
-                value={selectedBranchId}
-                onChange={(e) => setSelectedBranchId(e.target.value)}
-                className="bg-surface-container-low border-none rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-primary text-sm font-semibold transition-all"
+          {/* Branch Selector and Search for imports */}
+          <section className="space-y-4">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant shadow-sm">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-bold text-on-surface-variant whitespace-nowrap">Lọc theo chi nhánh:</span>
+                <select
+                  value={selectedBranchId}
+                  onChange={(e) => setSelectedBranchId(e.target.value)}
+                  className="bg-surface-container-low border-none rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-primary text-sm font-semibold transition-all"
+                >
+                  <option value="">Tất cả chi nhánh</option>
+                  {branches.map((b) => (
+                    <option key={b._id} value={b._id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  placeholder="Tìm phiếu nhập (mã phiếu, NCC)..."
+                  value={receiptsSearch}
+                  onChange={(e) => setReceiptsSearch(e.target.value)}
+                  className="w-full bg-surface-container-low border-none rounded-xl py-2.5 px-5 pl-11 focus:ring-2 focus:ring-primary transition-all text-sm"
+                />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
+              </div>
+            </div>
+            
+            {/* Date Range Filter - Collapsible */}
+            <div className="rounded-2xl border border-outline-variant bg-surface-container-lowest shadow-sm overflow-hidden">
+              <button
+                onClick={() => setShowDateFilter(!showDateFilter)}
+                className="w-full flex items-center justify-between p-4 hover:bg-surface-container-low transition-colors"
               >
-                <option value="">Tất cả chi nhánh</option>
-                {branches.map((b) => (
-                  <option key={b._id} value={b._id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
+                <div className="flex items-center gap-2">
+                  <Filter size={16} className="text-primary" />
+                  <span className="text-sm font-bold text-on-surface">Lọc theo thời gian nhập kho</span>
+                  {(startDate || endDate) && (
+                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                      Đang áp dụng
+                    </span>
+                  )}
+                </div>
+                <Calendar size={16} className={`text-on-surface-variant transition-transform ${showDateFilter ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {showDateFilter && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 border-t border-outline-variant bg-surface-container-low/30">
+                  <div className="relative">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">
+                      Từ ngày
+                    </label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="w-full rounded-lg border border-outline bg-transparent py-2 px-3 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+                  
+                  <div className="relative">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">
+                      Đến ngày
+                    </label>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="w-full rounded-lg border border-outline bg-transparent py-2 px-3 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+                  
+                  <div className="flex items-end">
+                    <button
+                      onClick={() => {
+                        setStartDate('')
+                        setEndDate('')
+                      }}
+                      className="w-full rounded-lg border border-outline bg-surface-container-low px-4 py-2 text-sm font-bold hover:bg-surface-container-high transition-colors"
+                    >
+                      Xóa bộ lọc
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
 
@@ -731,7 +1308,7 @@ export const ManageInventoryPage = () => {
               <Loader2 size={36} className="text-primary animate-spin mb-3" />
               <p className="text-sm text-on-surface-variant font-medium">Đang tải lịch sử nhập hàng...</p>
             </div>
-          ) : receiptsList.length === 0 ? (
+          ) : receiptsStats.filtered.length === 0 ? (
             <div className="text-center py-16 bg-surface-container-lowest rounded-2xl border border-dashed border-outline-variant">
               <History size={48} className="mx-auto mb-4 text-on-surface-variant opacity-60" />
               <h3 className="text-lg font-bold text-on-surface">Chưa có phiếu nhập kho nào</h3>
@@ -755,7 +1332,7 @@ export const ManageInventoryPage = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-outline-variant/60">
-                    {receiptsList.map((rec) => {
+                    {receiptsStats.filtered.map((rec) => {
                       const branchName = typeof rec.branchId === 'object' ? rec.branchId.name : 'N/A'
                       const creatorName = typeof rec.createdBy === 'object' ? rec.createdBy.fullName : 'System'
                       return (
@@ -1040,94 +1617,213 @@ export const ManageInventoryPage = () => {
                 </div>
               </div>
 
+              {/* Autocomplete Search & Quick Add Bar */}
+              <div className="space-y-1.5 relative">
+                <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1">
+                  <Search size={14} className="text-primary" />
+                  Tìm & Thêm nhanh sản phẩm
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={productSearchQuery}
+                    onChange={(e) => setProductSearchQuery(e.target.value)}
+                    placeholder="Nhập tên hoặc SKU sản phẩm để thêm vào phiếu..."
+                    className="w-full bg-surface-container-low border border-outline-variant/60 rounded-xl py-3 px-4 pl-11 focus:ring-2 focus:ring-primary focus:border-primary text-sm transition-all shadow-sm"
+                  />
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant opacity-70" size={16} />
+                  {productSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setProductSearchQuery('')}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface p-1 rounded-full hover:bg-surface-container-high transition-colors"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Search Results Dropdown */}
+                {searchSuggestions.length > 0 && (
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-surface border border-outline-variant rounded-xl shadow-2xl max-h-60 overflow-y-auto z-50 divide-y divide-outline-variant/60 animate-in fade-in slide-in-from-top-2 duration-150">
+                    {searchSuggestions.map((p) => (
+                      <button
+                        key={p._id}
+                        type="button"
+                        onClick={() => handleQuickAddProduct(p)}
+                        className="w-full text-left p-3 hover:bg-surface-container-low transition-colors flex items-center gap-3"
+                      >
+                        <div className="w-8 h-8 bg-surface-container-low rounded overflow-hidden border border-outline-variant flex items-center justify-center shrink-0">
+                          {p.imageUrl ? (
+                            <img src={p.imageUrl} alt={p.productName} className="w-full h-full object-cover" />
+                          ) : (
+                            <Package size={14} className="text-on-surface-variant opacity-65" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-on-surface truncate">{p.productName}</p>
+                          <p className="text-xs text-on-surface-variant font-mono">{p.sku} | Đơn vị: {p.unit || 'cái'}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-xs font-semibold text-on-surface-variant">Giá bán</p>
+                          <p className="text-sm font-bold text-primary">{formatVND(p.price)}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {productSearchQuery.trim() && searchSuggestions.length === 0 && (
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-surface border border-outline-variant rounded-xl shadow-2xl p-4 text-center z-50 text-xs font-medium text-on-surface-variant bg-surface-container-low/40">
+                    Không tìm thấy sản phẩm hoạt động khớp với từ khóa.
+                  </div>
+                )}
+              </div>
+
               {/* Items List Builder */}
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between border-b border-outline-variant pb-2">
-                  <span className="text-sm font-black text-on-surface">Danh sách hàng nhập</span>
-                  <button
-                    type="button"
-                    onClick={addImportItemRow}
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline"
-                  >
-                    <PlusCircle size={14} />
-                    Thêm dòng hàng
-                  </button>
-                </div>
-
-                {importItems.map((item, idx) => (
-                  <div key={idx} className="flex flex-col md:flex-row gap-3 items-end bg-surface-container-low/40 p-3 rounded-xl border border-outline-variant/40">
-                    {/* Product Selection */}
-                    <div className="flex-1 space-y-1">
-                      <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">
-                        Sản phẩm <span className="text-error">*</span>
-                      </label>
-                      <select
-                        value={item.productId}
-                        onChange={(e) => updateImportItemRow(idx, 'productId', e.target.value)}
-                        required
-                        className="w-full bg-surface-container-low border-none rounded-lg py-2 px-3 focus:ring-2 focus:ring-primary text-xs font-medium transition-all"
-                      >
-                        <option value="">-- Chọn sản phẩm --</option>
-                        {products.map((p) => (
-                          <option key={p._id} value={p._id}>
-                            {p.productName} ({p.sku})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Quantity */}
-                    <div className="w-full md:w-28 space-y-1">
-                      <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">
-                        Số lượng nhập
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        required
-                        value={item.quantity}
-                        onChange={(e) => updateImportItemRow(idx, 'quantity', parseInt(e.target.value) || 1)}
-                        className="w-full bg-surface-container-low border-none rounded-lg py-2 px-3 focus:ring-2 focus:ring-primary text-xs text-right font-bold transition-all"
-                      />
-                    </div>
-
-                    {/* Unit Cost */}
-                    <div className="w-full md:w-32 space-y-1">
-                      <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">
-                        Giá vốn (đ)
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        required
-                        value={item.unitCost}
-                        onChange={(e) => updateImportItemRow(idx, 'unitCost', parseFloat(e.target.value) || 0)}
-                        className="w-full bg-surface-container-low border-none rounded-lg py-2 px-3 focus:ring-2 focus:ring-primary text-xs text-right font-bold transition-all"
-                      />
-                    </div>
-
-                    {/* Subtotal calculation */}
-                    <div className="w-full md:w-28 space-y-1">
-                      <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">
-                        Thành tiền
-                      </label>
-                      <div className="w-full py-2 text-xs text-right font-bold text-primary">
-                        {formatVND(item.quantity * item.unitCost)}
-                      </div>
-                    </div>
-
-                    {/* Delete button */}
+                  <span className="text-sm font-black text-on-surface flex items-center gap-2">
+                    Danh sách hàng nhập ({importItems.length} sản phẩm)
+                  </span>
+                  {importItems.length > 0 && (
                     <button
                       type="button"
-                      onClick={() => removeImportItemRow(idx)}
-                      disabled={importItems.length === 1}
-                      className="rounded-lg p-2 text-error hover:bg-error-container/30 transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                      onClick={handleClearImportItems}
+                      className="text-xs font-bold text-error hover:underline flex items-center gap-1.5"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={12} />
+                      Xóa tất cả
                     </button>
+                  )}
+                </div>
+
+                {importItems.length === 0 ? (
+                  <div className="text-center py-10 bg-surface-container-low/20 rounded-2xl border border-dashed border-outline-variant/60 px-4">
+                    <Box size={32} className="mx-auto mb-2 text-on-surface-variant opacity-40 animate-pulse" />
+                    <p className="text-xs font-medium text-on-surface-variant max-w-sm mx-auto leading-relaxed">
+                      Chưa chọn sản phẩm nào. Hãy tìm kiếm sản phẩm bằng thanh tìm kiếm ở trên để thêm vào phiếu nhập kho.
+                    </p>
                   </div>
-                ))}
+                ) : (
+                  <div className="overflow-hidden border border-outline-variant rounded-xl bg-surface-container-lowest shadow-sm">
+                    <div className="overflow-x-auto animate-in fade-in duration-200">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="border-b border-outline-variant bg-surface-container-low/50">
+                            <th className="p-3 font-bold text-on-surface-variant">Sản phẩm</th>
+                            <th className="p-3 font-bold text-on-surface-variant text-center w-32">Số lượng</th>
+                            <th className="p-3 font-bold text-on-surface-variant text-right w-36">Giá vốn (đ)</th>
+                            <th className="p-3 font-bold text-on-surface-variant text-right w-28">Giá bán gốc</th>
+                            <th className="p-3 font-bold text-on-surface-variant text-right w-32">Thành tiền</th>
+                            <th className="p-3 font-bold text-on-surface-variant text-center w-12"></th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-outline-variant/50">
+                          {importItems.map((item, idx) => {
+                            const pInfo = activeProducts.find((p) => p._id === item.productId);
+                            const name = pInfo?.productName || 'Sản phẩm';
+                            const sku = pInfo?.sku || 'N/A';
+                            const unit = pInfo?.unit || 'cái';
+                            const sellingPrice = pInfo?.price || 0;
+                            const isLoss = item.unitCost > sellingPrice;
+                            
+                            return (
+                              <tr key={idx} className="hover:bg-surface-container-low/20 transition-colors align-middle">
+                                {/* Product info */}
+                                <td className="p-3 min-w-[200px]">
+                                  <div className="flex items-center gap-2.5">
+                                    <div className="w-8 h-8 bg-surface-container-low rounded overflow-hidden border border-outline-variant flex items-center justify-center shrink-0">
+                                      {pInfo?.imageUrl ? (
+                                        <img src={pInfo.imageUrl} alt={name} className="w-full h-full object-cover" />
+                                      ) : (
+                                        <Package size={14} className="text-on-surface-variant opacity-60" />
+                                      )}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="font-bold text-on-surface truncate max-w-[180px]" title={name}>{name}</p>
+                                      <p className="text-[10px] text-on-surface-variant font-mono">{sku} | Đơn vị: {unit}</p>
+                                    </div>
+                                  </div>
+                                </td>
+                                
+                                {/* Quantity stepper */}
+                                <td className="p-3 text-center">
+                                  <div className="inline-flex items-center border border-outline rounded-lg overflow-hidden bg-surface-container-low shadow-sm">
+                                    <button
+                                      type="button"
+                                      onClick={() => updateImportItemRow(idx, 'quantity', Math.max(1, item.quantity - 1))}
+                                      className="p-1.5 hover:bg-surface-container-high text-on-surface-variant active:bg-outline/25 transition-colors border-r border-outline"
+                                    >
+                                      <Minus size={12} />
+                                    </button>
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      required
+                                      value={item.quantity}
+                                      onChange={(e) => updateImportItemRow(idx, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
+                                      className="w-10 bg-transparent border-none text-center font-bold text-xs p-1 focus:ring-0 outline-none"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => updateImportItemRow(idx, 'quantity', item.quantity + 1)}
+                                      className="p-1.5 hover:bg-surface-container-high text-on-surface-variant active:bg-outline/25 transition-colors border-l border-outline"
+                                    >
+                                      <Plus size={12} />
+                                    </button>
+                                  </div>
+                                </td>
+                                
+                                {/* Unit Cost input with margin alert */}
+                                <td className="p-3 text-right">
+                                  <div className="relative inline-block w-full">
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      step="1"
+                                      required
+                                      value={item.unitCost}
+                                      onChange={(e) => updateImportItemRow(idx, 'unitCost', parseFloat(e.target.value) || 0)}
+                                      className="w-full bg-surface-container-low border border-outline rounded-lg py-1.5 px-2 text-right font-bold text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all shadow-sm"
+                                    />
+                                    {isLoss && sellingPrice > 0 && (
+                                      <div className="text-[10px] text-error font-medium flex items-center justify-end gap-1 mt-1 leading-tight animate-pulse">
+                                        <AlertTriangle size={10} className="shrink-0" />
+                                        Vượt giá bán ({formatVND(sellingPrice)})
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
+                                
+                                {/* Static Selling Price */}
+                                <td className="p-3 text-right font-medium text-on-surface-variant">
+                                  {formatVND(sellingPrice)}
+                                </td>
+                                
+                                {/* Row Subtotal */}
+                                <td className="p-3 text-right font-black text-primary text-sm">
+                                  {formatVND(item.quantity * item.unitCost)}
+                                </td>
+                                
+                                {/* Delete Action */}
+                                <td className="p-3 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => removeImportItemRow(idx)}
+                                    className="rounded-lg p-1.5 text-error hover:bg-error-container/30 hover:text-error transition-colors"
+                                    title="Xóa dòng"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Note */}

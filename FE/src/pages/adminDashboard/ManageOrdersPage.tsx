@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   Search,
   Building2,
@@ -13,6 +13,11 @@ import {
   MapPin,
   FileText,
   Package,
+  ShoppingCart,
+  TrendingUp,
+  RefreshCw,
+  Download,
+  Filter,
 } from 'lucide-react'
 import { orderService } from '@services/orderService'
 import { branchService } from '@services/branchService'
@@ -92,6 +97,11 @@ export const ManageOrdersPage = () => {
   const [selectedBranch, setSelectedBranch] = useState<string>('')
   const [selectedStatus, setSelectedStatus] = useState<string>('')
   const [searchQuery, setSearchQuery] = useState<string>('')
+  
+  // Date range filter states
+  const [startDate, setStartDate] = useState<string>('')
+  const [endDate, setEndDate] = useState<string>('')
+  const [showDateFilter, setShowDateFilter] = useState(false)
 
   // Loading and error states
   const [loading, setLoading] = useState(true)
@@ -100,6 +110,9 @@ export const ManageOrdersPage = () => {
 
   // Selected order for details modal
   const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null)
+  
+  // Auto-refresh state
+  const [autoRefresh, setAutoRefresh] = useState(false)
 
   // Fetch initial data
   const fetchData = async () => {
@@ -156,7 +169,18 @@ export const ManageOrdersPage = () => {
   useEffect(() => {
     fetchFilteredOrders()
   }, [selectedBranch, selectedStatus])
-
+  
+  // Auto-refresh effect
+  useEffect(() => {
+    if (!autoRefresh) return
+    
+    const intervalId = setInterval(() => {
+      fetchFilteredOrders()
+    }, 30000) // Refresh every 30 seconds
+    
+    return () => clearInterval(intervalId)
+  }, [autoRefresh, selectedBranch, selectedStatus])
+  
   // Handle confirming order (pending -> confirmed)
   const handleConfirmOrder = async (orderId: string) => {
     if (actionLoading) return
@@ -229,32 +253,105 @@ export const ManageOrdersPage = () => {
   // Apply search query filter (local filter based on code or customer phone/name)
   const filteredOrders = orders.filter((order) => {
     const q = searchQuery.toLowerCase().trim()
-    if (!q) return true
+    if (q) {
+      const codeMatch = order.code?.toLowerCase().includes(q) ?? false
 
-    const codeMatch = order.code?.toLowerCase().includes(q) ?? false
+      // Customer properties
+      let customerMatch = false
+      if (order.customerId && typeof order.customerId === 'object') {
+        const c = order.customerId
+        customerMatch =
+          (c.fullName?.toLowerCase().includes(q) ?? false) ||
+          (c.email?.toLowerCase().includes(q) ?? false) ||
+          (c.phone?.includes(q) ?? false)
+      } else if (typeof order.customerId === 'string') {
+        customerMatch = order.customerId.toLowerCase().includes(q)
+      }
 
-    // Customer properties
-    let customerMatch = false
-    if (order.customerId && typeof order.customerId === 'object') {
-      const c = order.customerId
-      customerMatch =
-        (c.fullName?.toLowerCase().includes(q) ?? false) ||
-        (c.email?.toLowerCase().includes(q) ?? false) ||
-        (c.phone?.includes(q) ?? false)
-    } else if (typeof order.customerId === 'string') {
-      customerMatch = order.customerId.toLowerCase().includes(q)
+      // Delivery address / note
+      const addressMatch = order.deliveryAddress?.toLowerCase().includes(q) ?? false
+
+      if (!(codeMatch || customerMatch || addressMatch)) return false
     }
-
-    // Delivery address / note
-    const addressMatch = order.deliveryAddress?.toLowerCase().includes(q) ?? false
-
-    return codeMatch || customerMatch || addressMatch
+    
+    // Date range filter
+    if (startDate || endDate) {
+      const orderDate = new Date(order.createdAt)
+      if (startDate && orderDate < new Date(startDate)) return false
+      if (endDate) {
+        const endDateTime = new Date(endDate)
+        endDateTime.setHours(23, 59, 59, 999)
+        if (orderDate > endDateTime) return false
+      }
+    }
+    
+    return true
   })
+  
+  // Export to CSV function
+  const exportToCSV = () => {
+    const headers = ['Mã đơn', 'Khách hàng', 'Ngày đặt', 'Chi nhánh', 'Tổng tiền', 'Trạng thái']
+    const rows = filteredOrders.map(order => {
+      const customerName = order.customerId && typeof order.customerId === 'object' 
+        ? order.customerId.fullName 
+        : 'Khách vãng lai'
+      const branchName = order.branchId && typeof order.branchId === 'object'
+        ? order.branchId.name
+        : 'Mặc định'
+      
+      return [
+        order.code,
+        customerName,
+        formatDate(order.createdAt),
+        branchName,
+        order.totalAmount,
+        getStatusConfig(order.status).text
+      ]
+    })
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n')
+    
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `orders_${new Date().toISOString().split('T')[0]}.csv`
+    link.click()
+  }
 
   // Open detail modal helper
   const handleOpenDetails = (order: AdminOrder) => {
     setSelectedOrder(order)
   }
+  
+  // Calculate statistics
+  const statistics = useMemo(() => {
+    const total = filteredOrders.length
+    const pending = filteredOrders.filter(o => o.status === 'pending').length
+    const confirmed = filteredOrders.filter(o => o.status === 'confirmed').length
+    const delivering = filteredOrders.filter(o => o.status === 'delivering').length
+    const delivered = filteredOrders.filter(o => o.status === 'delivered').length
+    const cancelled = filteredOrders.filter(o => o.status === 'cancelled').length
+    const totalRevenue = filteredOrders
+      .filter(o => o.status === 'delivered')
+      .reduce((sum, o) => sum + o.totalAmount, 0)
+    const pendingRevenue = filteredOrders
+      .filter(o => ['pending', 'confirmed', 'preparing', 'delivering'].includes(o.status))
+      .reduce((sum, o) => sum + o.totalAmount, 0)
+    
+    return {
+      total,
+      pending,
+      confirmed,
+      delivering,
+      delivered,
+      cancelled,
+      totalRevenue,
+      pendingRevenue,
+    }
+  }, [filteredOrders])
 
   return (
     <div className="space-y-6">
@@ -271,82 +368,236 @@ export const ManageOrdersPage = () => {
             Duyệt đơn, theo dõi lộ trình và cập nhật trạng thái đơn hàng của khách hàng.
           </p>
         </div>
+        
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              fetchFilteredOrders()
+            }}
+            disabled={loading}
+            className="flex items-center gap-2 rounded-lg bg-surface-container-low border border-outline px-4 py-2 text-sm font-bold hover:bg-surface-container-high transition-colors disabled:opacity-50"
+          >
+            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+            Làm mới
+          </button>
+          
+          <button
+            onClick={() => setAutoRefresh(!autoRefresh)}
+            className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-bold transition-colors ${
+              autoRefresh 
+                ? 'bg-primary text-white border-primary' 
+                : 'bg-surface-container-low border-outline hover:bg-surface-container-high'
+            }`}
+          >
+            <Clock size={16} />
+            {autoRefresh ? 'Tự động: Bật' : 'Tự động: Tắt'}
+          </button>
+          
+          <button
+            onClick={exportToCSV}
+            disabled={filteredOrders.length === 0}
+            className="flex items-center gap-2 rounded-lg bg-surface-container-low border border-outline px-4 py-2 text-sm font-bold hover:bg-surface-container-high transition-colors disabled:opacity-50"
+          >
+            <Download size={16} />
+            Xuất Excel
+          </button>
+        </div>
+      </div>
+      
+      {/* ── STATISTICS CARDS ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="rounded-xl border border-outline-variant bg-gradient-to-br from-blue-50 to-blue-100/50 p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-blue-700">
+                Tổng đơn hàng
+              </p>
+              <p className="mt-1 text-2xl font-black text-blue-900">{statistics.total}</p>
+            </div>
+            <div className="rounded-full bg-blue-200 p-3">
+              <ShoppingCart size={24} className="text-blue-700" />
+            </div>
+          </div>
+        </div>
+        
+        <div className="rounded-xl border border-outline-variant bg-gradient-to-br from-amber-50 to-amber-100/50 p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-amber-700">
+                Chờ xác nhận
+              </p>
+              <p className="mt-1 text-2xl font-black text-amber-900">{statistics.pending}</p>
+            </div>
+            <div className="rounded-full bg-amber-200 p-3">
+              <Clock size={24} className="text-amber-700" />
+            </div>
+          </div>
+        </div>
+        
+        <div className="rounded-xl border border-outline-variant bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-emerald-700">
+                Đã giao hàng
+              </p>
+              <p className="mt-1 text-2xl font-black text-emerald-900">{statistics.delivered}</p>
+            </div>
+            <div className="rounded-full bg-emerald-200 p-3">
+              <CheckCircle2 size={24} className="text-emerald-700" />
+            </div>
+          </div>
+        </div>
+        
+        <div className="rounded-xl border border-outline-variant bg-gradient-to-br from-purple-50 to-purple-100/50 p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-purple-700">
+                Doanh thu
+              </p>
+              <p className="mt-1 text-lg font-black text-purple-900">{formatVND(statistics.totalRevenue)}</p>
+            </div>
+            <div className="rounded-full bg-purple-200 p-3">
+              <TrendingUp size={24} className="text-purple-700" />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* ── FILTER BAR ── */}
-      <div className="grid grid-cols-1 gap-4 rounded-2xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm sm:grid-cols-3">
-        {/* Branch filter */}
-        <div className="relative">
-          <label
-            htmlFor="filter-branch"
-            className="absolute -top-2 left-3 bg-surface-container-lowest px-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant"
-          >
-            Lọc theo chi nhánh
-          </label>
-          <div className="flex items-center">
-            <Building2 size={16} className="absolute left-3 text-on-surface-variant opacity-60" />
-            <select
-              id="filter-branch"
-              value={selectedBranch}
-              onChange={(e) => setSelectedBranch(e.target.value)}
-              className="w-full rounded-lg border border-outline bg-transparent py-2.5 pl-10 pr-3 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 gap-4 rounded-2xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm sm:grid-cols-3">
+          {/* Branch filter */}
+          <div className="relative">
+            <label
+              htmlFor="filter-branch"
+              className="absolute -top-2 left-3 bg-surface-container-lowest px-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant"
             >
-              <option value="">Tất cả chi nhánh</option>
-              {branches.map((b) => (
-                <option key={b._id} value={b._id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
+              Lọc theo chi nhánh
+            </label>
+            <div className="flex items-center">
+              <Building2 size={16} className="absolute left-3 text-on-surface-variant opacity-60" />
+              <select
+                id="filter-branch"
+                value={selectedBranch}
+                onChange={(e) => setSelectedBranch(e.target.value)}
+                className="w-full rounded-lg border border-outline bg-transparent py-2.5 pl-10 pr-3 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
+              >
+                <option value="">Tất cả chi nhánh</option>
+                {branches.map((b) => (
+                  <option key={b._id} value={b._id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Status filter */}
+          <div className="relative">
+            <label
+              htmlFor="filter-status"
+              className="absolute -top-2 left-3 bg-surface-container-lowest px-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant"
+            >
+              Lọc trạng thái đơn
+            </label>
+            <div className="flex items-center">
+              <Clock size={16} className="absolute left-3 text-on-surface-variant opacity-60" />
+              <select
+                id="filter-status"
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className="w-full rounded-lg border border-outline bg-transparent py-2.5 pl-10 pr-3 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
+              >
+                <option value="">Tất cả trạng thái</option>
+                <option value="pending">Chờ xác nhận (Pending)</option>
+                <option value="confirmed">Đã xác nhận (Confirmed)</option>
+                <option value="preparing">Đang chuẩn bị (Preparing)</option>
+                <option value="delivering">Đang giao hàng (Delivering)</option>
+                <option value="delivered">Đã giao hàng (Delivered)</option>
+                <option value="cancelled">Đã hủy (Cancelled)</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Text search */}
+          <div className="relative">
+            <label
+              htmlFor="search-orders"
+              className="absolute -top-2 left-3 bg-surface-container-lowest px-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant"
+            >
+              Tìm kiếm nhanh
+            </label>
+            <div className="relative flex items-center">
+              <Search size={16} className="absolute left-3 text-on-surface-variant opacity-60" />
+              <input
+                id="search-orders"
+                type="text"
+                placeholder="Nhập mã đơn, tên, sđt khách hàng..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-lg border border-outline bg-transparent py-2.5 pl-10 pr-3 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
+              />
+            </div>
           </div>
         </div>
-
-        {/* Status filter */}
-        <div className="relative">
-          <label
-            htmlFor="filter-status"
-            className="absolute -top-2 left-3 bg-surface-container-lowest px-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant"
+        
+        {/* Date Range Filter - Collapsible */}
+        <div className="rounded-2xl border border-outline-variant bg-surface-container-lowest shadow-sm overflow-hidden">
+          <button
+            onClick={() => setShowDateFilter(!showDateFilter)}
+            className="w-full flex items-center justify-between p-4 hover:bg-surface-container-low transition-colors"
           >
-            Lọc trạng thái đơn
-          </label>
-          <div className="flex items-center">
-            <Clock size={16} className="absolute left-3 text-on-surface-variant opacity-60" />
-            <select
-              id="filter-status"
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full rounded-lg border border-outline bg-transparent py-2.5 pl-10 pr-3 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
-            >
-              <option value="">Tất cả trạng thái</option>
-              <option value="pending">Chờ xác nhận (Pending)</option>
-              <option value="confirmed">Đã xác nhận (Confirmed)</option>
-              <option value="preparing">Đang chuẩn bị (Preparing)</option>
-              <option value="delivering">Đang giao hàng (Delivering)</option>
-              <option value="delivered">Đã giao hàng (Delivered)</option>
-              <option value="cancelled">Đã hủy (Cancelled)</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Text search */}
-        <div className="relative">
-          <label
-            htmlFor="search-orders"
-            className="absolute -top-2 left-3 bg-surface-container-lowest px-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant"
-          >
-            Tìm kiếm nhanh
-          </label>
-          <div className="relative flex items-center">
-            <Search size={16} className="absolute left-3 text-on-surface-variant opacity-60" />
-            <input
-              id="search-orders"
-              type="text"
-              placeholder="Nhập mã đơn, tên, sđt khách hàng..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-outline bg-transparent py-2.5 pl-10 pr-3 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
-            />
-          </div>
+            <div className="flex items-center gap-2">
+              <Filter size={16} className="text-primary" />
+              <span className="text-sm font-bold text-on-surface">Lọc theo khoảng thời gian</span>
+              {(startDate || endDate) && (
+                <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                  Đang áp dụng
+                </span>
+              )}
+            </div>
+            <Calendar size={16} className={`text-on-surface-variant transition-transform ${showDateFilter ? 'rotate-180' : ''}`} />
+          </button>
+          
+          {showDateFilter && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 border-t border-outline-variant bg-surface-container-low/30">
+              <div className="relative">
+                <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">
+                  Từ ngày
+                </label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full rounded-lg border border-outline bg-transparent py-2 px-3 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
+                />
+              </div>
+              
+              <div className="relative">
+                <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">
+                  Đến ngày
+                </label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full rounded-lg border border-outline bg-transparent py-2 px-3 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
+                />
+              </div>
+              
+              <div className="flex items-end">
+                <button
+                  onClick={() => {
+                    setStartDate('')
+                    setEndDate('')
+                  }}
+                  className="w-full rounded-lg border border-outline bg-surface-container-low px-4 py-2 text-sm font-bold hover:bg-surface-container-high transition-colors"
+                >
+                  Xóa bộ lọc
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
