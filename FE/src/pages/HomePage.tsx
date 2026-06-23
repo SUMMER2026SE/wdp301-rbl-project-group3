@@ -63,27 +63,6 @@ const productImageMap: Record<string, string> = {
   'Fresh Whole Sea Bass': '/assets/winmart/sea-bass.png',
 }
 
-type FlashSaleProduct = {
-  discount: string
-  image: string
-  alt: string
-  title: string
-  unit: string
-  price: string
-  originalPrice: string
-}
-
-type RecommendedProduct = {
-  image: string
-  alt: string
-  rating: string
-  reviews: string
-  title: string
-  unit: string
-  price: string
-  hasFavorite?: boolean
-}
-
 type CountdownTime = {
   hours: string
   minutes: string
@@ -146,109 +125,8 @@ const categories: Category[] = [
   { icon: 'outdoor_grill', label: 'Cooking Essentials' },
 ]
 
-const flashSaleProducts: FlashSaleProduct[] = [
-  {
-    discount: '-25%',
-    image: '/assets/winmart/tomatoes.png',
-    alt: 'Fresh organic tomatoes on the vine',
-    title: 'Fresh Organic Tomato',
-    unit: '500g / box',
-    price: '30.000 đ',
-    originalPrice: '40.000 đ',
-  },
-  {
-    discount: '-15%',
-    image: '/assets/winmart/ribeye.png',
-    alt: 'Premium ribeye steak with rosemary',
-    title: 'Premium Ribeye Steak',
-    unit: '300g / pack',
-    price: '210.000 đ',
-    originalPrice: '250.000 đ',
-  },
-  {
-    discount: '-40%',
-    image: '/assets/winmart/berries.png',
-    alt: 'Mixed berry bowl',
-    title: 'Mixed Berry Bowl',
-    unit: '250g / box',
-    price: '100.000 đ',
-    originalPrice: '170.000 đ',
-  },
-  {
-    discount: '-10%',
-    image: '/assets/winmart/milk.png',
-    alt: 'Whole organic milk bottle',
-    title: 'Whole Organic Milk',
-    unit: '1L / bottle',
-    price: '50.000 đ',
-    originalPrice: '55.000 đ',
-  },
-  {
-    discount: '-20%',
-    image: '/assets/winmart/sourdough.png',
-    alt: 'Artisan sourdough loaf',
-    title: 'Artisan Sourdough',
-    unit: '450g / loaf',
-    price: '90.000 đ',
-    originalPrice: '110.000 đ',
-  },
-]
-
-const recommendedProducts: RecommendedProduct[] = [
-  {
-    image: '/assets/winmart/carrots.png',
-    alt: 'Organic carrots with green tops',
-    rating: '4.8',
-    reviews: '120',
-    title: 'Organic Bunch Carrots',
-    unit: '/ kg',
-    price: '60.000 đ',
-    hasFavorite: true,
-  },
-  {
-    image: '/assets/winmart/sparkling-water.png',
-    alt: 'Sparkling water bottle on ice',
-    rating: '4.9',
-    reviews: '85',
-    title: 'Pure Alpine Sparkle',
-    unit: '750ml / bottle',
-    price: '50.000 đ',
-  },
-  {
-    image: '/assets/winmart/asparagus.png',
-    alt: 'Fresh green asparagus bunch',
-    rating: '4.7',
-    reviews: '240',
-    title: 'Young Green Asparagus',
-    unit: '250g / bunch',
-    price: '90.000 đ',
-  },
-  {
-    image: '/assets/winmart/greek-yogurt.png',
-    alt: 'Greek yogurt with honey and walnuts',
-    rating: '4.9',
-    reviews: '310',
-    title: 'Velvet Greek Yogurt',
-    unit: '500g / tub',
-    price: '100.000 đ',
-  },
-  {
-    image: '/assets/winmart/sea-bass.png',
-    alt: 'Fresh whole sea bass on ice',
-    rating: '5.0',
-    reviews: '42',
-    title: 'Fresh Whole Sea Bass',
-    unit: '/ kg',
-    price: '310.000 đ',
-  },
-]
-
-const filterTabs = ['All', 'Fresh Food', 'Drinks', 'Snacks']
-
 const heroImage = '/assets/winmart/hero-market.png'
-
 const citrusImage = '/assets/winmart/citrus.png'
-
 const bbqImage = '/assets/winmart/bbq.png'
 
 
@@ -311,15 +189,21 @@ const formatVND = (num: number) => {
 }
 
 const FlashSaleCard = ({ product, onAddToCart }: { product: any; onAddToCart?: () => void }) => {
-  const isDbProduct = '_id' in product
-  const title = isDbProduct ? product.productName : product.title
-  const price = isDbProduct ? formatVND(product.price) : product.price
-  const originalPrice = isDbProduct ? formatVND(product.price * 1.25) : product.originalPrice
-  const discount = isDbProduct ? '-20%' : product.discount
-  const unit = isDbProduct ? (product.unit || 'unit') : product.unit
-  const image = isDbProduct
-    ? (product.imageUrl || productImageMap[title] || '/assets/winmart/tomatoes.png')
-    : product.image
+  const title = product.productName || product.name
+  
+  // 🔍 DEBUG: Log product data
+  console.log('FlashSaleCard - Product data:', {
+    title,
+    price: product.price,
+    salePrice: product.salePrice,
+    fullProduct: product
+  })
+  
+  const price = formatVND(product.salePrice || product.price || 0)
+  const originalPrice = formatVND((product.salePrice || product.price || 0) * 1.25)
+  const discount = '-20%'
+  const unit = product.unit || 'unit'
+  const image = product.imageUrl || productImageMap[title] || '/assets/winmart/tomatoes.png'
 
   return (
     <article className="bg-surface-container-lowest rounded-xl p-4 soft-lift group hover:scale-[0.98] transition-all cursor-pointer relative border border-transparent hover:border-primary/20">
@@ -359,16 +243,13 @@ const FlashSaleCard = ({ product, onAddToCart }: { product: any; onAddToCart?: (
 }
 
 const RecommendedCard = ({ product, onAddToCart }: { product: any; onAddToCart?: () => void }) => {
-  const isDbProduct = '_id' in product
-  const title = isDbProduct ? product.productName : product.title
-  const price = isDbProduct ? formatVND(product.price) : product.price
-  const unit = isDbProduct ? (product.unit || 'unit') : product.unit
-  const image = isDbProduct
-    ? (product.imageUrl || productImageMap[title] || '/assets/winmart/tomatoes.png')
-    : product.image
-  const rating = isDbProduct ? '4.8' : product.rating
-  const reviews = isDbProduct ? '15' : product.reviews
-  const hasFavorite = isDbProduct ? true : product.hasFavorite
+  const title = product.productName || product.name
+  const price = formatVND(product.salePrice || product.price || 0)
+  const unit = product.unit || 'unit'
+  const image = product.imageUrl || productImageMap[title] || '/assets/winmart/tomatoes.png'
+  const rating = '4.8'
+  const reviews = '15'
+  const hasFavorite = true
 
   return (
     <article className="bg-surface-container-lowest rounded-xl p-4 soft-lift border border-transparent hover:border-primary/20 group transition-all">
@@ -514,23 +395,15 @@ export const HomePage = () => {
   const filteredRecommendedProducts = useMemo(() => {
     if (hasLoadedProducts && dbProducts.length === 0) return []
 
-    if (selectedCategory === 'All') return dbProducts.length > 0 ? dbProducts : recommendedProducts
+    if (selectedCategory === 'All') return dbProducts
 
     if (typeof selectedCategory === 'object' && selectedCategory !== null) {
       return dbProducts.filter((product) => product.categoryId === selectedCategory._id)
     }
 
     const keywords = getCategoryKeywords(selectedCategory)
-    const filteredDb = dbProducts.filter((product) => {
+    return dbProducts.filter((product) => {
       const name = (product.productName || product.name || '').toLowerCase()
-      return keywords.some((kw) => name.includes(kw))
-    })
-
-    if (filteredDb.length > 0) return filteredDb
-
-    // Fallback filter on recommendedProducts
-    return recommendedProducts.filter((product) => {
-      const name = product.title.toLowerCase()
       return keywords.some((kw) => name.includes(kw))
     })
   }, [dbProducts, selectedCategory, hasLoadedProducts])
@@ -829,26 +702,20 @@ export const HomePage = () => {
                 <p className="text-sm font-bold">Không có sản phẩm Flash Sale nào tại chi nhánh này</p>
               </div>
             ) : (
-              (dbProducts.length > 0 ? dbProducts.slice(0, 5) : flashSaleProducts).map((product) => {
-                const isDbProduct = '_id' in product
-                const actualProduct = isDbProduct ? product : dbProducts.find((p) => p.productName === product.title)
+              dbProducts.slice(0, 5).map((product) => {
                 return (
                   <FlashSaleCard
-                    key={isDbProduct ? product._id : product.title}
+                    key={product._id}
                     product={product}
                     onAddToCart={async () => {
                       if (!isAuthenticated) {
                         navigate('/login')
                         return
                       }
-                      if (actualProduct) {
-                        try {
-                          await addToCart(actualProduct._id, 1)
-                        } catch (err: any) {
-                          alert(err.message || 'Failed to add to cart')
-                        }
-                      } else {
-                        alert('Product not available in database!')
+                      try {
+                        await addToCart(product._id, 1)
+                      } catch (err: any) {
+                        alert(err.message || 'Failed to add to cart')
                       }
                     }}
                   />
@@ -901,24 +768,8 @@ export const HomePage = () => {
         </section>
 
         <section className="mt-stack-lg">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+          <div className="mb-8">
             <h2 className="font-headline-md text-headline-md">Recommended for You</h2>
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {filterTabs.map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setSelectedCategory(tab)}
-                  className={
-                    selectedCategory === tab
-                      ? 'px-6 py-2 rounded-full bg-primary text-white font-bold text-label-lg transition-all'
-                      : 'px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant font-bold text-label-lg hover:bg-primary-container/20 hover:text-primary transition-all'
-                  }
-                  type="button"
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-gutter-md">
@@ -928,25 +779,19 @@ export const HomePage = () => {
               </div>
             ) : (
               filteredRecommendedProducts.map((product) => {
-                const isDbProduct = '_id' in product
-                const actualProduct = isDbProduct ? product : dbProducts.find((p) => p.productName === product.title)
                 return (
                   <RecommendedCard
-                    key={isDbProduct ? product._id : product.title}
+                    key={product._id}
                     product={product}
                     onAddToCart={async () => {
                       if (!isAuthenticated) {
                         navigate('/login')
                         return
                       }
-                      if (actualProduct) {
-                        try {
-                          await addToCart(actualProduct._id, 1)
-                        } catch (err: any) {
-                          alert(err.message || 'Failed to add to cart')
-                        }
-                      } else {
-                        alert('Product not available in database!')
+                      try {
+                        await addToCart(product._id, 1)
+                      } catch (err: any) {
+                        alert(err.message || 'Failed to add to cart')
                       }
                     }}
                   />
@@ -1140,7 +985,7 @@ export const HomePage = () => {
                   </div>
                 ) : (
                   cart.items.map((item) => {
-                    const image = productImageMap[item.product.name] || '/assets/winmart/tomatoes.png'
+                    const image = (item.product as any).imageUrl || productImageMap[item.product.name] || '/assets/winmart/tomatoes.png'
                     return (
                       <div
                         key={item.itemId}
@@ -1155,7 +1000,7 @@ export const HomePage = () => {
                             <p className="text-label-md text-on-surface-variant">{item.product.unit}</p>
                           )}
                           <p className="text-primary font-bold text-body-md mt-1">
-                            ${item.product.price.toFixed(2)}
+                            {formatVND(item.product.price)}
                           </p>
                         </div>
                         <div className="flex flex-col items-end gap-2">
@@ -1224,7 +1069,7 @@ export const HomePage = () => {
                 <div className="px-6 py-5 border-t border-outline-variant bg-surface-container-low space-y-4">
                   <div className="flex justify-between items-center text-body-lg font-bold">
                     <span>Total Amount</span>
-                    <span className="text-primary text-headline-sm">${cart.totalAmount.toFixed(2)}</span>
+                    <span className="text-primary text-headline-sm">{formatVND(cart.totalAmount)}</span>
                   </div>
                   <button
                     onClick={() => {

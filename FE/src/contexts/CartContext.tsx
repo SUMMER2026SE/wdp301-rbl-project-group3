@@ -30,7 +30,20 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true)
       setError(null)
-      const response = await cartService.getCart()
+      
+      // Get branchId from localStorage
+      let branchId: string | undefined
+      const savedBranchStr = localStorage.getItem('selectedBranch')
+      if (savedBranchStr) {
+        try {
+          const branch = JSON.parse(savedBranchStr)
+          branchId = branch._id
+        } catch (e) {
+          console.error('Failed to parse selectedBranch:', e)
+        }
+      }
+      
+      const response = await cartService.getCart(branchId)
       if (response.success) {
         setCart(response.data)
       } else {
@@ -52,7 +65,20 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true)
       setError(null)
-      const response = await cartService.addToCart(productId, quantity)
+      
+      // Get branchId from localStorage
+      let branchId: string | undefined
+      const savedBranchStr = localStorage.getItem('selectedBranch')
+      if (savedBranchStr) {
+        try {
+          const branch = JSON.parse(savedBranchStr)
+          branchId = branch._id
+        } catch (e) {
+          console.error('Failed to parse selectedBranch:', e)
+        }
+      }
+      
+      const response = await cartService.addToCart(productId, quantity, branchId)
       if (response.success) {
         setCart(response.data)
       } else {
@@ -71,7 +97,20 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true)
       setError(null)
-      const response = await cartService.updateItem(itemId, quantity)
+      
+      // Get branchId from localStorage
+      let branchId: string | undefined
+      const savedBranchStr = localStorage.getItem('selectedBranch')
+      if (savedBranchStr) {
+        try {
+          const branch = JSON.parse(savedBranchStr)
+          branchId = branch._id
+        } catch (e) {
+          console.error('Failed to parse selectedBranch:', e)
+        }
+      }
+      
+      const response = await cartService.updateItem(itemId, quantity, branchId)
       if (response.success) {
         setCart(response.data)
       } else {
@@ -90,7 +129,20 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true)
       setError(null)
-      const response = await cartService.removeItem(itemId)
+      
+      // Get branchId from localStorage
+      let branchId: string | undefined
+      const savedBranchStr = localStorage.getItem('selectedBranch')
+      if (savedBranchStr) {
+        try {
+          const branch = JSON.parse(savedBranchStr)
+          branchId = branch._id
+        } catch (e) {
+          console.error('Failed to parse selectedBranch:', e)
+        }
+      }
+      
+      const response = await cartService.removeItem(itemId, branchId)
       if (response.success) {
         setCart(response.data)
       } else {

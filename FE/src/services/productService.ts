@@ -11,7 +11,7 @@ export const productService = {
     const normalized: Product[] = rawList.map((p: any) => ({
       ...p,
       productName: p.productName || p.name || 'Unnamed Product',
-      price: p.price ?? p.salePrice ?? 0,
+      price: p.salePrice ?? p.price ?? 0, // ✅ Ưu tiên salePrice trước!
     }))
     return {
       success: raw.success,
@@ -59,7 +59,7 @@ export const productService = {
       raw.data.product = {
         ...p,
         productName: p.productName || p.name || 'Unnamed Product',
-        price: p.price ?? p.salePrice ?? 0,
+        price: p.salePrice ?? p.price ?? 0, // ✅ Ưu tiên salePrice trước!
       }
     }
     return raw
@@ -106,7 +106,7 @@ export const productService = {
       raw.data.product = {
         ...p,
         productName: p.productName || p.name || 'Unnamed Product',
-        price: p.price ?? p.salePrice ?? 0,
+        price: p.salePrice ?? p.price ?? 0, // ✅ Ưu tiên salePrice trước!
       }
     }
     return raw
