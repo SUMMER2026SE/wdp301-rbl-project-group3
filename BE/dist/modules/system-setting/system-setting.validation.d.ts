@@ -10,8 +10,8 @@ export declare const listSettingsSchema: z.ZodObject<{
         page: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
         limit: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
         group: z.ZodOptional<z.ZodEnum<{
-            general: "general";
             order: "order";
+            general: "general";
             delivery: "delivery";
             inventory: "inventory";
             payment: "payment";
@@ -29,8 +29,8 @@ export declare const createSettingSchema: z.ZodObject<{
         key: z.ZodString;
         label: z.ZodString;
         group: z.ZodEnum<{
-            general: "general";
             order: "order";
+            general: "general";
             delivery: "delivery";
             inventory: "inventory";
             payment: "payment";
@@ -53,8 +53,8 @@ export declare const updateSettingSchema: z.ZodObject<{
     body: z.ZodObject<{
         label: z.ZodOptional<z.ZodString>;
         group: z.ZodOptional<z.ZodEnum<{
-            general: "general";
             order: "order";
+            general: "general";
             delivery: "delivery";
             inventory: "inventory";
             payment: "payment";
@@ -68,6 +68,14 @@ export declare const updateSettingSchema: z.ZodObject<{
         }>>;
         description: z.ZodOptional<z.ZodString>;
         isPublic: z.ZodOptional<z.ZodBoolean>;
+    }, z.core.$strip>;
+}, z.core.$strip>;
+export declare const bulkUpdateSettingsSchema: z.ZodObject<{
+    body: z.ZodObject<{
+        settings: z.ZodArray<z.ZodObject<{
+            key: z.ZodString;
+            value: z.ZodUnion<readonly [z.ZodString, z.ZodNumber, z.ZodBoolean]>;
+        }, z.core.$strip>>;
     }, z.core.$strip>;
 }, z.core.$strip>;
 export { validate };

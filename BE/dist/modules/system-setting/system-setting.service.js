@@ -65,6 +65,18 @@ class SystemSettingService {
             throw new errorHandler_middleware_1.AppError('Setting not found', 404);
         return toSettingResponse(setting);
     }
+    async getSettingsByGroup() {
+        await this.ensureDefaultSettings();
+        const settings = await system_setting_repository_1.systemSettingRepository.findAll();
+        const grouped = settings.reduce((acc, setting) => {
+            const response = toSettingResponse(setting);
+            if (!acc[setting.group])
+                acc[setting.group] = [];
+            acc[setting.group].push(response);
+            return acc;
+        }, {});
+        return { groups: grouped };
+    }
     async createSetting(data, adminUserId) {
         assertValueMatchesType(data.value, data.valueType);
         const existing = await system_setting_repository_1.systemSettingRepository.findByKey(data.key);
@@ -96,6 +108,28 @@ class SystemSettingService {
         if (!updated)
             throw new errorHandler_middleware_1.AppError('Setting not found', 404);
         return toSettingResponse(updated);
+    }
+    async bulkUpdateSettings(items, adminUserId) {
+        const updated = [];
+        const notFound = [];
+        for (const item of items) {
+            const setting = await system_setting_repository_1.systemSettingRepository.findByKey(item.key);
+            if (!setting) {
+                notFound.push(item.key);
+                continue;
+            }
+            assertValueMatchesType(item.value, setting.valueType);
+            const result = await system_setting_repository_1.systemSettingRepository.updateByKey(item.key, {
+                value: item.value,
+                updatedBy: new mongoose_1.Types.ObjectId(adminUserId),
+            });
+            if (result)
+                updated.push(toSettingResponse(result));
+        }
+        if (notFound.length > 0) {
+            throw new errorHandler_middleware_1.AppError(`Settings not found: ${notFound.join(', ')}`, 404);
+        }
+        return { settings: updated };
     }
     async deleteSetting(key) {
         const setting = await system_setting_repository_1.systemSettingRepository.findByKey(key);

@@ -20,6 +20,10 @@ class SystemSettingController {
             const settings = await system_setting_service_1.systemSettingService.getPublicSettings();
             (0, response_util_1.sendSuccess)(res, { settings }, 'Public settings retrieved');
         });
+        this.getByGroup = (0, asyncHandler_1.asyncHandler)(async (_req, res) => {
+            const result = await system_setting_service_1.systemSettingService.getSettingsByGroup();
+            (0, response_util_1.sendSuccess)(res, result, 'Settings retrieved');
+        });
         this.getByKey = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
             const setting = await system_setting_service_1.systemSettingService.getSettingByKey(String(req.params.key));
             (0, response_util_1.sendSuccess)(res, { setting }, 'Setting retrieved');
@@ -41,6 +45,15 @@ class SystemSettingController {
             });
             const setting = await system_setting_service_1.systemSettingService.updateSetting(params.key, body, req.user.userId);
             (0, response_util_1.sendSuccess)(res, { setting }, 'Setting updated');
+        });
+        this.bulkUpdate = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
+            const { body } = system_setting_validation_1.bulkUpdateSettingsSchema.parse({
+                query: req.query,
+                body: req.body,
+                params: req.params,
+            });
+            const result = await system_setting_service_1.systemSettingService.bulkUpdateSettings(body.settings, req.user.userId);
+            (0, response_util_1.sendSuccess)(res, result, 'Settings updated');
         });
         this.delete = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
             const setting = await system_setting_service_1.systemSettingService.deleteSetting(String(req.params.key));

@@ -23,5 +23,19 @@ export declare const listUsersSchema: z.ZodObject<{
         }>>;
     }, z.core.$strip>;
 }, z.core.$strip>;
+export declare const changeRoleSchema: z.ZodObject<{
+    params: z.ZodObject<{
+        id: z.ZodString;
+    }, z.core.$strip>;
+    body: z.ZodObject<{
+        role: z.ZodEnum<{
+            admin: "admin";
+            branch_manager: "branch_manager";
+            staff: "staff";
+            customer: "customer";
+        }>;
+        branchId: z.ZodOptional<z.ZodString>;
+    }, z.core.$strip>;
+}, z.core.$strip>;
 export { validate };
 //# sourceMappingURL=admin-user.validation.d.ts.map

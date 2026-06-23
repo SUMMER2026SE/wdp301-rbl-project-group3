@@ -12,5 +12,6 @@ router.use((0, role_middleware_1.authorize)(...adminRoles));
 router.get('/', (0, admin_user_validation_1.validate)(admin_user_validation_1.listUsersSchema), admin_user_controller_1.adminUserController.list);
 router.patch('/:id/lock', (0, admin_user_validation_1.validate)(admin_user_validation_1.userIdParamSchema), admin_user_controller_1.adminUserController.lock);
 router.patch('/:id/unlock', (0, admin_user_validation_1.validate)(admin_user_validation_1.userIdParamSchema), admin_user_controller_1.adminUserController.unlock);
+router.patch('/:id/role', (0, admin_user_validation_1.validate)(admin_user_validation_1.changeRoleSchema), admin_user_controller_1.adminUserController.changeRole);
 exports.default = router;
 //# sourceMappingURL=admin-user.routes.js.map

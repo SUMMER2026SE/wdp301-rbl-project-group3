@@ -3,7 +3,7 @@ import type { ApiResponse, Product } from '@/types'
 
 export const productService = {
   // Get products (active or all, filterable by keyword)
-  getProducts: async (params?: { keyword?: string; status?: string; page?: number; limit?: number }): Promise<ApiResponse<Product[]> & { pagination?: any }> => {
+  getProducts: async (params?: { keyword?: string; status?: string; page?: number; limit?: number; branchId?: string }): Promise<ApiResponse<Product[]> & { pagination?: any }> => {
     const response = await apiClient.get('/api/products', { params })
     const raw = response.data
     // BE wraps array inside: { success, data: { products: [...] } }

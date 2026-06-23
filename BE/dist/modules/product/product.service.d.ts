@@ -7,6 +7,7 @@ export interface ListProductsQuery {
     categoryId?: string;
     minPrice?: number;
     maxPrice?: number;
+    branchId?: string;
 }
 export interface ListProductsResult {
     products: IProduct[];

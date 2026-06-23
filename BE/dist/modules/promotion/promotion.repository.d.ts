@@ -47,7 +47,7 @@ export declare class PromotionRepository {
         total: number;
     }>;
     updateVoucherStatus(id: string, status: VoucherStatus): Promise<IVoucher | null>;
-    markVoucherUsed(id: string, userId: string): Promise<IVoucher | null>;
+    markVoucherUsedWithOrder(id: string, userId: string, orderId: string): Promise<IVoucher | null>;
     disableManyVouchersByPromotion(promotionId: string): Promise<void>;
     countActiveVouchersByPromotion(promotionId: string): Promise<number>;
 }

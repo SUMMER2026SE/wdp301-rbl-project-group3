@@ -22,6 +22,7 @@ export const listProductsSchema = z
       categoryId: objectId.optional(),
       minPrice: z.coerce.number().min(0).optional(),
       maxPrice: z.coerce.number().min(0).optional(),
+      branchId: objectId.optional(),
     }),
   })
   .refine(

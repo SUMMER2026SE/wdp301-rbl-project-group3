@@ -45,6 +45,21 @@ export declare class SystemSettingService {
         createdAt: Date;
         updatedAt: Date;
     }>;
+    getSettingsByGroup(): Promise<{
+        groups: Record<string, {
+            id: string;
+            key: string;
+            label: string;
+            group: import("../../models/system-setting.model").SettingGroup;
+            value: string | number | boolean;
+            valueType: SettingValueType;
+            description: string | undefined;
+            isPublic: boolean;
+            updatedBy: string | undefined;
+            createdAt: Date;
+            updatedAt: Date;
+        }[]>;
+    }>;
     createSetting(data: {
         key: string;
         label: string;
@@ -85,6 +100,24 @@ export declare class SystemSettingService {
         updatedBy: string | undefined;
         createdAt: Date;
         updatedAt: Date;
+    }>;
+    bulkUpdateSettings(items: {
+        key: string;
+        value: string | number | boolean;
+    }[], adminUserId: string): Promise<{
+        settings: {
+            id: string;
+            key: string;
+            label: string;
+            group: import("../../models/system-setting.model").SettingGroup;
+            value: string | number | boolean;
+            valueType: SettingValueType;
+            description: string | undefined;
+            isPublic: boolean;
+            updatedBy: string | undefined;
+            createdAt: Date;
+            updatedAt: Date;
+        }[];
     }>;
     deleteSetting(key: string): Promise<{
         id: string;

@@ -17,6 +17,7 @@ export declare class SystemSettingRepository {
     create(data: Partial<ISystemSetting>): Promise<ISystemSetting>;
     findPaginated(filters: SettingListFilters, page: number, limit: number): Promise<PaginatedSettings>;
     findAllPublic(): Promise<ISystemSetting[]>;
+    findAll(): Promise<ISystemSetting[]>;
     findByKey(key: string): Promise<ISystemSetting | null>;
     updateByKey(key: string, data: Partial<ISystemSetting>): Promise<ISystemSetting | null>;
     deleteByKey(key: string): Promise<ISystemSetting | null>;

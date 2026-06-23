@@ -5,6 +5,7 @@ export interface ProductListFilters {
     categoryId?: string;
     minPrice?: number;
     maxPrice?: number;
+    branchId?: string;
 }
 export interface PaginatedProducts {
     items: IProduct[];

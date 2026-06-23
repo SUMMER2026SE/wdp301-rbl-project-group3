@@ -17,6 +17,7 @@ export declare const listProductsSchema: z.ZodObject<{
         categoryId: z.ZodOptional<z.ZodString>;
         minPrice: z.ZodOptional<z.ZodCoercedNumber<unknown>>;
         maxPrice: z.ZodOptional<z.ZodCoercedNumber<unknown>>;
+        branchId: z.ZodOptional<z.ZodString>;
     }, z.core.$strip>;
 }, z.core.$strip>;
 export declare const createProductSchema: z.ZodObject<{

@@ -47,6 +47,21 @@ class AdminUserRepository {
             .select(userListProjection)
             .exec();
     }
+    async updateRoleById(id, role, branchId) {
+        const update = {
+            $set: { role },
+            $inc: { refreshTokenVersion: 1 },
+        };
+        if (branchId === null) {
+            update.$unset = { branchId: '' };
+        }
+        else if (branchId) {
+            update.$set.branchId = branchId;
+        }
+        return user_model_1.User.findByIdAndUpdate(id, update, { new: true, runValidators: true })
+            .select(userListProjection)
+            .exec();
+    }
 }
 exports.AdminUserRepository = AdminUserRepository;
 exports.adminUserRepository = new AdminUserRepository();

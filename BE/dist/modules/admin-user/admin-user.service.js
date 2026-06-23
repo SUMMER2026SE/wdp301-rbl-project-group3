@@ -1,7 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.adminUserService = exports.AdminUserService = void 0;
+const mongoose_1 = require("mongoose");
 const errorHandler_middleware_1 = require("../../middlewares/errorHandler.middleware");
+const branch_service_1 = require("../branch/branch.service");
 const admin_user_repository_1 = require("./admin-user.repository");
 function toAdminUserResponse(user) {
     return {
@@ -52,6 +54,33 @@ class AdminUserService {
         if (user.status === 'active')
             throw new errorHandler_middleware_1.AppError('User is already active', 400);
         const updated = await admin_user_repository_1.adminUserRepository.updateStatusById(targetUserId, 'active');
+        if (!updated)
+            throw new errorHandler_middleware_1.AppError('User not found', 404);
+        return toAdminUserResponse(updated);
+    }
+    async changeUserRole(targetUserId, adminUserId, data) {
+        if (targetUserId === adminUserId) {
+            throw new errorHandler_middleware_1.AppError('You cannot change your own role', 400);
+        }
+        const user = await admin_user_repository_1.adminUserRepository.findById(targetUserId);
+        if (!user)
+            throw new errorHandler_middleware_1.AppError('User not found', 404);
+        if (user.role === data.role) {
+            throw new errorHandler_middleware_1.AppError('User already has this role', 400);
+        }
+        const branchScopedRoles = ['branch_manager', 'staff'];
+        let branchObjectId;
+        if (branchScopedRoles.includes(data.role)) {
+            if (!data.branchId) {
+                throw new errorHandler_middleware_1.AppError('branchId is required for branch_manager and staff roles', 400);
+            }
+            await branch_service_1.branchService.getBranchById(data.branchId);
+            branchObjectId = new mongoose_1.Types.ObjectId(data.branchId);
+        }
+        else {
+            branchObjectId = null;
+        }
+        const updated = await admin_user_repository_1.adminUserRepository.updateRoleById(targetUserId, data.role, branchObjectId);
         if (!updated)
             throw new errorHandler_middleware_1.AppError('User not found', 404);
         return toAdminUserResponse(updated);

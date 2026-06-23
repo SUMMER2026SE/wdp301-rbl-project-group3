@@ -161,6 +161,97 @@ class OrderService {
         }
         return String(value);
     }
+    buildCustomerOrderResponse(order) {
+        const branch = order.branchId;
+        return {
+            orderId: order._id.toString(),
+            code: order.code,
+            status: order.status,
+            branch: branch?._id
+                ? {
+                    branchId: branch._id.toString(),
+                    name: branch.name,
+                    code: branch.code,
+                    address: branch.address,
+                    phone: branch.phone ?? null,
+                }
+                : { branchId: String(order.branchId) },
+            items: order.items.map((item) => {
+                const product = item.productId;
+                return {
+                    productId: product?._id?.toString() ?? String(item.productId ?? ''),
+                    productName: product?.name ?? '',
+                    sku: product?.sku ?? '',
+                    unit: product?.unit ?? '',
+                    imageUrl: product?.imageUrl ?? null,
+                    quantity: item.quantity ?? 0,
+                    unitPrice: item.unitPrice ?? 0,
+                    subtotal: item.subtotal ?? 0,
+                };
+            }),
+            totalAmount: order.totalAmount,
+            deliveryAddress: order.deliveryAddress ?? null,
+            note: order.note ?? null,
+            createdAt: order.createdAt,
+            updatedAt: order.updatedAt,
+        };
+    }
+    async getOrderHistory(customerId, page, limit, status) {
+        const validStatuses = [
+            'pending', 'confirmed', 'preparing', 'delivering', 'delivered', 'cancelled',
+        ];
+        if (status && !validStatuses.includes(status)) {
+            throw new errorHandler_middleware_1.AppError(`Invalid status. Valid values: ${validStatuses.join(', ')}`, 400);
+        }
+        const { orders, total } = await order_repository_1.orderRepository.findByCustomerId(customerId, page, limit, status);
+        const totalPages = Math.ceil(total / limit);
+        return {
+            orders: orders.map((o) => this.buildCustomerOrderResponse(o)),
+            pagination: {
+                total, page, limit, totalPages,
+                hasNextPage: page < totalPages,
+                hasPrevPage: page > 1,
+            },
+        };
+    }
+    async trackOrder(orderId, customerId) {
+        const order = await order_repository_1.orderRepository.findByIdAndCustomerId(orderId, customerId);
+        if (!order)
+            throw new errorHandler_middleware_1.AppError('Order not found', 404);
+        const trackingEvents = await order_repository_1.orderRepository.findTrackingByOrderId(orderId);
+        return {
+            order: this.buildCustomerOrderResponse(order),
+            tracking: trackingEvents.map((e) => ({
+                trackingId: e._id.toString(),
+                status: e.status,
+                location: e.location ?? null,
+                note: e.note ?? null,
+                timestamp: e.createdAt,
+            })),
+            currentStatus: order.status,
+        };
+    }
+    async getCustomerOrderById(orderId, customerId) {
+        const order = await order_repository_1.orderRepository.findByIdAndCustomerId(orderId, customerId);
+        if (!order)
+            throw new errorHandler_middleware_1.AppError('Order not found', 404);
+        return this.buildCustomerOrderResponse(order);
+    }
+    async cancelCustomerOrder(orderId, customerId, reason) {
+        const order = await order_repository_1.orderRepository.findByIdAndCustomerId(orderId, customerId);
+        if (!order)
+            throw new errorHandler_middleware_1.AppError('Order not found', 404);
+        if (order.status !== 'pending') {
+            throw new errorHandler_middleware_1.AppError(`Cannot cancel order with status "${order.status}". Only pending orders can be cancelled.`, 409);
+        }
+        const [updatedOrder] = await Promise.all([
+            order_repository_1.orderRepository.cancelByCustomer(orderId),
+            order_repository_1.orderRepository.addTrackingEvent(orderId, 'cancelled', reason ?? 'Cancelled by customer'),
+        ]);
+        if (!updatedOrder)
+            throw new errorHandler_middleware_1.AppError('Failed to cancel order', 500);
+        return this.buildCustomerOrderResponse(updatedOrder);
+    }
 }
 exports.OrderService = OrderService;
 exports.orderService = new OrderService();
