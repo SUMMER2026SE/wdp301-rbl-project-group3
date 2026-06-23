@@ -68,4 +68,35 @@ export const inventoryService = {
     const response = await apiClient.post('/api/inventory/import-receipts', data)
     return response.data
   },
+
+  // Manually add a product stock entry to branch inventory
+  createInventory: async (data: {
+    branchId: string
+    productId: string
+    quantity: number
+    averageCost: number
+    lowStockThreshold: number
+  }): Promise<ApiResponse<Inventory>> => {
+    const response = await apiClient.post('/api/inventory', data)
+    return response.data
+  },
+
+  // Manually update stock quantity, average cost or threshold
+  updateInventory: async (
+    id: string,
+    data: {
+      quantity?: number
+      averageCost?: number
+      lowStockThreshold?: number
+    }
+  ): Promise<ApiResponse<Inventory>> => {
+    const response = await apiClient.patch(`/api/inventory/${id}`, data)
+    return response.data
+  },
+
+  // Manually delete an inventory stock record
+  deleteInventory: async (id: string): Promise<ApiResponse<void>> => {
+    const response = await apiClient.delete(`/api/inventory/${id}`)
+    return response.data
+  },
 }

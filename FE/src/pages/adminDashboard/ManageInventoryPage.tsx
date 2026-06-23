@@ -1,16 +1,16 @@
 import { useState, useEffect, useMemo } from 'react'
-import { 
-  Package, 
-  Plus, 
-  Search, 
-  Loader2, 
-  X, 
-  AlertCircle, 
-  Check, 
-  History, 
-  Layers, 
-  AlertTriangle, 
-  PlusCircle, 
+import {
+  Package,
+  Plus,
+  Search,
+  Loader2,
+  X,
+  AlertCircle,
+  Check,
+  History,
+  Layers,
+  AlertTriangle,
+  PlusCircle,
   Trash2,
   Pencil,
   TrendingUp,
@@ -38,13 +38,13 @@ const formatVND = (num: number) => {
 
 export const ManageInventoryPage = () => {
   const [activeTab, setActiveTab] = useState<'stock' | 'import' | 'catalog'>('stock')
-  
+
   // Master data
   const [branches, setBranches] = useState<Branch[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedBranchId, setSelectedBranchId] = useState<string>('')
-  
+
   // Tab 1: Stock states
   const [inventoryList, setInventoryList] = useState<Inventory[]>([])
   const [stockLoading, setStockLoading] = useState(false)
@@ -61,7 +61,7 @@ export const ManageInventoryPage = () => {
   const [endDate, setEndDate] = useState<string>('')
   const [showDateFilter, setShowDateFilter] = useState(false)
   const [autoRefresh, setAutoRefresh] = useState(false)
-  
+
   // Create Receipt Modal
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
   const [importLoading, setImportLoading] = useState(false)
@@ -75,7 +75,28 @@ export const ManageInventoryPage = () => {
   // Optimized Stock-In autocomplete & historical lookup states
   const [activeProducts, setActiveProducts] = useState<Product[]>([])
   const [importBranchInventory, setImportBranchInventory] = useState<Inventory[]>([])
-  const [productSearchQuery, setProductSearchQuery] = useState('')
+
+  // Manual Stock Creation states
+  const [isManualStockModalOpen, setIsManualStockModalOpen] = useState(false)
+  const [manualStockBranchId, setManualStockBranchId] = useState('')
+  const [manualStockProductId, setManualStockProductId] = useState('')
+  const [manualStockQuantity, setManualStockQuantity] = useState(0)
+  const [manualStockAvgCost, setManualStockAvgCost] = useState(0)
+  const [manualStockThreshold, setManualStockThreshold] = useState(10)
+  const [manualStockSearchQuery, setManualStockSearchQuery] = useState('')
+  const [manualStockError, setManualStockError] = useState<string | null>(null)
+  const [manualStockLoading, setManualStockLoading] = useState(false)
+  const [manualStockSuccess, setManualStockSuccess] = useState(false)
+
+  // Manual Stock Editing states
+  const [isEditStockModalOpen, setIsEditStockModalOpen] = useState(false)
+  const [editingStockItem, setEditingStockItem] = useState<Inventory | null>(null)
+  const [editStockQuantity, setEditStockQuantity] = useState(0)
+  const [editStockAvgCost, setEditStockAvgCost] = useState(0)
+  const [editStockThreshold, setEditStockThreshold] = useState(10)
+  const [editStockError, setEditStockError] = useState<string | null>(null)
+  const [editStockLoading, setEditStockLoading] = useState(false)
+  const [editStockSuccess, setEditStockSuccess] = useState(false)
 
   // Tab 3: Catalog states
   const [catalogLoading, setCatalogLoading] = useState(false)
@@ -255,10 +276,10 @@ export const ManageInventoryPage = () => {
     fetchImportBranchInventory()
   }, [importBranchId, isImportModalOpen])
 
-  // Fetch all active products quietly for autocomplete when modal opens
+  // Fetch all active products quietly for autocomplete when either modal opens
   useEffect(() => {
     const fetchActiveProducts = async () => {
-      if (!isImportModalOpen) return
+      if (!isImportModalOpen && !isManualStockModalOpen) return
       try {
         const response = await productService.getProducts({ limit: 1000, status: 'active' })
         if (response.success) {
@@ -269,32 +290,43 @@ export const ManageInventoryPage = () => {
       }
     }
     fetchActiveProducts()
-  }, [isImportModalOpen])
+  }, [isImportModalOpen, isManualStockModalOpen])
 
-  // Autocomplete search suggestions for import modal
-  const searchSuggestions = useMemo(() => {
-    if (!productSearchQuery.trim()) return []
-    const query = productSearchQuery.toLowerCase()
+
+  // Autocomplete search suggestions for manual stock creation modal
+  const manualStockSearchSuggestions = useMemo(() => {
+    if (!manualStockSearchQuery.trim()) return []
+    const query = manualStockSearchQuery.toLowerCase()
     return activeProducts.filter((p) => {
       const isProductActive = p.status === 'active' || p.status === true
       if (!isProductActive) return false
+
+      // Filter out products already present in the branch inventory to avoid duplicates
+      const existsInBranch = inventoryList.some(
+        inv => {
+          const invProdId = typeof inv.productId === 'object' ? inv.productId?._id : inv.productId
+          return invProdId === p._id
+        }
+      )
+      if (existsInBranch) return false
+
       const nameMatch = (p.productName || p.name || '').toLowerCase().includes(query)
       const skuMatch = (p.sku || '').toLowerCase().includes(query)
       return nameMatch || skuMatch
     })
-  }, [productSearchQuery, activeProducts])
-  
+  }, [manualStockSearchQuery, activeProducts, inventoryList])
+
   // Auto-refresh for stock tab
   useEffect(() => {
     if (!autoRefresh || activeTab !== 'stock') return
-    
+
     const intervalId = setInterval(() => {
       fetchInventory()
     }, 30000) // Refresh every 30 seconds
-    
+
     return () => clearInterval(intervalId)
   }, [autoRefresh, activeTab, selectedBranchId, filterLowStock])
-  
+
   // Calculate inventory statistics
   const inventoryStats = useMemo(() => {
     // Filter stock locally based on stockSearch keyword
@@ -305,12 +337,12 @@ export const ManageInventoryPage = () => {
       const skuMatch = item.productId?.sku?.toLowerCase().includes(keyword)
       return nameMatch || skuMatch
     })
-    
+
     const totalProducts = filtered.length
     const lowStockItems = filtered.filter(item => item.quantity <= item.lowStockThreshold).length
     const totalValue = filtered.reduce((sum, item) => sum + (item.quantity * item.averageCost), 0)
     const outOfStock = filtered.filter(item => item.quantity === 0).length
-    
+
     return {
       totalProducts,
       lowStockItems,
@@ -319,9 +351,9 @@ export const ManageInventoryPage = () => {
       filtered
     }
   }, [inventoryList, stockSearch])
-  
+
   const filteredStock = inventoryStats.filtered
-  
+
   // Calculate receipts statistics  
   const receiptsStats = useMemo(() => {
     const filteredByDate = receiptsList.filter(rec => {
@@ -331,7 +363,7 @@ export const ManageInventoryPage = () => {
         const supplierMatch = rec.supplierName?.toLowerCase().includes(keyword)
         if (!(codeMatch || supplierMatch)) return false
       }
-      
+
       if (startDate || endDate) {
         const recDate = new Date(rec.createdAt)
         if (startDate && recDate < new Date(startDate)) return false
@@ -341,14 +373,14 @@ export const ManageInventoryPage = () => {
           if (recDate > endDateTime) return false
         }
       }
-      
+
       return true
     })
-    
+
     const totalReceipts = filteredByDate.length
     const totalValue = filteredByDate.reduce((sum, rec) => sum + rec.totalCost, 0)
     const totalItems = filteredByDate.reduce((sum, rec) => sum + rec.items.length, 0)
-    
+
     return {
       totalReceipts,
       totalValue,
@@ -356,14 +388,14 @@ export const ManageInventoryPage = () => {
       filtered: filteredByDate
     }
   }, [receiptsList, receiptsSearch, startDate, endDate])
-  
+
   // Export receipts to CSV
   const exportReceiptsToCSV = () => {
     const headers = ['Mã phiếu', 'Chi nhánh', 'Nhà cung cấp', 'Tổng giá trị', 'Người tạo', 'Ngày nhập']
     const rows = receiptsStats.filtered.map(rec => {
       const branchName = typeof rec.branchId === 'object' ? rec.branchId.name : 'N/A'
       const creatorName = typeof rec.createdBy === 'object' ? rec.createdBy.fullName : 'System'
-      
+
       return [
         rec.code,
         branchName,
@@ -373,25 +405,25 @@ export const ManageInventoryPage = () => {
         new Date(rec.createdAt).toLocaleString()
       ]
     })
-    
+
     const csvContent = [
       headers.join(','),
       ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
     ].join('\n')
-    
+
     const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
     link.download = `import_receipts_${new Date().toISOString().split('T')[0]}.csv`
     link.click()
   }
-  
+
   // Export stock to CSV
   const exportStockToCSV = () => {
-    const headers = ['STT', 'Mã SKU', 'Tên sản phẩm', 'Đơn vị', 'Số lượng tồn', 'Giá vốn TB', 'Giá nhập gần nhất', 'Trạng thái']
+    const headers = ['STT', 'Mã SKU', 'Tên sản phẩm', 'Đơn vị', 'Số lượng tồn', 'Giá bán trung bình', 'Giá nhập gốc', 'Trạng thái']
     const rows = filteredStock.map((item, idx) => {
       const isLow = item.quantity <= item.lowStockThreshold
-      
+
       return [
         idx + 1,
         item.productId?.sku || 'N/A',
@@ -399,16 +431,16 @@ export const ManageInventoryPage = () => {
         item.productId?.unit || 'item',
         item.quantity,
         item.averageCost ?? 0,
-        item.lastImportCost ?? 0,
+        item.productId?.price ?? item.productId?.salePrice ?? 0,
         isLow ? 'Cảnh báo hết' : 'Đủ hàng'
       ]
     })
-    
+
     const csvContent = [
       headers.join(','),
       ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
     ].join('\n')
-    
+
     const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
@@ -418,7 +450,7 @@ export const ManageInventoryPage = () => {
   }
 
   // --- ACTIONS ---
-  
+
   // Quick Add Product to Import List
   const handleQuickAddProduct = (product: Product) => {
     const existingIndex = importItems.findIndex(item => item.productId === product._id)
@@ -440,7 +472,6 @@ export const ManageInventoryPage = () => {
 
       setImportItems([...importItems, { productId: product._id, quantity: 1, unitCost: suggestedCost }])
     }
-    setProductSearchQuery('') // Clear search box
   }
 
   // Remove item row in import builder
@@ -465,10 +496,153 @@ export const ManageInventoryPage = () => {
     setImportItems([])
   }
 
+  // Submit manual stock initialization
+  const handleManualStockSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!manualStockBranchId) {
+      setManualStockError('❌ Vui lòng chọn chi nhánh.')
+      return
+    }
+    if (!manualStockProductId) {
+      setManualStockError('❌ Vui lòng tìm và chọn sản phẩm.')
+      return
+    }
+    if (manualStockQuantity < 0) {
+      setManualStockError('❌ Số lượng tồn kho không được âm.')
+      return
+    }
+    if (manualStockAvgCost < 0) {
+      setManualStockError('❌ Giá vốn trung bình không được âm.')
+      return
+    }
+    if (manualStockThreshold < 0) {
+      setManualStockError('❌ Định mức cảnh báo không được âm.')
+      return
+    }
+
+    try {
+      setManualStockLoading(true)
+      setManualStockError(null)
+      const res = await inventoryService.createInventory({
+        branchId: manualStockBranchId,
+        productId: manualStockProductId,
+        quantity: Math.floor(manualStockQuantity),
+        averageCost: manualStockAvgCost,
+        lowStockThreshold: Math.floor(manualStockThreshold),
+      })
+
+      if (res.success) {
+        setManualStockSuccess(true)
+        setTimeout(() => {
+          setManualStockSuccess(false)
+          setIsManualStockModalOpen(false)
+          setManualStockProductId('')
+          setManualStockSearchQuery('')
+          setManualStockQuantity(0)
+          setManualStockAvgCost(0)
+          setManualStockThreshold(10)
+          fetchInventory() // Refresh stock list
+        }, 1500)
+      } else {
+        setManualStockError('❌ ' + (res.message || 'Không thể khởi tạo tồn kho sản phẩm.'))
+      }
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || 'Lỗi hệ thống khi khởi tạo tồn kho.'
+      setManualStockError('❌ ' + msg)
+    } finally {
+      setManualStockLoading(false)
+    }
+  }
+
+  // Handle edit click
+  const handleEditStockClick = (item: Inventory) => {
+    setEditingStockItem(item)
+    setEditStockQuantity(item.quantity)
+    setEditStockAvgCost(item.averageCost)
+    setEditStockThreshold(item.lowStockThreshold)
+    setEditStockError(null)
+    setEditStockSuccess(false)
+    setIsEditStockModalOpen(true)
+  }
+
+  // Submit manual stock edit
+  const handleEditStockSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingStockItem) return
+    if (editStockQuantity < 0) {
+      setEditStockError('❌ Số lượng tồn kho không được âm.')
+      return
+    }
+    if (editStockAvgCost < 0) {
+      setEditStockError('❌ Giá vốn trung bình không được âm.')
+      return
+    }
+    if (editStockThreshold < 0) {
+      setEditStockError('❌ Định mức cảnh báo không được âm.')
+      return
+    }
+
+    try {
+      setEditStockLoading(true)
+      setEditStockError(null)
+      const res = await inventoryService.updateInventory(editingStockItem._id, {
+        quantity: Math.floor(editStockQuantity),
+        averageCost: editStockAvgCost,
+        lowStockThreshold: Math.floor(editStockThreshold),
+      })
+
+      if (res.success) {
+        setEditStockSuccess(true)
+        setTimeout(() => {
+          setEditStockSuccess(false)
+          setIsEditStockModalOpen(false)
+          setEditingStockItem(null)
+          fetchInventory() // Refresh stock list
+        }, 1500)
+      } else {
+        setEditStockError('❌ ' + (res.message || 'Không thể cập nhật tồn kho.'))
+      }
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || 'Lỗi hệ thống khi cập nhật tồn kho.'
+      setEditStockError('❌ ' + msg)
+    } finally {
+      setEditStockLoading(false)
+    }
+  }
+
+  // Delete manual stock confirmation and execution
+  const handleDeleteStockClick = async (item: Inventory) => {
+    const productName = item.productId?.productName || item.productId?.name || 'sản phẩm'
+    const branchName = branches.find(b => b._id === selectedBranchId)?.name || 'chi nhánh'
+    const confirmMsg = `⚠️ CẢNH BÁO XÓA TỒN KHO\n\n` +
+      `Sản phẩm: ${productName}\n` +
+      `Chi nhánh: ${branchName}\n\n` +
+      `Hành động này sẽ XÓA BẢN GHI TỒN KHO của sản phẩm này tại chi nhánh. ` +
+      `Số lượng tồn kho, giá vốn và định mức cảnh báo liên quan sẽ biến mất hoàn toàn.\n\n` +
+      `Bạn có chắc chắn muốn XÓA không?`
+
+    if (!window.confirm(confirmMsg)) return
+
+    try {
+      setStockLoading(true)
+      const res = await inventoryService.deleteInventory(item._id)
+      if (res.success) {
+        fetchInventory() // Refresh stock list
+      } else {
+        setStockError('❌ ' + (res.message || 'Không thể xóa tồn kho.'))
+      }
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || 'Lỗi hệ thống khi xóa tồn kho.'
+      setStockError('❌ ' + msg)
+    } finally {
+      setStockLoading(false)
+    }
+  }
+
   // Submit new import receipt
   const handleImportSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // Validation 1: Check branch selection
     if (!importBranchId) {
       setImportError('❌ Vui lòng chọn chi nhánh nhập hàng.')
@@ -480,14 +654,14 @@ export const ManageInventoryPage = () => {
       setImportError('❌ Vui lòng tìm và chọn ít nhất một sản phẩm để nhập kho.')
       return
     }
-    
+
     // Validation 2: Check if any product is empty
     const hasEmptyProduct = importItems.some((item) => !item.productId)
     if (hasEmptyProduct) {
       setImportError('❌ Vui lòng chọn đầy đủ sản phẩm cho mỗi dòng nhập.')
       return
     }
-    
+
     // Validation 3: Check for duplicate products
     const productIds = importItems.map(item => item.productId)
     const hasDuplicates = productIds.some((id, index) => productIds.indexOf(id) !== index)
@@ -495,21 +669,21 @@ export const ManageInventoryPage = () => {
       setImportError('❌ Không được chọn trùng sản phẩm. Vui lòng gộp số lượng hoặc xóa dòng trùng.')
       return
     }
-    
+
     // Validation 4: Check quantity > 0
     const hasInvalidQuantity = importItems.some((item) => item.quantity <= 0)
     if (hasInvalidQuantity) {
       setImportError('❌ Số lượng nhập phải lớn hơn 0.')
       return
     }
-    
+
     // Validation 5: Check unitCost >= 0
     const hasInvalidCost = importItems.some((item) => item.unitCost < 0)
     if (hasInvalidCost) {
       setImportError('❌ Giá vốn không được âm.')
       return
     }
-    
+
     // Validation 6: Warning for zero cost
     const hasZeroCost = importItems.some((item) => item.unitCost === 0)
     if (hasZeroCost) {
@@ -597,7 +771,7 @@ export const ManageInventoryPage = () => {
   const handleToggleProductStatus = async (product: Product) => {
     const isActive = product.status === 'active' || product.status === true
     const productName = product.productName || product.name || 'sản phẩm này'
-    
+
     // Different confirm messages based on action
     let confirmMessage = ''
     if (isActive) {
@@ -619,15 +793,15 @@ export const ManageInventoryPage = () => {
         `• Khách hàng có thể đặt mua sản phẩm này\n\n` +
         `Bạn có chắc chắn muốn MỞ BÁN LẠI sản phẩm này?`
     }
-    
+
     if (!window.confirm(confirmMessage)) {
       return
     }
-    
+
     try {
       setCatalogLoading(true)
       setCatalogError(null)
-      
+
       let res
       if (isActive) {
         // Inactive means calling delete API
@@ -636,7 +810,7 @@ export const ManageInventoryPage = () => {
         // Active means calling PATCH API with status active
         res = await productService.updateProduct(product._id, { status: 'active' })
       }
-      
+
       if (res.success) {
         fetchProducts() // refresh catalog list
       } else {
@@ -653,60 +827,60 @@ export const ManageInventoryPage = () => {
   // Submit new or edited master product
   const handleProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // Validation 1: Required fields
     if (!productForm.name.trim()) {
       setProductError('❌ Tên sản phẩm là bắt buộc.')
       return
     }
-    
+
     if (!productForm.sku.trim()) {
       setProductError('❌ Mã SKU là bắt buộc.')
       return
     }
-    
+
     // Validation 2: SKU format (chỉ cho phép chữ, số, gạch ngang và gạch dưới)
     const skuPattern = /^[A-Z0-9_-]+$/
     if (!skuPattern.test(productForm.sku.trim())) {
       setProductError('❌ Mã SKU chỉ được chứa chữ IN HOA, số, gạch ngang (-) và gạch dưới (_).')
       return
     }
-    
+
     // Validation 3: SKU length
     if (productForm.sku.trim().length < 3) {
       setProductError('❌ Mã SKU phải có ít nhất 3 ký tự.')
       return
     }
-    
+
     if (productForm.sku.trim().length > 50) {
       setProductError('❌ Mã SKU không được quá 50 ký tự.')
       return
     }
-    
+
     // Validation 4: Product name length
     if (productForm.name.trim().length < 3) {
       setProductError('❌ Tên sản phẩm phải có ít nhất 3 ký tự.')
       return
     }
-    
+
     if (productForm.name.trim().length > 200) {
       setProductError('❌ Tên sản phẩm không được quá 200 ký tự.')
       return
     }
-    
+
     // Validation 5: Price validation
     if (productForm.salePrice < 0) {
-      setProductError('❌ Giá bán không được âm.')
+      setProductError('❌ Giá nhập gốc không được âm.')
       return
     }
-    
+
     if (productForm.salePrice === 0) {
       const confirmZeroPrice = window.confirm(
-        '⚠️ Giá bán đang là 0đ. Sản phẩm này sẽ là hàng miễn phí.\n\nBạn có chắc chắn muốn tiếp tục?'
+        '⚠️ Giá nhập gốc đang là 0đ. Sản phẩm này sẽ có giá nhập gốc mặc định là 0đ.\n\nBạn có chắc chắn muốn tiếp tục?'
       )
       if (!confirmZeroPrice) return
     }
-    
+
     // Validation 6: Category selection
     if (!productForm.categoryId) {
       const confirmNoCategory = window.confirm(
@@ -714,13 +888,13 @@ export const ManageInventoryPage = () => {
       )
       if (!confirmNoCategory) return
     }
-    
+
     // Validation 7: Description length
     if (productForm.description.trim().length > 1000) {
       setProductError('❌ Mô tả sản phẩm không được quá 1000 ký tự.')
       return
     }
-    
+
     // Validation 8: Image validation (nếu là file upload)
     if (imageFile) {
       const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
@@ -728,7 +902,7 @@ export const ManageInventoryPage = () => {
         setProductError('❌ Chỉ chấp nhận file ảnh định dạng JPG, PNG hoặc WEBP.')
         return
       }
-      
+
       const maxSize = 5 * 1024 * 1024 // 5MB
       if (imageFile.size > maxSize) {
         setProductError('❌ Kích thước ảnh không được vượt quá 5MB.')
@@ -827,18 +1001,17 @@ export const ManageInventoryPage = () => {
                 <RefreshCw size={16} className={stockLoading ? 'animate-spin' : ''} />
                 Làm mới
               </button>
-              
+
               <button
                 onClick={() => setAutoRefresh(!autoRefresh)}
-                className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-bold transition-colors ${
-                  autoRefresh 
-                    ? 'bg-primary text-white border-primary' 
+                className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-bold transition-colors ${autoRefresh
+                    ? 'bg-primary text-white border-primary'
                     : 'bg-surface-container-low border-outline hover:bg-surface-container-high'
-                }`}
+                  }`}
               >
                 {autoRefresh ? 'Tự động: Bật' : 'Tự động: Tắt'}
               </button>
-              
+
               <button
                 onClick={exportStockToCSV}
                 disabled={filteredStock.length === 0}
@@ -846,6 +1019,25 @@ export const ManageInventoryPage = () => {
               >
                 <Download size={16} />
                 Xuất Excel
+              </button>
+
+              <button
+                onClick={() => {
+                  setManualStockError(null)
+                  setManualStockSuccess(false)
+                  setManualStockBranchId(selectedBranchId)
+                  setManualStockProductId('')
+                  setManualStockSearchQuery('')
+                  setManualStockQuantity(0)
+                  setManualStockAvgCost(0)
+                  setManualStockThreshold(10)
+                  setIsManualStockModalOpen(true)
+                }}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white transition-all hover:bg-opacity-90 active:scale-95 shadow-md hover:shadow-lg"
+                type="button"
+              >
+                <PlusCircle size={16} />
+                Khởi tạo tồn kho
               </button>
             </>
           )}
@@ -864,7 +1056,6 @@ export const ManageInventoryPage = () => {
                   setImportError(null)
                   setImportSuccess(false)
                   setImportItems([])
-                  setProductSearchQuery('')
                   setIsImportModalOpen(true)
                 }}
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white transition-all hover:bg-opacity-90 active:scale-95 shadow-md hover:shadow-lg"
@@ -903,7 +1094,7 @@ export const ManageInventoryPage = () => {
           )}
         </div>
       </section>
-      
+
       {/* ── STATISTICS CARDS - Show for Stock and Import tabs ── */}
       {activeTab === 'stock' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -920,7 +1111,7 @@ export const ManageInventoryPage = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="rounded-xl border border-outline-variant bg-gradient-to-br from-amber-50 to-amber-100/50 p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
@@ -934,7 +1125,7 @@ export const ManageInventoryPage = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="rounded-xl border border-outline-variant bg-gradient-to-br from-rose-50 to-rose-100/50 p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
@@ -948,7 +1139,7 @@ export const ManageInventoryPage = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="rounded-xl border border-outline-variant bg-gradient-to-br from-purple-50 to-purple-100/50 p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
@@ -964,7 +1155,7 @@ export const ManageInventoryPage = () => {
           </div>
         </div>
       )}
-      
+
       {activeTab === 'import' && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="rounded-xl border border-outline-variant bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-4 shadow-sm">
@@ -980,7 +1171,7 @@ export const ManageInventoryPage = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="rounded-xl border border-outline-variant bg-gradient-to-br from-indigo-50 to-indigo-100/50 p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
@@ -994,7 +1185,7 @@ export const ManageInventoryPage = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="rounded-xl border border-outline-variant bg-gradient-to-br from-purple-50 to-purple-100/50 p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
@@ -1015,33 +1206,30 @@ export const ManageInventoryPage = () => {
       <div className="border-b border-outline-variant flex gap-6 text-sm font-medium">
         <button
           onClick={() => setActiveTab('stock')}
-          className={`pb-3 border-b-2 transition-all flex items-center gap-2 ${
-            activeTab === 'stock'
+          className={`pb-3 border-b-2 transition-all flex items-center gap-2 ${activeTab === 'stock'
               ? 'border-primary text-primary font-black'
               : 'border-transparent text-on-surface-variant hover:text-on-surface'
-          }`}
+            }`}
         >
           <Package size={18} />
           Báo cáo Tồn kho
         </button>
         <button
           onClick={() => setActiveTab('import')}
-          className={`pb-3 border-b-2 transition-all flex items-center gap-2 ${
-            activeTab === 'import'
+          className={`pb-3 border-b-2 transition-all flex items-center gap-2 ${activeTab === 'import'
               ? 'border-primary text-primary font-black'
               : 'border-transparent text-on-surface-variant hover:text-on-surface'
-          }`}
+            }`}
         >
           <History size={18} />
           Lịch sử Nhập kho
         </button>
         <button
           onClick={() => setActiveTab('catalog')}
-          className={`pb-3 border-b-2 transition-all flex items-center gap-2 ${
-            activeTab === 'catalog'
+          className={`pb-3 border-b-2 transition-all flex items-center gap-2 ${activeTab === 'catalog'
               ? 'border-primary text-primary font-black'
               : 'border-transparent text-on-surface-variant hover:text-on-surface'
-          }`}
+            }`}
         >
           <Layers size={18} />
           Danh mục Sản phẩm gốc
@@ -1129,9 +1317,10 @@ export const ManageInventoryPage = () => {
                       <th className="p-4 font-bold text-on-surface-variant">Tên Sản phẩm</th>
                       <th className="p-4 font-bold text-on-surface-variant">Đơn vị</th>
                       <th className="p-4 font-bold text-on-surface-variant text-right">Số lượng tồn</th>
-                      <th className="p-4 font-bold text-on-surface-variant text-right">Giá vốn trung bình</th>
-                      <th className="p-4 font-bold text-on-surface-variant text-right">Giá nhập gần nhất</th>
+                      <th className="p-4 font-bold text-on-surface-variant text-right">Giá bán trung bình</th>
+                      <th className="p-4 font-bold text-on-surface-variant text-right">Giá nhập gốc</th>
                       <th className="p-4 font-bold text-on-surface-variant text-center">Trạng thái kho</th>
+                      <th className="p-4 font-bold text-on-surface-variant text-center">Hành động</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-outline-variant/60">
@@ -1168,15 +1357,14 @@ export const ManageInventoryPage = () => {
                             {formatVND(item.averageCost ?? 0)}
                           </td>
                           <td className="p-4 text-right font-semibold text-on-surface-variant">
-                            {item.lastImportCost !== undefined ? formatVND(item.lastImportCost) : 'N/A'}
+                            {formatVND(item.productId?.price ?? item.productId?.salePrice ?? 0)}
                           </td>
                           <td className="p-4 text-center">
                             <span
-                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${
-                                isLow
+                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${isLow
                                   ? 'bg-error-container text-on-error-container'
                                   : 'bg-success-container text-on-success-container'
-                              }`}
+                                }`}
                             >
                               {isLow ? (
                                 <>
@@ -1190,6 +1378,26 @@ export const ManageInventoryPage = () => {
                                 </>
                               )}
                             </span>
+                          </td>
+                          <td className="p-4 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => handleEditStockClick(item)}
+                                className="rounded-lg p-2 text-primary hover:bg-primary-container/20 transition-colors"
+                                title="Chỉnh sửa tồn kho"
+                                type="button"
+                              >
+                                <Pencil size={16} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteStockClick(item)}
+                                className="rounded-lg p-2 text-error hover:bg-error-container/20 transition-colors"
+                                title="Xóa tồn kho"
+                                type="button"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       )
@@ -1223,7 +1431,7 @@ export const ManageInventoryPage = () => {
                   ))}
                 </select>
               </div>
-              
+
               <div className="flex-1 relative">
                 <input
                   type="text"
@@ -1235,7 +1443,7 @@ export const ManageInventoryPage = () => {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
               </div>
             </div>
-            
+
             {/* Date Range Filter - Collapsible */}
             <div className="rounded-2xl border border-outline-variant bg-surface-container-lowest shadow-sm overflow-hidden">
               <button
@@ -1253,7 +1461,7 @@ export const ManageInventoryPage = () => {
                 </div>
                 <Calendar size={16} className={`text-on-surface-variant transition-transform ${showDateFilter ? 'rotate-180' : ''}`} />
               </button>
-              
+
               {showDateFilter && (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 border-t border-outline-variant bg-surface-container-low/30">
                   <div className="relative">
@@ -1267,7 +1475,7 @@ export const ManageInventoryPage = () => {
                       className="w-full rounded-lg border border-outline bg-transparent py-2 px-3 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
                     />
                   </div>
-                  
+
                   <div className="relative">
                     <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">
                       Đến ngày
@@ -1279,7 +1487,7 @@ export const ManageInventoryPage = () => {
                       className="w-full rounded-lg border border-outline bg-transparent py-2 px-3 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
                     />
                   </div>
-                  
+
                   <div className="flex items-end">
                     <button
                       onClick={() => {
@@ -1429,7 +1637,7 @@ export const ManageInventoryPage = () => {
                       <th className="p-4 font-bold text-on-surface-variant">Tên Sản phẩm</th>
                       <th className="p-4 font-bold text-on-surface-variant">Danh mục</th>
                       <th className="p-4 font-bold text-on-surface-variant">Đơn vị</th>
-                      <th className="p-4 font-bold text-on-surface-variant text-right">Giá Bán Niêm Yết</th>
+                      <th className="p-4 font-bold text-on-surface-variant text-right">Giá nhập gốc</th>
                       <th className="p-4 font-bold text-on-surface-variant text-center">Trạng thái bán</th>
                       <th className="p-4 font-bold text-on-surface-variant">Mô tả chi tiết</th>
                       <th className="p-4 font-bold text-on-surface-variant text-center">Hành động</th>
@@ -1475,11 +1683,10 @@ export const ManageInventoryPage = () => {
                           </td>
                           <td className="p-4 text-center">
                             <span
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                                isActive
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${isActive
                                   ? 'bg-success-container text-on-success-container'
                                   : 'bg-surface-container-high text-on-surface-variant'
-                              }`}
+                                }`}
                             >
                               {isActive ? 'Đang bán' : 'Dừng bán'}
                             </span>
@@ -1498,11 +1705,10 @@ export const ManageInventoryPage = () => {
                               </button>
                               <button
                                 onClick={() => handleToggleProductStatus(product)}
-                                className={`rounded-lg p-2 transition-colors ${
-                                  isActive
+                                className={`rounded-lg p-2 transition-colors ${isActive
                                     ? 'text-error hover:bg-error-container/20'
                                     : 'text-success hover:bg-success-container/20'
-                                }`}
+                                  }`}
                                 title={isActive ? 'Dừng bán sản phẩm' : 'Kích hoạt lại sản phẩm'}
                               >
                                 <Trash2 size={16} />
@@ -1617,66 +1823,32 @@ export const ManageInventoryPage = () => {
                 </div>
               </div>
 
-              {/* Autocomplete Search & Quick Add Bar */}
-              <div className="space-y-1.5 relative">
-                <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1">
-                  <Search size={14} className="text-primary" />
-                  Tìm & Thêm nhanh sản phẩm
+              {/* Select Product Dropdown */}
+              <div className="space-y-1.5">
+                <label htmlFor="importProductSelect" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1">
+                  <Package size={14} className="text-primary" />
+                  Chọn sản phẩm cần nhập <span className="text-error">*</span>
                 </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={productSearchQuery}
-                    onChange={(e) => setProductSearchQuery(e.target.value)}
-                    placeholder="Nhập tên hoặc SKU sản phẩm để thêm vào phiếu..."
-                    className="w-full bg-surface-container-low border border-outline-variant/60 rounded-xl py-3 px-4 pl-11 focus:ring-2 focus:ring-primary focus:border-primary text-sm transition-all shadow-sm"
-                  />
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant opacity-70" size={16} />
-                  {productSearchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setProductSearchQuery('')}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface p-1 rounded-full hover:bg-surface-container-high transition-colors"
-                    >
-                      <X size={14} />
-                    </button>
-                  )}
-                </div>
-
-                {/* Search Results Dropdown */}
-                {searchSuggestions.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full mt-1 bg-surface border border-outline-variant rounded-xl shadow-2xl max-h-60 overflow-y-auto z-50 divide-y divide-outline-variant/60 animate-in fade-in slide-in-from-top-2 duration-150">
-                    {searchSuggestions.map((p) => (
-                      <button
-                        key={p._id}
-                        type="button"
-                        onClick={() => handleQuickAddProduct(p)}
-                        className="w-full text-left p-3 hover:bg-surface-container-low transition-colors flex items-center gap-3"
-                      >
-                        <div className="w-8 h-8 bg-surface-container-low rounded overflow-hidden border border-outline-variant flex items-center justify-center shrink-0">
-                          {p.imageUrl ? (
-                            <img src={p.imageUrl} alt={p.productName} className="w-full h-full object-cover" />
-                          ) : (
-                            <Package size={14} className="text-on-surface-variant opacity-65" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-on-surface truncate">{p.productName}</p>
-                          <p className="text-xs text-on-surface-variant font-mono">{p.sku} | Đơn vị: {p.unit || 'cái'}</p>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-xs font-semibold text-on-surface-variant">Giá bán</p>
-                          <p className="text-sm font-bold text-primary">{formatVND(p.price)}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {productSearchQuery.trim() && searchSuggestions.length === 0 && (
-                  <div className="absolute left-0 right-0 top-full mt-1 bg-surface border border-outline-variant rounded-xl shadow-2xl p-4 text-center z-50 text-xs font-medium text-on-surface-variant bg-surface-container-low/40">
-                    Không tìm thấy sản phẩm hoạt động khớp với từ khóa.
-                  </div>
-                )}
+                <select
+                  id="importProductSelect"
+                  value=""
+                  onChange={(e) => {
+                    const val = e.target.value
+                    if (!val) return
+                    const matchedProduct = activeProducts.find((p) => p._id === val)
+                    if (matchedProduct) {
+                      handleQuickAddProduct(matchedProduct)
+                    }
+                  }}
+                  className="w-full bg-surface-container-low border border-outline-variant/60 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary focus:border-primary text-sm font-semibold transition-all shadow-sm"
+                >
+                  <option value="">-- Chọn sản phẩm từ danh sách --</option>
+                  {activeProducts.map((p) => (
+                    <option key={p._id} value={p._id}>
+                      {p.productName || p.name} ({p.sku}) - {p.unit || 'cái'} - {formatVND(p.price || 0)}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Items List Builder */}
@@ -1712,8 +1884,8 @@ export const ManageInventoryPage = () => {
                           <tr className="border-b border-outline-variant bg-surface-container-low/50">
                             <th className="p-3 font-bold text-on-surface-variant">Sản phẩm</th>
                             <th className="p-3 font-bold text-on-surface-variant text-center w-32">Số lượng</th>
-                            <th className="p-3 font-bold text-on-surface-variant text-right w-36">Giá vốn (đ)</th>
-                            <th className="p-3 font-bold text-on-surface-variant text-right w-28">Giá bán gốc</th>
+                            <th className="p-3 font-bold text-on-surface-variant text-right w-36">Giá bán (đ)</th>
+                            <th className="p-3 font-bold text-on-surface-variant text-right w-28">Giá nhập gốc</th>
                             <th className="p-3 font-bold text-on-surface-variant text-right w-32">Thành tiền</th>
                             <th className="p-3 font-bold text-on-surface-variant text-center w-12"></th>
                           </tr>
@@ -1724,9 +1896,9 @@ export const ManageInventoryPage = () => {
                             const name = pInfo?.productName || 'Sản phẩm';
                             const sku = pInfo?.sku || 'N/A';
                             const unit = pInfo?.unit || 'cái';
-                            const sellingPrice = pInfo?.price || 0;
-                            const isLoss = item.unitCost > sellingPrice;
-                            
+                            const costPrice = pInfo?.price || 0;
+                            const isLoss = item.unitCost > 0 && item.unitCost < costPrice;
+
                             return (
                               <tr key={idx} className="hover:bg-surface-container-low/20 transition-colors align-middle">
                                 {/* Product info */}
@@ -1745,7 +1917,7 @@ export const ManageInventoryPage = () => {
                                     </div>
                                   </div>
                                 </td>
-                                
+
                                 {/* Quantity stepper */}
                                 <td className="p-3 text-center">
                                   <div className="inline-flex items-center border border-outline rounded-lg overflow-hidden bg-surface-container-low shadow-sm">
@@ -1773,7 +1945,7 @@ export const ManageInventoryPage = () => {
                                     </button>
                                   </div>
                                 </td>
-                                
+
                                 {/* Unit Cost input with margin alert */}
                                 <td className="p-3 text-right">
                                   <div className="relative inline-block w-full">
@@ -1786,25 +1958,25 @@ export const ManageInventoryPage = () => {
                                       onChange={(e) => updateImportItemRow(idx, 'unitCost', parseFloat(e.target.value) || 0)}
                                       className="w-full bg-surface-container-low border border-outline rounded-lg py-1.5 px-2 text-right font-bold text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all shadow-sm"
                                     />
-                                    {isLoss && sellingPrice > 0 && (
+                                    {isLoss && costPrice > 0 && (
                                       <div className="text-[10px] text-error font-medium flex items-center justify-end gap-1 mt-1 leading-tight animate-pulse">
                                         <AlertTriangle size={10} className="shrink-0" />
-                                        Vượt giá bán ({formatVND(sellingPrice)})
+                                        Thấp hơn giá nhập ({formatVND(costPrice)})
                                       </div>
                                     )}
                                   </div>
                                 </td>
-                                
-                                {/* Static Selling Price */}
+
+                                {/* Static Cost Price */}
                                 <td className="p-3 text-right font-medium text-on-surface-variant">
-                                  {formatVND(sellingPrice)}
+                                  {formatVND(costPrice)}
                                 </td>
-                                
+
                                 {/* Row Subtotal */}
                                 <td className="p-3 text-right font-black text-primary text-sm">
                                   {formatVND(item.quantity * item.unitCost)}
                                 </td>
-                                
+
                                 {/* Delete Action */}
                                 <td className="p-3 text-center">
                                   <button
@@ -1846,7 +2018,7 @@ export const ManageInventoryPage = () => {
                 <div className="text-sm font-medium">
                   Tổng chi phí đợt nhập: <span className="text-lg font-black text-primary">{formatVND(importTotalCost)}</span>
                 </div>
-                
+
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
@@ -1952,7 +2124,7 @@ export const ManageInventoryPage = () => {
                 {/* Giá bán niêm yết */}
                 <div className="space-y-1.5">
                   <label htmlFor="prod-price" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
-                    Giá bán (đ) <span className="text-error">*</span>
+                    Giá nhập gốc (đ) <span className="text-error">*</span>
                   </label>
                   <input
                     type="number"
@@ -2093,6 +2265,354 @@ export const ManageInventoryPage = () => {
                     </>
                   ) : (
                     editingProduct ? 'Lưu thay đổi' : 'Tạo sản phẩm'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── MANUAL STOCK CREATION MODAL ── */}
+      {isManualStockModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-lg bg-surface rounded-2xl border border-outline-variant shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-outline-variant bg-surface-container-low px-6 py-4">
+              <h2 className="text-lg font-black text-on-surface flex items-center gap-2">
+                <PlusCircle size={20} className="text-primary" />
+                Khởi tạo tồn kho thủ công
+              </h2>
+              <button
+                type="button"
+                onClick={() => setIsManualStockModalOpen(false)}
+                className="rounded-full p-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleManualStockSubmit} className="p-6 space-y-4">
+              {manualStockError && (
+                <div className="flex items-center gap-3 p-4 bg-error-container text-on-error-container rounded-xl border border-error/20">
+                  <AlertCircle size={20} className="shrink-0" />
+                  <p className="text-sm font-semibold">{manualStockError}</p>
+                </div>
+              )}
+
+              {manualStockSuccess && (
+                <div className="flex items-center gap-3 p-4 bg-success-container text-on-success-container rounded-xl border border-success/20">
+                  <Check size={20} className="shrink-0" />
+                  <p className="text-sm font-semibold">Khởi tạo tồn kho sản phẩm thành công!</p>
+                </div>
+              )}
+
+              {/* Chi nhánh */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                  Chi nhánh nhận tồn kho
+                </label>
+                <select
+                  value={manualStockBranchId}
+                  onChange={(e) => setManualStockBranchId(e.target.value)}
+                  className="w-full bg-surface-container-low border-none rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary text-sm font-semibold transition-all disabled:opacity-60"
+                  disabled
+                >
+                  {branches.map((b) => (
+                    <option key={b._id} value={b._id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Tìm & Chọn sản phẩm */}
+              <div className="space-y-1.5 relative">
+                <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                  Chọn sản phẩm khởi tạo <span className="text-error">*</span>
+                </label>
+                {manualStockProductId ? (
+                  (() => {
+                    const selectedProd = activeProducts.find(p => p._id === manualStockProductId)
+                    return (
+                      <div className="flex items-center gap-3 p-3 bg-surface-container-low rounded-xl border border-outline-variant/60">
+                        <div className="w-10 h-10 bg-surface rounded-lg overflow-hidden border border-outline-variant flex items-center justify-center shrink-0">
+                          {selectedProd?.imageUrl ? (
+                            <img src={selectedProd.imageUrl} alt={selectedProd.productName} className="w-full h-full object-cover" />
+                          ) : (
+                            <Package size={18} className="text-on-surface-variant opacity-60" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-on-surface truncate">{selectedProd?.productName || selectedProd?.name}</p>
+                          <p className="text-xs text-on-surface-variant font-mono">{selectedProd?.sku} | Đơn vị: {selectedProd?.unit || 'cái'}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setManualStockProductId('')
+                            setManualStockSearchQuery('')
+                          }}
+                          className="rounded-lg p-2 text-error hover:bg-error-container/20 transition-colors text-xs font-bold"
+                        >
+                          Thay đổi
+                        </button>
+                      </div>
+                    )
+                  })()
+                ) : (
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={manualStockSearchQuery}
+                      onChange={(e) => setManualStockSearchQuery(e.target.value)}
+                      placeholder="Tìm theo tên hoặc SKU sản phẩm gốc..."
+                      className="w-full bg-surface-container-low border border-outline-variant/60 rounded-xl py-3 px-4 pl-11 focus:ring-2 focus:ring-primary focus:border-primary text-sm transition-all shadow-sm"
+                    />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant opacity-70" size={16} />
+                    {manualStockSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setManualStockSearchQuery('')}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface p-1 rounded-full hover:bg-surface-container-high transition-colors"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+
+                    {/* Suggestions list */}
+                    {manualStockSearchSuggestions.length > 0 && (
+                      <div className="absolute left-0 right-0 top-full mt-1 bg-surface border border-outline-variant rounded-xl shadow-2xl max-h-60 overflow-y-auto z-50 divide-y divide-outline-variant/60 animate-in fade-in slide-in-from-top-2 duration-150">
+                        {manualStockSearchSuggestions.map((p) => (
+                          <button
+                            key={p._id}
+                            type="button"
+                            onClick={() => {
+                              setManualStockProductId(p._id)
+                              setManualStockSearchQuery('')
+                            }}
+                            className="w-full text-left p-3 hover:bg-surface-container-low transition-colors flex items-center gap-3"
+                          >
+                            <div className="w-8 h-8 bg-surface-container-low rounded overflow-hidden border border-outline-variant flex items-center justify-center shrink-0">
+                              {p.imageUrl ? (
+                                <img src={p.imageUrl} alt={p.productName} className="w-full h-full object-cover" />
+                              ) : (
+                                <Package size={14} className="text-on-surface-variant opacity-65" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-bold text-on-surface truncate">{p.productName || p.name}</p>
+                              <p className="text-xs text-on-surface-variant font-mono">{p.sku} | Đơn vị: {p.unit || 'cái'}</p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className="text-xs font-semibold text-on-surface-variant">Giá bán</p>
+                              <p className="text-sm font-bold text-primary">{formatVND(p.price || 0)}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {manualStockSearchQuery.trim() && manualStockSearchSuggestions.length === 0 && (
+                      <div className="absolute left-0 right-0 top-full mt-1 bg-surface border border-outline-variant rounded-xl shadow-2xl p-4 text-center z-50 text-xs font-medium text-on-surface-variant bg-surface-container-low">
+                        Không tìm thấy sản phẩm chưa có tồn kho tại chi nhánh này.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Thông số tồn kho */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Định mức cảnh báo */}
+                <div className="space-y-1.5">
+                  <label htmlFor="manual-threshold" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                    Cảnh báo tồn ít <span className="text-error">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    id="manual-threshold"
+                    min="0"
+                    step="1"
+                    required
+                    value={manualStockThreshold}
+                    onChange={(e) => setManualStockThreshold(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="w-full bg-surface-container-low border border-outline-variant/60 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary text-sm font-semibold transition-all"
+                  />
+                </div>
+
+                {/* Gợi ý quy trình */}
+                <div className="bg-surface-container-low p-3 rounded-xl border border-outline-variant/60 flex flex-col justify-center text-xs text-on-surface-variant font-medium">
+                  <p>💡 **Lưu ý:** Số lượng tồn kho và giá vốn ban đầu sẽ được khởi tạo mặc định bằng **0**.</p>
+                  <p className="mt-1">Để thêm hàng thực tế, hãy thực hiện **Nhập kho** ở tab Lịch sử nhập kho.</p>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-outline-variant">
+                <button
+                  type="button"
+                  onClick={() => setIsManualStockModalOpen(false)}
+                  disabled={manualStockLoading}
+                  className="rounded-xl px-5 py-3 text-sm font-bold text-on-surface-variant hover:bg-surface-container-low transition-colors disabled:opacity-50"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={manualStockLoading || !manualStockProductId}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white transition-all hover:bg-opacity-90 active:scale-95 disabled:opacity-50"
+                >
+                  {manualStockLoading ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Đang xử lý...
+                    </>
+                  ) : (
+                    'Khởi tạo tồn kho'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── EDIT STOCK MODAL ── */}
+      {isEditStockModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-lg bg-surface rounded-2xl border border-outline-variant shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-outline-variant bg-surface-container-low px-6 py-4">
+              <h2 className="text-lg font-black text-on-surface flex items-center gap-2">
+                <Pencil size={20} className="text-primary" />
+                Cập nhật tồn kho sản phẩm
+              </h2>
+              <button
+                type="button"
+                onClick={() => setIsEditStockModalOpen(false)}
+                className="rounded-full p-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleEditStockSubmit} className="p-6 space-y-4">
+              {editStockError && (
+                <div className="flex items-center gap-3 p-4 bg-error-container text-on-error-container rounded-xl border border-error/20">
+                  <AlertCircle size={20} className="shrink-0" />
+                  <p className="text-sm font-semibold">{editStockError}</p>
+                </div>
+              )}
+
+              {editStockSuccess && (
+                <div className="flex items-center gap-3 p-4 bg-success-container text-on-success-container rounded-xl border border-success/20">
+                  <Check size={20} className="shrink-0" />
+                  <p className="text-sm font-semibold">Cập nhật thông tin tồn kho thành công!</p>
+                </div>
+              )}
+
+              {/* Sản phẩm info */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                  Sản phẩm & Chi nhánh
+                </label>
+                <div className="flex items-center gap-3 p-3 bg-surface-container-low rounded-xl border border-outline-variant/60">
+                  <div className="w-10 h-10 bg-surface rounded-lg overflow-hidden border border-outline-variant flex items-center justify-center shrink-0">
+                    {editingStockItem?.productId?.imageUrl ? (
+                      <img
+                        src={editingStockItem.productId.imageUrl}
+                        alt={editingStockItem.productId.productName}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Package size={18} className="text-on-surface-variant opacity-60" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-on-surface truncate">
+                      {editingStockItem?.productId?.productName || editingStockItem?.productId?.name}
+                    </p>
+                    <p className="text-xs text-on-surface-variant font-mono">
+                      SKU: {editingStockItem?.productId?.sku || 'N/A'} | Chi nhánh: {branches.find(b => b._id === selectedBranchId)?.name || 'Chi nhánh'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Thông số tồn kho */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Số lượng - Chỉ đọc */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                    Số lượng tồn (Chỉ đọc)
+                  </label>
+                  <input
+                    type="text"
+                    disabled
+                    value={editStockQuantity}
+                    className="w-full bg-surface-container-low/50 border border-outline-variant/30 rounded-xl py-3 px-4 text-sm font-bold text-on-surface-variant opacity-75 cursor-not-allowed"
+                  />
+                </div>
+
+                {/* Giá vốn trung bình - Chỉ đọc */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                    Giá bán trung bình (Chỉ đọc)
+                  </label>
+                  <input
+                    type="text"
+                    disabled
+                    value={formatVND(editStockAvgCost)}
+                    className="w-full bg-surface-container-low/50 border border-outline-variant/30 rounded-xl py-3 px-4 text-sm font-bold text-on-surface-variant opacity-75 cursor-not-allowed"
+                  />
+                </div>
+
+                {/* Định mức cảnh báo */}
+                <div className="space-y-1.5">
+                  <label htmlFor="edit-threshold" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                    Cảnh báo tồn ít <span className="text-error">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    id="edit-threshold"
+                    min="0"
+                    step="1"
+                    required
+                    value={editStockThreshold}
+                    onChange={(e) => setEditStockThreshold(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="w-full bg-surface-container-low border border-outline-variant/60 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary text-sm font-bold transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="text-[11px] leading-relaxed text-on-surface-variant font-medium bg-surface-container-low p-3 rounded-xl border border-outline-variant/60">
+                💡 **Lưu ý:** Để đảm bảo lịch sử giao dịch chính xác, số lượng tồn kho và giá vốn chỉ thay đổi khi tạo **Phiếu Nhập Kho** hoặc thực hiện bán hàng/đặt hàng.
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-outline-variant">
+                <button
+                  type="button"
+                  onClick={() => setIsEditStockModalOpen(false)}
+                  disabled={editStockLoading}
+                  className="rounded-xl px-5 py-3 text-sm font-bold text-on-surface-variant hover:bg-surface-container-low transition-colors disabled:opacity-50"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={editStockLoading}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white transition-all hover:bg-opacity-90 active:scale-95 disabled:opacity-50"
+                >
+                  {editStockLoading ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Đang xử lý...
+                    </>
+                  ) : (
+                    'Cập nhật'
                   )}
                 </button>
               </div>
