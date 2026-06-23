@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Clock, Ticket, AlertCircle, Copy, Check } from 'lucide-react'
+import { Clock, Ticket, AlertCircle, Check } from 'lucide-react'
 import { promotionService } from '@/services/promotionService'
 import type { Promotion } from '@/types'
 
@@ -23,7 +23,6 @@ export const VouchersPage = () => {
   const [promotions, setPromotions] = useState<Promotion[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [copiedId, setCopiedId] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchPromotions = async () => {
@@ -48,10 +47,34 @@ export const VouchersPage = () => {
     fetchPromotions()
   }, [])
 
-  const handleCopyCode = (id: string, text: string) => {
-    navigator.clipboard.writeText(text)
-    setCopiedId(id)
-    setTimeout(() => setCopiedId(null), 2000)
+  const [claimLoadingId, setClaimLoadingId] = useState<string | null>(null)
+
+  const handleClaimVoucher = async (promoId: string, code: string) => {
+    try {
+      setClaimLoadingId(promoId)
+      const res = await promotionService.claimVoucher(code)
+      if (res.success) {
+        setPromotions((prev) =>
+          prev.map((p) => {
+            if (p.id === promoId && p.vouchersDetail) {
+              return {
+                ...p,
+                vouchersDetail: p.vouchersDetail.map((v) =>
+                  v.code === code ? { ...v, isClaimed: true, claimStatus: 'active' } : v
+                ),
+              }
+            }
+            return p
+          })
+        )
+      } else {
+        alert(res.message || 'Không thể nhận mã giảm giá.')
+      }
+    } catch (err: any) {
+      alert(err.response?.data?.message || err.message || 'Đã có lỗi xảy ra.')
+    } finally {
+      setClaimLoadingId(null)
+    }
   }
 
   // Curated, beautiful gradients for voucher tones
@@ -111,8 +134,9 @@ export const VouchersPage = () => {
                 promo.maxDiscountAmount ? ` Giảm tối đa ${formatVND(promo.maxDiscountAmount)}.` : ''
               }`
 
-            // Mock display a copyable preview tag for testing, referencing campaign
-            const promoCodePreview = `PROMO${promo.id.substring(promo.id.length - 6).toUpperCase()}`
+            const voucherDetail = promo.vouchersDetail?.[0]
+            const voucherCode = voucherDetail?.code || promo.vouchers?.[0]
+            const isClaimed = voucherDetail?.isClaimed || false
 
             return (
               <article
@@ -135,6 +159,15 @@ export const VouchersPage = () => {
                       {description}
                     </p>
                     
+                    {voucherCode && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-on-surface-variant uppercase">Mã:</span>
+                        <span className="font-mono font-black text-xs tracking-wider text-primary bg-primary/5 px-2.5 py-1 rounded-lg border border-primary/10 select-all">
+                          {voucherCode}
+                        </span>
+                      </div>
+                    )}
+
                     {promo.minOrderAmount && promo.minOrderAmount > 0 ? (
                       <div className="text-[11px] font-bold text-on-surface-variant bg-surface-container px-3 py-1.5 rounded-lg inline-block">
                         Đơn tối thiểu: {formatVND(promo.minOrderAmount)}
@@ -149,21 +182,35 @@ export const VouchersPage = () => {
                     {getExpirationDays(promo.endDate)}
                   </span>
                   
-                  <button
-                    type="button"
-                    onClick={() => handleCopyCode(promo.id, promoCodePreview)}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-primary hover:bg-opacity-95 text-white px-4 py-2 text-xs font-black transition-all shadow-sm cursor-pointer"
-                  >
-                    {copiedId === promo.id ? (
-                      <>
-                        <Check size={13} /> Đã sao chép
-                      </>
+                  {voucherCode ? (
+                    isClaimed ? (
+                      <button
+                        type="button"
+                        disabled
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-surface-container-high text-on-surface-variant/40 px-4 py-2 text-xs font-black transition-all shadow-sm cursor-default"
+                      >
+                        <Check size={13} /> Đã nhận
+                      </button>
                     ) : (
-                      <>
-                        <Copy size={13} /> Nhận mã
-                      </>
-                    )}
-                  </button>
+                      <button
+                        type="button"
+                        disabled={claimLoadingId === promo.id}
+                        onClick={() => handleClaimVoucher(promo.id, voucherCode)}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-primary hover:bg-opacity-95 text-white px-4 py-2 text-xs font-black transition-all shadow-sm cursor-pointer disabled:opacity-50"
+                      >
+                        {claimLoadingId === promo.id ? (
+                          <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        ) : (
+                          <Ticket size={13} />
+                        )}
+                        Nhận mã
+                      </button>
+                    )
+                  ) : (
+                    <span className="text-xs font-bold text-on-surface-variant bg-surface-container px-3 py-1.5 rounded-lg">
+                      Không khả dụng
+                    </span>
+                  )}
                 </div>
               </article>
             )

@@ -68,6 +68,9 @@ export const CheckoutPage = () => {
   const [isCheckingVoucher, setIsCheckingVoucher] = useState(false)
   const [voucherError, setVoucherError] = useState<string | null>(null)
   const [voucherSuccessMsg, setVoucherSuccessMsg] = useState<string | null>(null)
+  const [availablePromotions, setAvailablePromotions] = useState<any[]>([])
+  const [isVoucherListModalOpen, setIsVoucherListModalOpen] = useState(false)
+  const [isLoadingAvailableVouchers, setIsLoadingAvailableVouchers] = useState(false)
 
   useEffect(() => {
     const fetchBranches = async () => {
@@ -101,6 +104,64 @@ export const CheckoutPage = () => {
     }
     fetchBranches()
   }, [])
+
+  useEffect(() => {
+    const fetchAvailablePromotions = async () => {
+      if (!selectedBranch) return
+      setIsLoadingAvailableVouchers(true)
+      try {
+        const res = await promotionService.getActivePromotions({
+          branchId: selectedBranch._id,
+          limit: 100,
+          onlyClaimed: true,
+        })
+        if (res.success && res.data) {
+          setAvailablePromotions(res.data.data || [])
+        }
+      } catch (err) {
+        console.error('Failed to fetch available promotions:', err)
+      } finally {
+        setIsLoadingAvailableVouchers(false)
+      }
+    }
+    fetchAvailablePromotions()
+  }, [selectedBranch])
+
+  const handleSelectVoucherFromList = (code: string) => {
+    setVoucherCode(code)
+    setIsVoucherListModalOpen(false)
+    triggerApplyVoucherDirectly(code)
+  }
+
+  const triggerApplyVoucherDirectly = async (codeStr: string) => {
+    if (!cart || cart.items.length === 0 || !selectedBranch) return
+    setIsCheckingVoucher(true)
+    setVoucherError(null)
+    setVoucherSuccessMsg(null)
+    try {
+      const res = await promotionService.lookupVoucher(
+        codeStr.trim().toUpperCase(),
+        cart.totalAmount,
+        selectedBranch._id
+      )
+      if (res.success && res.data) {
+        const { voucher, discountAmount: calculatedDiscount } = res.data
+        setAppliedVoucher(voucher)
+        setDiscountAmount(calculatedDiscount)
+        setVoucherSuccessMsg(`Áp dụng thành công! Bạn được giảm ${formatVND(calculatedDiscount)}`)
+      } else {
+        setVoucherError(res.message || 'Mã giảm giá không hợp lệ hoặc không áp dụng được.')
+      }
+    } catch (err: any) {
+      setVoucherError(
+        err.response?.data?.message ||
+          err.message ||
+          'Không thể kiểm tra mã giảm giá lúc này.'
+      )
+    } finally {
+      setIsCheckingVoucher(false)
+    }
+  }
 
   const filteredBranches = useMemo(() => {
     const kw = branchSearch.trim().toLowerCase()
@@ -526,6 +587,19 @@ export const CheckoutPage = () => {
                     )}
                   </div>
 
+                  {!appliedVoucher && (
+                    <div className="flex justify-between items-center text-[11px] mt-1 bg-surface p-2 rounded-lg border border-outline-variant/30">
+                      <span className="text-on-surface-variant font-semibold">Hoặc chọn từ danh sách ưu đãi:</span>
+                      <button
+                        type="button"
+                        onClick={() => setIsVoucherListModalOpen(true)}
+                        className="text-primary font-black hover:underline cursor-pointer flex items-center gap-1 transition active:scale-95"
+                      >
+                        <Ticket className="w-3.5 h-3.5" /> Chọn mã giảm giá
+                      </button>
+                    </div>
+                  )}
+
                   {voucherError && (
                     <div className="text-[11px] font-bold text-error flex items-center gap-1.5 bg-error-container/20 p-2.5 rounded-lg border border-error/10 animate-fade-in">
                       <AlertCircle className="w-3.5 h-3.5 shrink-0" />
@@ -690,6 +764,152 @@ export const CheckoutPage = () => {
                   )
                 })
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Voucher Selection Modal */}
+      {isVoucherListModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in">
+          <div className="bg-surface-container-lowest max-w-lg w-full rounded-2xl border border-outline-variant shadow-2xl overflow-hidden flex flex-col max-h-[80vh] text-on-surface">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-outline-variant p-5 bg-surface-container-low">
+              <div>
+                <h3 className="text-lg font-black text-primary flex items-center gap-2">
+                  <Ticket className="text-primary w-5 h-5" />
+                  Chọn mã giảm giá
+                </h3>
+                <p className="text-xs text-on-surface-variant mt-1">
+                  Chọn mã giảm giá phù hợp nhất cho đơn hàng của bạn
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsVoucherListModalOpen(false)}
+                className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container-high transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Vouchers List */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-surface-container-lowest">
+              {isLoadingAvailableVouchers ? (
+                <div className="flex flex-col items-center justify-center py-10 space-y-2">
+                  <Loader className="w-8 h-8 animate-spin text-primary" />
+                  <p className="text-xs text-on-surface-variant font-bold">Đang tải mã giảm giá khả dụng...</p>
+                </div>
+              ) : availablePromotions.length === 0 || !availablePromotions.some(p => p.vouchers && p.vouchers.length > 0) ? (
+                <div className="text-center py-10 text-on-surface-variant">
+                  <Ticket className="mx-auto mb-3 text-on-surface-variant/40 w-10 h-10" />
+                  <p className="text-sm font-bold">Hiện chưa có mã giảm giá nào</p>
+                  <p className="text-xs mt-1">Quay lại sau để cập nhật các ưu đãi mới nhất.</p>
+                </div>
+              ) : (
+                availablePromotions.map((promo) => {
+                  const isPercentage = promo.discountType === 'percentage'
+                  const minOrder = promo.minOrderAmount || 0
+                  const isMinOrderMet = (cart?.totalAmount || 0) >= minOrder
+                  const vouchersList = promo.vouchers || []
+
+                  if (vouchersList.length === 0) return null
+
+                  return vouchersList.map((codeStr: string) => {
+                    const isSelected = appliedVoucher?.code === codeStr
+                    return (
+                      <div
+                        key={codeStr}
+                        onClick={() => {
+                          if (isMinOrderMet && !isSelected) {
+                            handleSelectVoucherFromList(codeStr)
+                          }
+                        }}
+                        className={`p-4 rounded-xl border-2 flex items-start gap-4 transition-all duration-200 ${
+                          isSelected
+                            ? 'border-primary bg-primary/5 cursor-default'
+                            : isMinOrderMet
+                            ? 'border-outline-variant/40 hover:border-primary/30 hover:bg-surface-container-low cursor-pointer'
+                            : 'border-outline-variant/20 bg-surface-container-high/30 opacity-60 cursor-not-allowed'
+                        }`}
+                      >
+                        {/* Left visual icon */}
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
+                          isSelected
+                            ? 'bg-primary text-white'
+                            : isMinOrderMet
+                            ? 'bg-primary/10 text-primary'
+                            : 'bg-surface-container-highest text-on-surface-variant'
+                        }`}>
+                          <Ticket className="w-6 h-6" />
+                        </div>
+
+                        {/* Middle info */}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-black text-sm tracking-wider text-primary uppercase">
+                              {codeStr}
+                            </span>
+                            <span className="text-[10px] font-black text-on-surface-variant bg-surface-container px-2 py-0.5 rounded">
+                              {promo.name}
+                            </span>
+                          </div>
+
+                          <p className="font-black text-sm mt-1.5 text-on-surface">
+                            {isPercentage ? `Giảm ${promo.discountValue}%` : `Giảm ${formatVND(promo.discountValue)}`}
+                            {isPercentage && promo.maxDiscountAmount && ` (Tối đa ${formatVND(promo.maxDiscountAmount)})`}
+                          </p>
+
+                          <p className="text-[10px] text-on-surface-variant mt-1">
+                            Áp dụng cho đơn từ {formatVND(minOrder)}
+                          </p>
+
+                          {!isMinOrderMet && (
+                            <p className="text-[10px] text-error font-bold mt-1.5 flex items-center gap-1">
+                              <AlertCircle className="w-3 h-3" />
+                              Chưa đạt đơn tối thiểu (Cần mua thêm {formatVND(minOrder - (cart?.totalAmount || 0))})
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Right action indicator */}
+                        <div className="shrink-0 pt-0.5">
+                          {isSelected ? (
+                            <span className="text-xs font-black text-primary uppercase bg-primary/10 px-2.5 py-1 rounded-lg">
+                              Đã áp dụng
+                            </span>
+                          ) : isMinOrderMet ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleSelectVoucherFromList(codeStr)
+                              }}
+                              className="bg-primary hover:bg-opacity-90 text-white text-xs font-black px-3.5 py-1.5 rounded-lg shadow-sm transition-all"
+                            >
+                              Dùng ngay
+                            </button>
+                          ) : (
+                            <span className="text-xs font-bold text-on-surface-variant/40 bg-surface-container px-2.5 py-1.5 rounded-lg">
+                              Chưa đủ đk
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })
+                })
+              )}
+            </div>
+            {/* Modal Footer */}
+            <div className="border-t border-outline-variant p-4 bg-surface-container-low flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsVoucherListModalOpen(false)}
+                className="bg-surface-container-highest hover:bg-surface-container text-on-surface font-bold text-xs px-5 py-2.5 rounded-xl transition"
+              >
+                Đóng lại
+              </button>
             </div>
           </div>
         </div>
