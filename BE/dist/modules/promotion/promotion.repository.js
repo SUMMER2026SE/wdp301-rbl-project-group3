@@ -70,8 +70,8 @@ class PromotionRepository {
     async updateVoucherStatus(id, status) {
         return voucher_model_1.Voucher.findByIdAndUpdate(id, { $set: { status } }, { new: true }).exec();
     }
-    async markVoucherUsed(id, userId) {
-        return voucher_model_1.Voucher.findByIdAndUpdate(id, { $set: { status: 'used', usedBy: new mongoose_1.Types.ObjectId(userId), usedAt: new Date() } }, { new: true }).exec();
+    async markVoucherUsedWithOrder(id, userId, orderId) {
+        return voucher_model_1.Voucher.findByIdAndUpdate(id, { $set: { status: 'used', usedBy: new mongoose_1.Types.ObjectId(userId), usedAt: new Date(), orderId: new mongoose_1.Types.ObjectId(orderId) } }, { new: true }).exec();
     }
     async disableManyVouchersByPromotion(promotionId) {
         await voucher_model_1.Voucher.updateMany({ promotionId: new mongoose_1.Types.ObjectId(promotionId), status: 'active' }, { $set: { status: 'disabled' } }).exec();

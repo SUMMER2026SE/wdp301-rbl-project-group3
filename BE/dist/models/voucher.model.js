@@ -62,6 +62,7 @@ const VoucherSchema = new mongoose_1.Schema({
     },
     usedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
     usedAt: { type: Date },
+    orderId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Order' },
     createdBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },
 }, {
     timestamps: true,

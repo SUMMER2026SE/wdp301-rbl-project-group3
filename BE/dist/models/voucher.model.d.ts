@@ -14,6 +14,7 @@ export interface IVoucher extends Document {
     status: VoucherStatus;
     usedBy?: Types.ObjectId;
     usedAt?: Date;
+    orderId?: Types.ObjectId;
     createdBy: Types.ObjectId;
     createdAt: Date;
     updatedAt: Date;

@@ -21,6 +21,7 @@ exports.listProductsSchema = zod_1.z
         categoryId: objectId.optional(),
         minPrice: zod_1.z.coerce.number().min(0).optional(),
         maxPrice: zod_1.z.coerce.number().min(0).optional(),
+        branchId: objectId.optional(),
     }),
 })
     .refine((data) => {

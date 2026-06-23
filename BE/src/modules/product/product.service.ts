@@ -11,6 +11,7 @@ export interface ListProductsQuery {
   categoryId?: string;
   minPrice?: number;
   maxPrice?: number;
+  branchId?: string;
 }
 
 export interface ListProductsResult {
@@ -58,6 +59,7 @@ export class ProductService {
         categoryId: query.categoryId,
         minPrice: query.minPrice,
         maxPrice: query.maxPrice,
+        branchId: query.branchId,
       },
       query.page,
       query.limit

@@ -24,6 +24,15 @@ class AdminUserController {
             const user = await admin_user_service_1.adminUserService.unlockUser(String(req.params.id));
             (0, response_util_1.sendSuccess)(res, { user }, 'User unlocked');
         });
+        this.changeRole = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
+            const { params, body } = admin_user_validation_1.changeRoleSchema.parse({
+                query: req.query,
+                body: req.body,
+                params: req.params,
+            });
+            const user = await admin_user_service_1.adminUserService.changeUserRole(params.id, req.user.userId, body);
+            (0, response_util_1.sendSuccess)(res, { user }, 'User role updated');
+        });
     }
 }
 exports.AdminUserController = AdminUserController;

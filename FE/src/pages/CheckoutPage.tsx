@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useCart } from '@/contexts/CartContext'
 import { orderService } from '@/services/orderService'
 import { promotionService } from '@/services/promotionService'
+import { branchService } from '@/services/branchService'
+import type { Branch } from '@/types'
 
 const formatVND = (num: number) => {
   return new Intl.NumberFormat('vi-VN', {
@@ -23,9 +25,8 @@ import {
   Ticket,
   Tag,
   X,
+  Search,
 } from 'lucide-react'
-
-const DUMMY_BRANCH_ID = '60d5ec3888339c2d1c68f123'
 
 const productImageMap: Record<string, string> = {
   'Fresh Organic Tomato': '/assets/winmart/tomatoes.png',
@@ -54,6 +55,12 @@ export const CheckoutPage = () => {
   const [error, setError] = useState<string | null>(null)
   const [successOrder, setSuccessOrder] = useState<any | null>(null)
 
+  // Branch states
+  const [branches, setBranches] = useState<Branch[]>([])
+  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null)
+  const [isBranchModalOpen, setIsBranchModalOpen] = useState(false)
+  const [branchSearch, setBranchSearch] = useState('')
+
   // Voucher states
   const [voucherCode, setVoucherCode] = useState('')
   const [appliedVoucher, setAppliedVoucher] = useState<any | null>(null)
@@ -62,12 +69,71 @@ export const CheckoutPage = () => {
   const [voucherError, setVoucherError] = useState<string | null>(null)
   const [voucherSuccessMsg, setVoucherSuccessMsg] = useState<string | null>(null)
 
+  useEffect(() => {
+    const fetchBranches = async () => {
+      try {
+        const res = await branchService.getBranches({ status: 'active' })
+        if (res.success && res.data) {
+          setBranches(res.data)
+          
+          const savedBranchStr = localStorage.getItem('selectedBranch')
+          if (savedBranchStr) {
+            try {
+              const parsed = JSON.parse(savedBranchStr)
+              const found = res.data.find((b) => b._id === parsed._id)
+              if (found) {
+                setSelectedBranch(found)
+                return
+              }
+            } catch (e) {
+              console.error('Failed to parse saved branch', e)
+            }
+          }
+          
+          if (res.data.length > 0) {
+            setSelectedBranch(res.data[0])
+            localStorage.setItem('selectedBranch', JSON.stringify(res.data[0]))
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch branches:', err)
+      }
+    }
+    fetchBranches()
+  }, [])
+
+  const filteredBranches = useMemo(() => {
+    const kw = branchSearch.trim().toLowerCase()
+    if (!kw) return branches
+    return branches.filter(
+      (b) =>
+        b.name.toLowerCase().includes(kw) ||
+        (b.address && b.address.toLowerCase().includes(kw)) ||
+        (b.code && b.code.toLowerCase().includes(kw))
+    )
+  }, [branches, branchSearch])
+
+  const handleSelectBranch = (branch: Branch) => {
+    setSelectedBranch(branch)
+    localStorage.setItem('selectedBranch', JSON.stringify(branch))
+    setIsBranchModalOpen(false)
+    if (appliedVoucher) {
+      handleRemoveVoucher()
+      setVoucherError('Chi nhánh thay đổi, vui lòng áp dụng lại mã giảm giá.')
+    }
+  }
+
   const handleApplyVoucher = async () => {
     if (!voucherCode.trim()) {
       setVoucherError('Vui lòng nhập mã giảm giá.')
       return
     }
     if (!cart || cart.items.length === 0) return
+
+    if (!selectedBranch) {
+      setVoucherError('Vui lòng chọn chi nhánh trước khi áp dụng mã giảm giá.')
+      return
+    }
 
     setIsCheckingVoucher(true)
     setVoucherError(null)
@@ -77,7 +143,7 @@ export const CheckoutPage = () => {
       const res = await promotionService.lookupVoucher(
         voucherCode.trim().toUpperCase(),
         cart.totalAmount,
-        DUMMY_BRANCH_ID
+        selectedBranch._id
       )
       if (res.success && res.data) {
         const { voucher, discountAmount: calculatedDiscount } = res.data
@@ -115,12 +181,17 @@ export const CheckoutPage = () => {
       return
     }
 
+    if (!selectedBranch) {
+      setError('Please select a branch first.')
+      return
+    }
+
     setIsSubmitting(true)
     setError(null)
 
     try {
       const res = await orderService.placeOrder({
-        branchId: DUMMY_BRANCH_ID,
+        branchId: selectedBranch._id,
         shippingAddress: `${fullName} - ${shippingAddress}`,
         phoneNumber,
         note: note.trim() || undefined,
@@ -305,21 +376,48 @@ export const CheckoutPage = () => {
 
               {/* Branch Information */}
               <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant/30">
-                <h3 className="text-lg font-bold flex items-center gap-2 border-b border-outline-variant/30 pb-3 mb-4">
-                  <MapPin className="text-primary w-5 h-5" />
-                  Select Branch
-                </h3>
-                <div className="flex items-center gap-3 bg-surface p-4 rounded-xl border border-primary/20">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                    <MapPin className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-sm">PMAN-Mart Quận 1 (Central Hub)</h4>
-                    <p className="text-[12px] text-on-surface-variant mt-0.5">
-                      15 Le Thanh Ton, District 1, Ho Chi Minh City
-                    </p>
-                  </div>
+                <div className="flex justify-between items-center border-b border-outline-variant/30 pb-3 mb-4">
+                  <h3 className="text-lg font-bold flex items-center gap-2">
+                    <MapPin className="text-primary w-5 h-5" />
+                    Select Branch
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setIsBranchModalOpen(true)}
+                    className="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    Change Branch
+                  </button>
                 </div>
+                {selectedBranch ? (
+                  <div className="flex items-center gap-3 bg-surface p-4 rounded-xl border border-primary/20">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                      <MapPin className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="font-bold text-sm text-on-surface truncate">{selectedBranch.name}</h4>
+                      <p className="text-[12px] text-on-surface-variant mt-0.5 leading-relaxed">
+                        {selectedBranch.address}
+                      </p>
+                      {selectedBranch.phone && (
+                        <p className="text-[10px] text-on-surface-variant mt-1">
+                          Phone: {selectedBranch.phone}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-on-surface-variant border border-dashed border-outline-variant rounded-xl">
+                    <p className="text-sm font-bold text-error">No branch selected</p>
+                    <button
+                      type="button"
+                      onClick={() => setIsBranchModalOpen(true)}
+                      className="mt-2 text-xs font-bold text-primary underline"
+                    >
+                      Click here to select a branch
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Payment Methods */}
@@ -505,6 +603,97 @@ export const CheckoutPage = () => {
           </div>
         )}
       </main>
+
+      {/* Branch Selection Modal */}
+      {isBranchModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in">
+          <div className="bg-surface-container-lowest max-w-lg w-full rounded-2xl border border-outline-variant shadow-2xl overflow-hidden flex flex-col max-h-[85vh] text-on-surface">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-outline-variant p-5 bg-surface-container-low">
+              <div>
+                <h3 className="text-lg font-black text-primary flex items-center gap-2">
+                  <MapPin className="text-primary w-5 h-5" />
+                  Chọn chi nhánh mua hàng
+                </h3>
+                <p className="text-xs text-on-surface-variant mt-1">
+                  Chọn chi nhánh gần nhất để đặt hàng nhanh hơn
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsBranchModalOpen(false)}
+                className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container-high transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Search Bar */}
+            <div className="p-5 border-b border-outline-variant/30 bg-surface-container-lowest">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant/60" />
+                <input
+                  type="text"
+                  value={branchSearch}
+                  onChange={(e) => setBranchSearch(e.target.value)}
+                  placeholder="Tìm theo tên chi nhánh, mã code hoặc địa chỉ..."
+                  className="w-full bg-surface-container-low border border-outline/30 rounded-full py-3 pl-12 pr-6 focus:ring-2 focus:ring-primary focus:bg-surface transition-all text-sm outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Branches List */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-3 bg-surface-container-lowest">
+              {filteredBranches.length === 0 ? (
+                <div className="text-center py-10 text-on-surface-variant">
+                  <MapPin className="mx-auto mb-3 text-on-surface-variant/40 w-10 h-10" />
+                  <p className="text-sm font-bold">Không tìm thấy chi nhánh nào</p>
+                  <p className="text-xs mt-1">Vui lòng thử từ khóa khác.</p>
+                </div>
+              ) : (
+                filteredBranches.map((branch) => {
+                  const isSelected = selectedBranch?._id === branch._id
+                  return (
+                    <div
+                      key={branch._id}
+                      onClick={() => handleSelectBranch(branch)}
+                      className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 flex items-center justify-between gap-4 ${
+                        isSelected
+                          ? 'border-primary bg-primary/5'
+                          : 'border-outline-variant/40 hover:border-primary/30 hover:bg-surface-container-low'
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
+                            isSelected ? 'bg-primary text-white' : 'bg-surface-container-highest text-on-surface-variant'
+                          }`}>
+                            {branch.code}
+                          </span>
+                          <h4 className="font-black text-sm truncate text-on-surface">{branch.name}</h4>
+                        </div>
+                        <p className="text-xs text-on-surface-variant mt-1.5 line-clamp-2 leading-relaxed">
+                          Địa chỉ: {branch.address}
+                        </p>
+                        {branch.phone && (
+                          <p className="text-[10px] text-on-surface-variant mt-1">
+                            SĐT: {branch.phone}
+                          </p>
+                        )}
+                      </div>
+                      <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${
+                        isSelected ? 'border-primary bg-primary' : 'border-outline'
+                      }`}>
+                        {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                      </div>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

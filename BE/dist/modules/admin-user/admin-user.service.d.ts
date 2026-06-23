@@ -1,4 +1,5 @@
 import { IUser } from '../../models/user.model';
+import { UserRole } from '../../types/common.types';
 export interface ListUsersQuery {
     page: number;
     limit: number;
@@ -21,7 +22,7 @@ declare function toAdminUserResponse(user: IUser): {
     email: string;
     phone: string | undefined;
     address: string | undefined;
-    role: import("../../types/common.types").UserRole;
+    role: UserRole;
     branchId: string | undefined;
     avatarUrl: string | undefined;
     authProvider: import("../../types/common.types").AuthProvider;
@@ -39,7 +40,7 @@ export declare class AdminUserService {
         email: string;
         phone: string | undefined;
         address: string | undefined;
-        role: import("../../types/common.types").UserRole;
+        role: UserRole;
         branchId: string | undefined;
         avatarUrl: string | undefined;
         authProvider: import("../../types/common.types").AuthProvider;
@@ -55,7 +56,26 @@ export declare class AdminUserService {
         email: string;
         phone: string | undefined;
         address: string | undefined;
-        role: import("../../types/common.types").UserRole;
+        role: UserRole;
+        branchId: string | undefined;
+        avatarUrl: string | undefined;
+        authProvider: import("../../types/common.types").AuthProvider;
+        isEmailVerified: boolean;
+        status: import("../../types/common.types").UserStatus;
+        lastLoginAt: Date | undefined;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
+    changeUserRole(targetUserId: string, adminUserId: string, data: {
+        role: UserRole;
+        branchId?: string;
+    }): Promise<{
+        id: string;
+        fullName: string;
+        email: string;
+        phone: string | undefined;
+        address: string | undefined;
+        role: UserRole;
         branchId: string | undefined;
         avatarUrl: string | undefined;
         authProvider: import("../../types/common.types").AuthProvider;

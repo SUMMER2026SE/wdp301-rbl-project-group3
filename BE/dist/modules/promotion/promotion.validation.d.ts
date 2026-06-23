@@ -108,6 +108,16 @@ export declare const voucherIdParamSchema: z.ZodObject<{
 export declare const lookupVoucherSchema: z.ZodObject<{
     query: z.ZodObject<{
         code: z.ZodString;
+        orderValue: z.ZodOptional<z.ZodCoercedNumber<unknown>>;
+        branchId: z.ZodOptional<z.ZodString>;
+    }, z.core.$strip>;
+}, z.core.$strip>;
+export declare const applyVoucherSchema: z.ZodObject<{
+    body: z.ZodObject<{
+        code: z.ZodString;
+        orderValue: z.ZodNumber;
+        branchId: z.ZodOptional<z.ZodString>;
+        orderId: z.ZodString;
     }, z.core.$strip>;
 }, z.core.$strip>;
 export declare const validate: <T extends z.ZodTypeAny>(schema: T) => (req: import("express").Request, _res: import("express").Response, next: import("express").NextFunction) => void;

@@ -41,6 +41,9 @@ class SystemSettingRepository {
     async findAllPublic() {
         return system_setting_model_1.SystemSetting.find({ isPublic: true }).sort({ group: 1, key: 1 }).exec();
     }
+    async findAll() {
+        return system_setting_model_1.SystemSetting.find().sort({ group: 1, key: 1 }).exec();
+    }
     async findByKey(key) {
         return system_setting_model_1.SystemSetting.findOne({ key: key.toLowerCase() }).exec();
     }

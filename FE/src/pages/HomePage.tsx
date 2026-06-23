@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@hooks/useAuth'
 import { useCart } from '@/contexts/CartContext'
 import { productService } from '@services/productService'
-import type { Product } from '@/types'
+import { branchService } from '@services/branchService'
+import type { Product, Branch } from '@/types'
 import {
   ArrowRight,
   Camera,
@@ -32,6 +33,7 @@ import {
   WalletCards,
   Zap,
   LogOut,
+  X,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -116,6 +118,7 @@ const iconMap: Record<string, LucideIcon> = {
   shopping_cart: ShoppingCart,
   social_leaderboard: Trophy,
   star: Star,
+  close: X,
 }
 
 const categories: Category[] = [
@@ -403,23 +406,85 @@ export const HomePage = () => {
   const [dbProducts, setDbProducts] = useState<Product[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All')
+  const [hasLoadedProducts, setHasLoadedProducts] = useState(false)
 
-  const fetchDbProducts = async (keyword?: string) => {
+  // Branch states
+  const [branches, setBranches] = useState<Branch[]>([])
+  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null)
+  const [isBranchModalOpen, setIsBranchModalOpen] = useState(false)
+  const [branchSearch, setBranchSearch] = useState('')
+
+  const fetchDbProducts = async (keyword?: string, branchId?: string) => {
+    setHasLoadedProducts(false)
     try {
-      const res = await productService.getProducts({ keyword, status: 'active' })
+      const activeBranchId = branchId || selectedBranch?._id
+      const res = await productService.getProducts({ 
+        keyword, 
+        status: 'active',
+        branchId: activeBranchId
+      })
       if (res.success) {
         setDbProducts(res.data)
       }
     } catch (err) {
       console.error('Failed to fetch products:', err)
+    } finally {
+      setHasLoadedProducts(true)
+    }
+  }
+
+  const fetchBranches = async () => {
+    try {
+      const res = await branchService.getBranches({ status: 'active' })
+      if (res.success && res.data) {
+        setBranches(res.data)
+        let activeBranch = res.data[0]
+        const savedBranchStr = localStorage.getItem('selectedBranch')
+        if (savedBranchStr) {
+          try {
+            const parsed = JSON.parse(savedBranchStr)
+            const found = res.data.find((b) => b._id === parsed._id)
+            if (found) {
+              activeBranch = found
+            }
+          } catch (e) {
+            console.error('Failed to parse saved branch', e)
+          }
+        }
+        setSelectedBranch(activeBranch)
+        localStorage.setItem('selectedBranch', JSON.stringify(activeBranch))
+        fetchDbProducts(searchQuery, activeBranch?._id)
+      }
+    } catch (err) {
+      console.error('Failed to fetch branches:', err)
     }
   }
 
   useEffect(() => {
-    fetchDbProducts()
+    fetchBranches()
   }, [])
 
+  const filteredBranches = useMemo(() => {
+    const kw = branchSearch.trim().toLowerCase()
+    if (!kw) return branches
+    return branches.filter(
+      (b) =>
+        b.name.toLowerCase().includes(kw) ||
+        (b.address && b.address.toLowerCase().includes(kw)) ||
+        (b.code && b.code.toLowerCase().includes(kw))
+    )
+  }, [branches, branchSearch])
+
+  const handleSelectBranch = (branch: Branch) => {
+    setSelectedBranch(branch)
+    localStorage.setItem('selectedBranch', JSON.stringify(branch))
+    setIsBranchModalOpen(false)
+    fetchDbProducts(searchQuery, branch._id)
+  }
+
   const filteredRecommendedProducts = useMemo(() => {
+    if (hasLoadedProducts && dbProducts.length === 0) return []
+
     if (selectedCategory === 'All') return dbProducts.length > 0 ? dbProducts : recommendedProducts
 
     const keywords = getCategoryKeywords(selectedCategory)
@@ -435,7 +500,7 @@ export const HomePage = () => {
       const name = product.title.toLowerCase()
       return keywords.some((kw) => name.includes(kw))
     })
-  }, [dbProducts, selectedCategory])
+  }, [dbProducts, selectedCategory, hasLoadedProducts])
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -503,8 +568,13 @@ export const HomePage = () => {
               <span className="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">
                 Deliver from
               </span>
-              <div className="flex items-center text-primary font-bold cursor-pointer">
-                <span className="text-body-md">PMAN-Mart Nguyen Hue</span>
+              <div 
+                onClick={() => setIsBranchModalOpen(true)}
+                className="flex items-center text-primary font-bold cursor-pointer hover:opacity-80 transition-all"
+              >
+                <span className="text-body-md truncate max-w-[180px]">
+                  {selectedBranch ? selectedBranch.name : 'Chọn chi nhánh'}
+                </span>
                 <Icon>expand_more</Icon>
               </div>
             </div>
@@ -714,31 +784,37 @@ export const HomePage = () => {
             </a>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-gutter-md">
-            {(dbProducts.length > 0 ? dbProducts.slice(0, 5) : flashSaleProducts).map((product) => {
-              const isDbProduct = '_id' in product
-              const actualProduct = isDbProduct ? product : dbProducts.find((p) => p.productName === product.title)
-              return (
-                <FlashSaleCard
-                  key={isDbProduct ? product._id : product.title}
-                  product={product}
-                  onAddToCart={async () => {
-                    if (!isAuthenticated) {
-                      navigate('/login')
-                      return
-                    }
-                    if (actualProduct) {
-                      try {
-                        await addToCart(actualProduct._id, 1)
-                      } catch (err: any) {
-                        alert(err.message || 'Failed to add to cart')
+            {hasLoadedProducts && dbProducts.length === 0 ? (
+              <div className="col-span-full text-center py-12 text-on-surface-variant bg-surface-container-low rounded-xl border border-outline-variant/30">
+                <p className="text-sm font-bold">Không có sản phẩm Flash Sale nào tại chi nhánh này</p>
+              </div>
+            ) : (
+              (dbProducts.length > 0 ? dbProducts.slice(0, 5) : flashSaleProducts).map((product) => {
+                const isDbProduct = '_id' in product
+                const actualProduct = isDbProduct ? product : dbProducts.find((p) => p.productName === product.title)
+                return (
+                  <FlashSaleCard
+                    key={isDbProduct ? product._id : product.title}
+                    product={product}
+                    onAddToCart={async () => {
+                      if (!isAuthenticated) {
+                        navigate('/login')
+                        return
                       }
-                    } else {
-                      alert('Product not available in database!')
-                    }
-                  }}
-                />
-              )
-            })}
+                      if (actualProduct) {
+                        try {
+                          await addToCart(actualProduct._id, 1)
+                        } catch (err: any) {
+                          alert(err.message || 'Failed to add to cart')
+                        }
+                      } else {
+                        alert('Product not available in database!')
+                      }
+                    }}
+                  />
+                )
+              })
+            )}
           </div>
         </section>
 
@@ -806,31 +882,37 @@ export const HomePage = () => {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-gutter-md">
-            {filteredRecommendedProducts.map((product) => {
-              const isDbProduct = '_id' in product
-              const actualProduct = isDbProduct ? product : dbProducts.find((p) => p.productName === product.title)
-              return (
-                <RecommendedCard
-                  key={isDbProduct ? product._id : product.title}
-                  product={product}
-                  onAddToCart={async () => {
-                    if (!isAuthenticated) {
-                      navigate('/login')
-                      return
-                    }
-                    if (actualProduct) {
-                      try {
-                        await addToCart(actualProduct._id, 1)
-                      } catch (err: any) {
-                        alert(err.message || 'Failed to add to cart')
+            {hasLoadedProducts && filteredRecommendedProducts.length === 0 ? (
+              <div className="col-span-full text-center py-12 text-on-surface-variant bg-surface-container-low rounded-xl border border-outline-variant/30">
+                <p className="text-sm font-bold">Không có sản phẩm nào được gợi ý tại chi nhánh này</p>
+              </div>
+            ) : (
+              filteredRecommendedProducts.map((product) => {
+                const isDbProduct = '_id' in product
+                const actualProduct = isDbProduct ? product : dbProducts.find((p) => p.productName === product.title)
+                return (
+                  <RecommendedCard
+                    key={isDbProduct ? product._id : product.title}
+                    product={product}
+                    onAddToCart={async () => {
+                      if (!isAuthenticated) {
+                        navigate('/login')
+                        return
                       }
-                    } else {
-                      alert('Product not available in database!')
-                    }
-                  }}
-                />
-              )
-            })}
+                      if (actualProduct) {
+                        try {
+                          await addToCart(actualProduct._id, 1)
+                        } catch (err: any) {
+                          alert(err.message || 'Failed to add to cart')
+                        }
+                      } else {
+                        alert('Product not available in database!')
+                      }
+                    }}
+                  />
+                )
+              })
+            )}
           </div>
         </section>
       </main>
@@ -1116,6 +1198,97 @@ export const HomePage = () => {
                     <Icon>arrow_forward</Icon>
                   </button>
                 </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Branch Selection Modal */}
+      {isBranchModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in">
+          <div className="bg-surface-container-lowest max-w-lg w-full rounded-2xl border border-outline-variant shadow-2xl overflow-hidden flex flex-col max-h-[85vh] text-on-surface">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-outline-variant p-5 bg-surface-container-low">
+              <div>
+                <h3 className="text-lg font-black text-primary flex items-center gap-2">
+                  <Icon className="text-primary">location_on</Icon>
+                  Chọn chi nhánh mua hàng
+                </h3>
+                <p className="text-xs text-on-surface-variant mt-1">
+                  Chọn chi nhánh gần nhất để đặt hàng nhanh hơn
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsBranchModalOpen(false)}
+                className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container-high transition-colors cursor-pointer"
+              >
+                <Icon>close</Icon>
+              </button>
+            </div>
+
+            {/* Search Bar */}
+            <div className="p-5 border-b border-outline-variant/30 bg-surface-container-lowest">
+              <div className="relative">
+                <Icon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant/60">search</Icon>
+                <input
+                  type="text"
+                  value={branchSearch}
+                  onChange={(e) => setBranchSearch(e.target.value)}
+                  placeholder="Tìm theo tên chi nhánh, mã code hoặc địa chỉ..."
+                  className="w-full bg-surface-container-low border border-outline/30 rounded-full py-3 pl-12 pr-6 focus:ring-2 focus:ring-primary focus:bg-surface transition-all text-sm outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Branches List */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-3 bg-surface-container-lowest">
+              {filteredBranches.length === 0 ? (
+                <div className="text-center py-10 text-on-surface-variant">
+                  <MapPin className="mx-auto mb-3 text-on-surface-variant/40" size={40} />
+                  <p className="text-sm font-bold">Không tìm thấy chi nhánh nào</p>
+                  <p className="text-xs mt-1">Vui lòng thử từ khóa khác.</p>
+                </div>
+              ) : (
+                filteredBranches.map((branch) => {
+                  const isSelected = selectedBranch?._id === branch._id
+                  return (
+                    <div
+                      key={branch._id}
+                      onClick={() => handleSelectBranch(branch)}
+                      className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 flex items-center justify-between gap-4 ${
+                        isSelected
+                          ? 'border-primary bg-primary/5'
+                          : 'border-outline-variant/40 hover:border-primary/30 hover:bg-surface-container-low'
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
+                            isSelected ? 'bg-primary text-white' : 'bg-surface-container-highest text-on-surface-variant'
+                          }`}>
+                            {branch.code}
+                          </span>
+                          <h4 className="font-black text-sm truncate text-on-surface">{branch.name}</h4>
+                        </div>
+                        <p className="text-xs text-on-surface-variant mt-1.5 line-clamp-2 leading-relaxed">
+                          Địa chỉ: {branch.address}
+                        </p>
+                        {branch.phone && (
+                          <p className="text-[10px] text-on-surface-variant mt-1">
+                            SĐT: {branch.phone}
+                          </p>
+                        )}
+                      </div>
+                      <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${
+                        isSelected ? 'border-primary bg-primary' : 'border-outline'
+                      }`}>
+                        {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                      </div>
+                    </div>
+                  )
+                })
               )}
             </div>
           </div>

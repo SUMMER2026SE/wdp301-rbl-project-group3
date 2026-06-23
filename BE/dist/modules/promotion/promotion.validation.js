@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validate = exports.lookupVoucherSchema = exports.voucherIdParamSchema = exports.listVouchersSchema = exports.generateVouchersSchema = exports.listActivePromotionsSchema = exports.listPromotionsSchema = exports.promotionIdParamSchema = exports.updatePromotionSchema = exports.createPromotionSchema = void 0;
+exports.validate = exports.applyVoucherSchema = exports.lookupVoucherSchema = exports.voucherIdParamSchema = exports.listVouchersSchema = exports.generateVouchersSchema = exports.listActivePromotionsSchema = exports.listPromotionsSchema = exports.promotionIdParamSchema = exports.updatePromotionSchema = exports.createPromotionSchema = void 0;
 const zod_1 = require("zod");
 const dateString = zod_1.z
     .string()
@@ -82,6 +82,16 @@ exports.voucherIdParamSchema = zod_1.z.object({
 exports.lookupVoucherSchema = zod_1.z.object({
     query: zod_1.z.object({
         code: zod_1.z.string().min(1, 'Voucher code is required'),
+        orderValue: zod_1.z.coerce.number().min(0).optional(),
+        branchId: mongoId.optional(),
+    }),
+});
+exports.applyVoucherSchema = zod_1.z.object({
+    body: zod_1.z.object({
+        code: zod_1.z.string().min(1, 'Voucher code is required'),
+        orderValue: zod_1.z.number().min(0),
+        branchId: mongoId.optional(),
+        orderId: mongoId,
     }),
 });
 const validate = (schema) => {

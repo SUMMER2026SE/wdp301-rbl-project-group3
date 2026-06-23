@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.productRepository = exports.ProductRepository = void 0;
 const product_model_1 = require("../../models/product.model");
+const inventory_model_1 = require("../../models/inventory.model");
 class ProductRepository {
     async create(data) {
         return new product_model_1.Product(data).save();
@@ -12,6 +13,14 @@ class ProductRepository {
             query.status = filters.status;
         if (filters.categoryId)
             query.categoryId = filters.categoryId;
+        if (filters.branchId) {
+            const inventories = await inventory_model_1.Inventory.find({
+                branchId: filters.branchId,
+                quantity: { $gt: 0 }
+            }).select('productId').exec();
+            const productIds = inventories.map(inv => inv.productId);
+            query._id = { $in: productIds };
+        }
         if (filters.keyword) {
             query.$or = [
                 { name: { $regex: filters.keyword, $options: 'i' } },

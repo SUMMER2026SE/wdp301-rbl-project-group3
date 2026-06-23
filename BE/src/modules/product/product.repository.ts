@@ -1,4 +1,5 @@
 import { IProduct, Product } from '../../models/product.model';
+import { Inventory } from '../../models/inventory.model';
 
 export interface ProductListFilters {
   status?: string;
@@ -6,6 +7,7 @@ export interface ProductListFilters {
   categoryId?: string;
   minPrice?: number;
   maxPrice?: number;
+  branchId?: string;
 }
 
 export interface PaginatedProducts {
@@ -26,10 +28,18 @@ export class ProductRepository {
     page: number,
     limit: number
   ): Promise<PaginatedProducts> {
-    const query: Record<string, unknown> = {};
+    const query: Record<string, any> = {};
 
     if (filters.status) query.status = filters.status;
     if (filters.categoryId) query.categoryId = filters.categoryId;
+    if (filters.branchId) {
+      const inventories = await Inventory.find({
+        branchId: filters.branchId,
+        quantity: { $gt: 0 }
+      }).select('productId').exec();
+      const productIds = inventories.map(inv => inv.productId);
+      query._id = { $in: productIds };
+    }
     if (filters.keyword) {
       query.$or = [
         { name: { $regex: filters.keyword, $options: 'i' } },

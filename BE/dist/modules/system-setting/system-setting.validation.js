@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validate = exports.updateSettingSchema = exports.createSettingSchema = exports.listSettingsSchema = exports.settingKeyParamSchema = void 0;
+exports.validate = exports.bulkUpdateSettingsSchema = exports.updateSettingSchema = exports.createSettingSchema = exports.listSettingsSchema = exports.settingKeyParamSchema = void 0;
 const zod_1 = require("zod");
 const auth_validation_1 = require("../auth/auth.validation");
 Object.defineProperty(exports, "validate", { enumerable: true, get: function () { return auth_validation_1.validate; } });
@@ -48,6 +48,17 @@ exports.updateSettingSchema = zod_1.z.object({
         valueType: settingValueType.optional(),
         description: zod_1.z.string().max(500).optional(),
         isPublic: zod_1.z.boolean().optional(),
+    }),
+});
+exports.bulkUpdateSettingsSchema = zod_1.z.object({
+    body: zod_1.z.object({
+        settings: zod_1.z
+            .array(zod_1.z.object({
+            key: settingKey,
+            value: zod_1.z.union([zod_1.z.string().max(500), zod_1.z.number(), zod_1.z.boolean()]),
+        }))
+            .min(1)
+            .max(50),
     }),
 });
 //# sourceMappingURL=system-setting.validation.js.map

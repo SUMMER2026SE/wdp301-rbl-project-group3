@@ -9,12 +9,12 @@ export declare const listOrdersSchema: z.ZodObject<{
     query: z.ZodObject<{
         branchId: z.ZodOptional<z.ZodString>;
         status: z.ZodOptional<z.ZodEnum<{
+            cancelled: "cancelled";
             pending: "pending";
             confirmed: "confirmed";
             preparing: "preparing";
             delivering: "delivering";
             delivered: "delivered";
-            cancelled: "cancelled";
         }>>;
     }, z.core.$strip>;
 }, z.core.$strip>;
@@ -24,12 +24,39 @@ export declare const updateOrderStatusSchema: z.ZodObject<{
     }, z.core.$strip>;
     body: z.ZodObject<{
         status: z.ZodEnum<{
+            cancelled: "cancelled";
             confirmed: "confirmed";
             preparing: "preparing";
             delivering: "delivering";
             delivered: "delivered";
-            cancelled: "cancelled";
         }>;
+    }, z.core.$strip>;
+}, z.core.$strip>;
+export declare const myOrdersSchema: z.ZodObject<{
+    query: z.ZodObject<{
+        page: z.ZodOptional<z.ZodString>;
+        limit: z.ZodOptional<z.ZodString>;
+        status: z.ZodOptional<z.ZodEnum<{
+            cancelled: "cancelled";
+            pending: "pending";
+            confirmed: "confirmed";
+            preparing: "preparing";
+            delivering: "delivering";
+            delivered: "delivered";
+        }>>;
+    }, z.core.$strip>;
+}, z.core.$strip>;
+export declare const myOrderIdParamSchema: z.ZodObject<{
+    params: z.ZodObject<{
+        orderId: z.ZodString;
+    }, z.core.$strip>;
+}, z.core.$strip>;
+export declare const cancelOrderSchema: z.ZodObject<{
+    params: z.ZodObject<{
+        orderId: z.ZodString;
+    }, z.core.$strip>;
+    body: z.ZodObject<{
+        reason: z.ZodOptional<z.ZodString>;
     }, z.core.$strip>;
 }, z.core.$strip>;
 export { validate };

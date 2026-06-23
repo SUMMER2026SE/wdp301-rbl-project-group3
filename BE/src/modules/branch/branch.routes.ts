@@ -11,22 +11,21 @@ import {
 } from './branch.validation';
 
 const router = Router();
-const branchReaders = ['admin', 'branch_manager', 'staff'] as const;
-
-router.use(authenticate);
 
 router.get(
   '/',
-  authorize(...branchReaders),
   validate(listBranchesSchema),
   branchController.getAll
 );
 router.get(
   '/:id',
-  authorize(...branchReaders),
   validate(branchIdParamSchema),
   branchController.getById
 );
+
+// Apply authentication middleware for mutative actions (create, update, delete)
+router.use(authenticate);
+
 router.post(
   '/',
   authorize('admin'),

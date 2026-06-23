@@ -15,6 +15,8 @@ publicRouter.get('/public', system_setting_controller_1.systemSettingController.
 adminRouter.use(auth_middleware_1.authenticate);
 adminRouter.use((0, role_middleware_1.authorize)(...adminRoles));
 adminRouter.get('/', (0, system_setting_validation_1.validate)(system_setting_validation_1.listSettingsSchema), system_setting_controller_1.systemSettingController.list);
+adminRouter.get('/groups', system_setting_controller_1.systemSettingController.getByGroup);
+adminRouter.patch('/bulk', (0, system_setting_validation_1.validate)(system_setting_validation_1.bulkUpdateSettingsSchema), system_setting_controller_1.systemSettingController.bulkUpdate);
 adminRouter.get('/:key', (0, system_setting_validation_1.validate)(system_setting_validation_1.settingKeyParamSchema), system_setting_controller_1.systemSettingController.getByKey);
 adminRouter.post('/', (0, system_setting_validation_1.validate)(system_setting_validation_1.createSettingSchema), system_setting_controller_1.systemSettingController.create);
 adminRouter.patch('/:key', (0, system_setting_validation_1.validate)(system_setting_validation_1.updateSettingSchema), system_setting_controller_1.systemSettingController.update);
