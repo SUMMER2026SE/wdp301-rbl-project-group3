@@ -75,6 +75,12 @@ export declare const listActivePromotionsSchema: z.ZodObject<{
         branchId: z.ZodOptional<z.ZodString>;
         page: z.ZodOptional<z.ZodCoercedNumber<unknown>>;
         limit: z.ZodOptional<z.ZodCoercedNumber<unknown>>;
+        onlyClaimed: z.ZodOptional<z.ZodPreprocess<z.ZodBoolean>>;
+    }, z.core.$strip>;
+}, z.core.$strip>;
+export declare const claimVoucherSchema: z.ZodObject<{
+    body: z.ZodObject<{
+        code: z.ZodString;
     }, z.core.$strip>;
 }, z.core.$strip>;
 export declare const generateVouchersSchema: z.ZodObject<{
@@ -82,7 +88,7 @@ export declare const generateVouchersSchema: z.ZodObject<{
         id: z.ZodString;
     }, z.core.$strip>;
     body: z.ZodObject<{
-        quantity: z.ZodNumber;
+        code: z.ZodString;
     }, z.core.$strip>;
 }, z.core.$strip>;
 export declare const listVouchersSchema: z.ZodObject<{

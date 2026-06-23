@@ -1,6 +1,7 @@
 import { Types } from 'mongoose';
 import { promotionRepository, PromotionFilter } from '../promotion.repository';
-import { IPromotion, PromotionStatus } from '../../../models/promotion.model';
+import { Promotion, IPromotion, PromotionStatus } from '../../../models/promotion.model';
+import { Voucher } from '../../../models/voucher.model';
 import { AppError } from '../../../middlewares/errorHandler.middleware';
 import { CallerContext } from '../types';
 
@@ -132,26 +133,78 @@ export class PromotionService {
     };
   }
 
-  async listActivePromotions(filter: { branchId?: string; page?: number; limit?: number }) {
+  async listActivePromotions(
+    filter: { branchId?: string; page?: number; limit?: number; onlyClaimed?: boolean },
+    caller: CallerContext
+  ) {
     const now = new Date();
-    const { data } = await promotionRepository.findPromotions({
+    const query: any = {
       status: 'active',
-      branchId: filter.branchId,
-      page: filter.page,
-      limit: filter.limit,
-    });
+      startDate: { $lte: now },
+      endDate: { $gte: now },
+    };
 
-    const filtered = data.filter((p) => p.startDate <= now && p.endDate >= now);
+    if (filter.branchId) {
+      query.$or = [
+        { scope: 'global' },
+        { scope: 'branch', branchId: new Types.ObjectId(filter.branchId) },
+      ];
+    } else {
+      query.scope = 'global';
+    }
+
     const page = filter.page ?? 1;
     const limit = filter.limit ?? 20;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      Promotion.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).exec(),
+      Promotion.countDocuments(query).exec(),
+    ]);
+
+    const callerUserId = caller.userId;
+
+    const dataWithVouchers = await Promise.all(
+      data.map(async (p) => {
+        const queryVoucher: any = { promotionId: p._id, status: 'active', expiresAt: { $gt: now } };
+        const vouchers = await Voucher.find(queryVoucher).exec();
+
+        const vouchersList = vouchers.map((v) => {
+          const userClaim = v.claims?.find(
+            (c) => c.userId.toString() === callerUserId
+          );
+          return {
+            code: v.code,
+            isClaimed: !!userClaim,
+            claimStatus: userClaim ? userClaim.status : null,
+          };
+        });
+
+        let filteredVouchers = vouchersList;
+        if (filter.onlyClaimed) {
+          filteredVouchers = vouchersList.filter(
+            (v) => v.isClaimed && v.claimStatus === 'active'
+          );
+        }
+
+        const promoRes = toPromotionResponse(p);
+        return {
+          ...promoRes,
+          vouchers: filteredVouchers.map((v) => v.code),
+          vouchersDetail: filteredVouchers,
+        };
+      })
+    );
+
+    const finalData = dataWithVouchers.filter((p) => p.vouchers.length > 0);
 
     return {
-      data: filtered.map(toPromotionResponse),
+      data: finalData,
       pagination: {
-        total: filtered.length,
+        total: finalData.length,
         page,
         limit,
-        totalPages: Math.ceil(filtered.length / limit),
+        totalPages: Math.ceil(finalData.length / limit),
       },
     };
   }

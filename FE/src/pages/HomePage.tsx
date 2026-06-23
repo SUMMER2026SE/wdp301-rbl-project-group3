@@ -4,7 +4,8 @@ import { useAuth } from '@hooks/useAuth'
 import { useCart } from '@/contexts/CartContext'
 import { productService } from '@services/productService'
 import { branchService } from '@services/branchService'
-import type { Product, Branch } from '@/types'
+import { categoryService } from '@services/categoryService'
+import type { Product, Branch, Category as DbCategory } from '@/types'
 import {
   ArrowRight,
   Camera,
@@ -119,6 +120,21 @@ const iconMap: Record<string, LucideIcon> = {
   social_leaderboard: Trophy,
   star: Star,
   close: X,
+}
+
+const categoryIconMap: Record<string, string> = {
+  'DO-UONG': 'local_drink',
+  'THUC-AN-NHE': 'bakery_dining',
+  'FRUITS': 'eco',
+  'MEAT': 'restaurant',
+  'DAIRY': 'egg',
+  'COOKING': 'outdoor_grill',
+  'Beverages': 'local_drink',
+  'Snacks & Bakery': 'bakery_dining',
+  'Fruits & Vegetables': 'eco',
+  'Fresh Meat & Seafood': 'restaurant',
+  'Dairy & Eggs': 'egg',
+  'Cooking Essentials': 'outdoor_grill',
 }
 
 const categories: Category[] = [
@@ -405,8 +421,9 @@ export const HomePage = () => {
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [dbProducts, setDbProducts] = useState<Product[]>([])
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('All')
+  const [selectedCategory, setSelectedCategory] = useState<string | DbCategory>('All')
   const [hasLoadedProducts, setHasLoadedProducts] = useState(false)
+  const [dbCategories, setDbCategories] = useState<DbCategory[]>([])
 
   // Branch states
   const [branches, setBranches] = useState<Branch[]>([])
@@ -460,8 +477,20 @@ export const HomePage = () => {
     }
   }
 
+  const fetchCategories = async () => {
+    try {
+      const res = await categoryService.getCategories({ status: 'active' })
+      if (res.success && res.data) {
+        setDbCategories(res.data)
+      }
+    } catch (err) {
+      console.error('Failed to fetch categories:', err)
+    }
+  }
+
   useEffect(() => {
     fetchBranches()
+    fetchCategories()
   }, [])
 
   const filteredBranches = useMemo(() => {
@@ -486,6 +515,10 @@ export const HomePage = () => {
     if (hasLoadedProducts && dbProducts.length === 0) return []
 
     if (selectedCategory === 'All') return dbProducts.length > 0 ? dbProducts : recommendedProducts
+
+    if (typeof selectedCategory === 'object' && selectedCategory !== null) {
+      return dbProducts.filter((product) => product.categoryId === selectedCategory._id)
+    }
 
     const keywords = getCategoryKeywords(selectedCategory)
     const filteredDb = dbProducts.filter((product) => {
@@ -708,12 +741,19 @@ export const HomePage = () => {
                 <Icon className="w-5 h-5">shop</Icon>
                 All Departments
               </button>
-              {categories.map((category) => {
-                const active = selectedCategory === category.label
+              {(dbCategories.length > 0 ? dbCategories : categories).map((category) => {
+                const isDb = '_id' in category
+                const label = isDb ? (category as DbCategory).name : (category as any).label
+                const code = isDb ? (category as DbCategory).code : (category as any).label
+                const iconName = isDb ? (categoryIconMap[code] || categoryIconMap[label] || 'eco') : (category as any).icon
+                const active = typeof selectedCategory === 'object' && selectedCategory !== null
+                  ? (isDb && selectedCategory._id === (category as DbCategory)._id)
+                  : (!isDb && selectedCategory === label)
+
                 return (
                   <button
-                    key={category.label}
-                    onClick={() => setSelectedCategory(category.label)}
+                    key={isDb ? (category as DbCategory)._id : label}
+                    onClick={() => setSelectedCategory(category as any)}
                     className={
                       active
                         ? 'flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary-container text-on-primary-container font-bold transition-all scale-[0.98] text-left w-full'
@@ -721,8 +761,8 @@ export const HomePage = () => {
                     }
                     type="button"
                   >
-                    <Icon className="w-5 h-5">{category.icon}</Icon>
-                    {category.label}
+                    <Icon className="w-5 h-5">{iconName}</Icon>
+                    {label}
                   </button>
                 )
               })}

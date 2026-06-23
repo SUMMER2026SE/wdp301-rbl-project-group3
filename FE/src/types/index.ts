@@ -287,6 +287,12 @@ export interface Category {
   updatedAt: string
 }
 
+export interface PromotionVoucherDetail {
+  code: string
+  isClaimed: boolean
+  claimStatus: 'active' | 'used' | null
+}
+
 export interface Promotion {
   id: string
   name: string
@@ -300,6 +306,9 @@ export interface Promotion {
   startDate: string
   endDate: string
   status: 'draft' | 'active' | 'inactive' | 'expired'
+  usageLimit?: number
+  vouchers?: string[]
+  vouchersDetail?: PromotionVoucherDetail[]
   createdAt: string
   updatedAt: string
 }

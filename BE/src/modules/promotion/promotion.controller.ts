@@ -64,12 +64,17 @@ export class PromotionController {
     const branchId = queryStr(req.query.branchId);
     const page = queryStr(req.query.page);
     const limit = queryStr(req.query.limit);
-
-    const result = await promotionService.listActivePromotions({
-      branchId,
-      page: page ? Number(page) : undefined,
-      limit: limit ? Number(limit) : undefined,
-    });
+    const onlyClaimed = queryStr(req.query.onlyClaimed) === 'true';
+    const caller = await buildCallerContext(req);
+    const result = await promotionService.listActivePromotions(
+      {
+        branchId,
+        page: page ? Number(page) : undefined,
+        limit: limit ? Number(limit) : undefined,
+        onlyClaimed,
+      },
+      caller
+    );
     sendSuccess(res, result, 'Active promotions retrieved');
   });
 
@@ -113,8 +118,8 @@ export class PromotionController {
   generateVouchers = asyncHandler(async (req: Request, res: Response) => {
     const caller = await buildCallerContext(req);
     const id = String(req.params.id);
-    const { quantity } = req.body;
-    const result = await couponService.generateVouchers(id, quantity, caller);
+    const { code } = req.body;
+    const result = await couponService.generateVouchers(id, code, caller);
     sendSuccess(res, result, result.message, 201);
   });
 
@@ -150,11 +155,14 @@ export class PromotionController {
     const orderValue = Number(queryStr(req.query.orderValue)) || 0;
     const branchId = queryStr(req.query.branchId);
 
-    const voucher = await promotionValidationService.validateVoucher(code, orderValue, branchId);
+    const caller = await buildCallerContext(req).catch(() => null);
+    const userId = caller?.userId;
+
+    const voucher = await promotionValidationService.validateVoucher(code, orderValue, branchId, userId);
     const discount = promotionCalculationService.calculateDiscount(voucher, orderValue);
-    
+
     const response = await couponService.getVoucherResponse(voucher);
-    
+
     sendSuccess(res, { voucher: response, discountAmount: discount }, 'Voucher is valid');
   });
 
@@ -170,13 +178,20 @@ export class PromotionController {
       throw new AppError('orderId is required to apply voucher', 400);
     }
 
-    const voucher = await promotionValidationService.validateVoucher(code, orderValue, branchId);
+    const voucher = await promotionValidationService.validateVoucher(code, orderValue, branchId, userId);
     const discount = promotionCalculationService.calculateDiscount(voucher, orderValue);
-    
+
     const updatedVoucher = await promotionUsageService.applyVoucher(voucher._id.toString(), userId, orderId);
     const response = await couponService.getVoucherResponse(updatedVoucher!);
 
     sendSuccess(res, { voucher: response, discountAmount: discount }, 'Voucher applied successfully');
+  });
+
+  claimVoucher = asyncHandler(async (req: Request, res: Response) => {
+    const caller = await buildCallerContext(req);
+    const { code } = req.body;
+    const result = await couponService.claimVoucher(code, caller);
+    sendSuccess(res, result, 'Voucher claimed successfully');
   });
 }
 

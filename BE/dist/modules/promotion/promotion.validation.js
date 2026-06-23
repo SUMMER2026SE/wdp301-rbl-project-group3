@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validate = exports.applyVoucherSchema = exports.lookupVoucherSchema = exports.voucherIdParamSchema = exports.listVouchersSchema = exports.generateVouchersSchema = exports.listActivePromotionsSchema = exports.listPromotionsSchema = exports.promotionIdParamSchema = exports.updatePromotionSchema = exports.createPromotionSchema = void 0;
+exports.validate = exports.applyVoucherSchema = exports.lookupVoucherSchema = exports.voucherIdParamSchema = exports.listVouchersSchema = exports.generateVouchersSchema = exports.claimVoucherSchema = exports.listActivePromotionsSchema = exports.listPromotionsSchema = exports.promotionIdParamSchema = exports.updatePromotionSchema = exports.createPromotionSchema = void 0;
 const zod_1 = require("zod");
 const dateString = zod_1.z
     .string()
@@ -60,12 +60,18 @@ exports.listActivePromotionsSchema = zod_1.z.object({
         branchId: mongoId.optional(),
         page: zod_1.z.coerce.number().int().min(1).optional(),
         limit: zod_1.z.coerce.number().int().min(1).max(100).optional(),
+        onlyClaimed: zod_1.z.preprocess((val) => val === 'true', zod_1.z.boolean()).optional(),
+    }),
+});
+exports.claimVoucherSchema = zod_1.z.object({
+    body: zod_1.z.object({
+        code: zod_1.z.string().min(1, 'Mã voucher không được để trống').trim().toUpperCase(),
     }),
 });
 exports.generateVouchersSchema = zod_1.z.object({
     params: zod_1.z.object({ id: mongoId }),
     body: zod_1.z.object({
-        quantity: zod_1.z.number().int().min(1).max(500),
+        code: zod_1.z.string().min(2).max(50).trim().toUpperCase(),
     }),
 });
 exports.listVouchersSchema = zod_1.z.object({

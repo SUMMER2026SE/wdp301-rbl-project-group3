@@ -13,6 +13,7 @@ import {
   X,
   UserCheck,
   Users,
+  Ticket,
 } from 'lucide-react'
 
 type NavItem = {
@@ -75,6 +76,12 @@ export const AdminLayout = () => {
       label: 'Chi nhánh',
       description: 'Quản lý cửa hàng',
       icon: <MapPin size={20} />,
+    },
+    {
+      path: '/admin/promotions',
+      label: 'Khuyến mãi',
+      description: 'Quản lý ưu đãi & voucher',
+      icon: <Ticket size={20} />,
     },
   ]
 
