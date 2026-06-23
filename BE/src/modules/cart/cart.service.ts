@@ -25,15 +25,15 @@ interface CartResponse {
 
 function buildCartResponse(cart: any): CartResponse {
     const items: CartItemResponse[] = cart.items
-        .filter((item: any) => item.productId && item.productId.status !== false)
+        .filter((item: any) => item.productId && item.productId.status !== 'inactive')
         .map((item: any) => {
             const product = item.productId;
-            const price = product?.price ?? 0;
+            const price = product?.salePrice ?? 0;
             return {
                 itemId: item._id.toString(),
                 product: {
                     id: product?._id?.toString() ?? '',
-                    name: product?.productName ?? 'Unknown',
+                    name: product?.name ?? 'Unknown',
                     price,
                     unit: product?.unit,
                 },
