@@ -22,7 +22,7 @@ exports.updateOrderStatusSchema = zod_1.z.object({
         id: objectId,
     }),
     body: zod_1.z.object({
-        status: zod_1.z.enum(['confirmed', 'preparing', 'delivering', 'delivered', 'cancelled']),
+        status: orderStatus,
     }),
 });
 exports.myOrdersSchema = zod_1.z.object({
