@@ -181,6 +181,7 @@ export class AuthService {
         role: user.role,
         avatarUrl: user.avatarUrl,
         isEmailVerified: user.isEmailVerified,
+        branchId: user.branchId?.toString(),
       },
     };
   }
@@ -249,6 +250,7 @@ export class AuthService {
         role: user.role,
         avatarUrl: user.avatarUrl,
         isEmailVerified: user.isEmailVerified,
+        branchId: user.branchId?.toString(),
       },
     };
   }

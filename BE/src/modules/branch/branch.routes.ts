@@ -26,6 +26,12 @@ router.get(
 // Apply authentication middleware for mutative actions (create, update, delete)
 router.use(authenticate);
 
+router.get(
+  '/:id/quick-stats',
+  validate(branchIdParamSchema),
+  branchController.getQuickStats
+);
+
 router.post(
   '/',
   authorize('admin'),
@@ -34,7 +40,7 @@ router.post(
 );
 router.patch(
   '/:id',
-  authorize('admin'),
+  authorize('admin', 'branch_manager'),
   validate(updateBranchSchema),
   branchController.update
 );
