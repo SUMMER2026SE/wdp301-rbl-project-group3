@@ -166,6 +166,15 @@ export declare class OrderService {
         createdAt: Date;
         updatedAt: Date;
     }>;
+    private generateOrderCode;
+    placeOrder(customerId: string, data: {
+        branchId: string;
+        shippingAddress: string;
+        phoneNumber: string;
+        note?: string;
+        paymentMethod: 'COD' | 'banking' | 'momo' | 'vnpay';
+        voucherCode?: string;
+    }): Promise<any>;
 }
 export declare const orderService: OrderService;
 //# sourceMappingURL=order.service.d.ts.map

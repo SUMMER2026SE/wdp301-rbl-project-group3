@@ -3,8 +3,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.orderService = exports.OrderService = void 0;
 const mongoose_1 = require("mongoose");
 const errorHandler_middleware_1 = require("../../middlewares/errorHandler.middleware");
+const order_model_1 = require("../../models/order.model");
 const inventory_repository_1 = require("../inventory/inventory.repository");
 const order_repository_1 = require("./order.repository");
+const cart_repository_1 = require("../cart/cart.repository");
+const validation_service_1 = require("../promotion/services/validation.service");
+const calculation_service_1 = require("../promotion/services/calculation.service");
+const usage_service_1 = require("../promotion/services/usage.service");
 const allowedTransitions = {
     pending: ['confirmed', 'cancelled'],
     confirmed: ['pending', 'preparing', 'cancelled'],
@@ -251,6 +256,74 @@ class OrderService {
         if (!updatedOrder)
             throw new errorHandler_middleware_1.AppError('Failed to cancel order', 500);
         return this.buildCustomerOrderResponse(updatedOrder);
+    }
+    generateOrderCode() {
+        const date = new Date();
+        const stamp = date.toISOString().slice(0, 10).replace(/-/g, '');
+        const random = Math.random().toString(36).slice(2, 8).toUpperCase();
+        return `ORD-${stamp}-${random}`;
+    }
+    async placeOrder(customerId, data) {
+        // 1. Lấy giỏ hàng của user
+        const cart = await cart_repository_1.cartRepository.findByUserId(customerId);
+        if (!cart || cart.items.length === 0) {
+            throw new errorHandler_middleware_1.AppError('Giỏ hàng trống, không thể đặt hàng.', 400);
+        }
+        // 2. Kiểm tra tồn kho và lấy thông tin sản phẩm
+        const orderItems = [];
+        let totalAmountBeforeDiscount = 0;
+        for (const item of cart.items) {
+            const product = item.productId; // populated product
+            if (!product || product.status === 'inactive') {
+                throw new errorHandler_middleware_1.AppError(`Sản phẩm ${product?.name || 'không xác định'} không còn bán.`, 400);
+            }
+            // Check stock
+            const stock = await inventory_repository_1.inventoryRepository.findInventoryItem(data.branchId, product._id.toString());
+            if (!stock || stock.quantity < item.quantity) {
+                throw new errorHandler_middleware_1.AppError(`Sản phẩm ${product.name} không đủ tồn kho tại chi nhánh đã chọn (Chỉ còn ${stock?.quantity ?? 0} sản phẩm).`, 400);
+            }
+            const unitPrice = product.salePrice ?? 0;
+            const subtotal = unitPrice * item.quantity;
+            totalAmountBeforeDiscount += subtotal;
+            orderItems.push({
+                productId: product._id,
+                quantity: item.quantity,
+                unitPrice,
+                subtotal,
+            });
+        }
+        // 3. Xử lý voucher nếu có
+        let totalAmount = totalAmountBeforeDiscount;
+        let discountAmount = 0;
+        let appliedVoucherId;
+        if (data.voucherCode) {
+            const voucher = await validation_service_1.promotionValidationService.validateVoucher(data.voucherCode, totalAmountBeforeDiscount, data.branchId);
+            discountAmount = calculation_service_1.promotionCalculationService.calculateDiscount(voucher, totalAmountBeforeDiscount);
+            totalAmount = Math.max(0, totalAmountBeforeDiscount - discountAmount);
+            appliedVoucherId = voucher._id.toString();
+        }
+        // 4. Tạo mã đơn hàng
+        const orderCode = this.generateOrderCode();
+        // 5. Lưu order vào database
+        const order = await order_model_1.Order.create({
+            code: orderCode,
+            customerId: new mongoose_1.Types.ObjectId(customerId),
+            branchId: new mongoose_1.Types.ObjectId(data.branchId),
+            items: orderItems,
+            totalAmount,
+            status: 'pending',
+            deliveryAddress: data.shippingAddress,
+            note: data.note,
+        });
+        // 6. Gắn tracking event ban đầu
+        await order_repository_1.orderRepository.addTrackingEvent(order._id.toString(), 'order_placed', 'Đơn hàng được đặt thành công.');
+        // 7. Áp dụng voucher (cập nhật trạng thái voucher và promotion usageCount)
+        if (appliedVoucherId) {
+            await usage_service_1.promotionUsageService.applyVoucher(appliedVoucherId, customerId, order._id.toString());
+        }
+        // 8. Xóa sạch giỏ hàng
+        await cart_repository_1.cartRepository.clearCart(customerId);
+        return this.buildCustomerOrderResponse(order);
     }
 }
 exports.OrderService = OrderService;

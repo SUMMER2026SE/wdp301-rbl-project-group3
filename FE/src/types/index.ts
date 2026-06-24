@@ -56,6 +56,7 @@ export interface CartProduct {
   name: string
   price: number
   unit?: string
+  imageUrl?: string
 }
 
 export interface CartItem {
@@ -340,6 +341,17 @@ export interface ActivePromotionsResponse {
     limit: number
     totalPages: number
   }
+}
+
+export interface UserAddress {
+  _id: string
+  userId: string
+  receiverName: string
+  phoneNumber: string
+  addressDetail: string
+  isDefault: boolean
+  createdAt?: string
+  updatedAt?: string
 }
 
 

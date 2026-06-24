@@ -5,6 +5,7 @@ interface CartItemResponse {
         name: string;
         price: number;
         unit?: string;
+        imageUrl?: string;
     };
     quantity: number;
     subtotal: number;

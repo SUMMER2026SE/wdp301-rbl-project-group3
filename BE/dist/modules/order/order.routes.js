@@ -13,6 +13,7 @@ router.get('/my', customerOnly, (0, order_validation_1.validate)(order_validatio
 router.get('/my/:orderId/tracking', customerOnly, (0, order_validation_1.validate)(order_validation_1.myOrderIdParamSchema), order_controller_1.orderController.trackMyOrder);
 router.patch('/my/:orderId/cancel', customerOnly, (0, order_validation_1.validate)(order_validation_1.cancelOrderSchema), order_controller_1.orderController.cancelMyOrder);
 router.get('/my/:orderId', customerOnly, (0, order_validation_1.validate)(order_validation_1.myOrderIdParamSchema), order_controller_1.orderController.getMyOrderById);
+router.post('/', customerOnly, (0, order_validation_1.validate)(order_validation_1.placeOrderSchema), order_controller_1.orderController.placeOrder);
 router.get('/', backOffice, (0, order_validation_1.validate)(order_validation_1.listOrdersSchema), order_controller_1.orderController.getAll);
 router.patch('/:id/confirm', backOffice, (0, order_validation_1.validate)(order_validation_1.orderIdParamSchema), order_controller_1.orderController.confirm);
 router.patch('/:id/status', backOffice, (0, order_validation_1.validate)(order_validation_1.updateOrderStatusSchema), order_controller_1.orderController.updateStatus);

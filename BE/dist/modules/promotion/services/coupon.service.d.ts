@@ -1,7 +1,7 @@
 import { CallerContext } from '../types';
 import { IVoucher } from '../../../models/voucher.model';
 export declare class CouponService {
-    generateVouchers(promotionId: string, code: string, caller: CallerContext): Promise<{
+    generateVouchers(promotionId: string, quantity: number, caller: CallerContext): Promise<{
         message: string;
         data: {
             id: string;
@@ -17,7 +17,7 @@ export declare class CouponService {
             usedBy: string | undefined;
             usedAt: Date | undefined;
             createdAt: Date;
-        };
+        }[];
     }>;
     listVouchers(promotionId: string, filter: {
         status?: 'active' | 'used' | 'expired' | 'disabled';
@@ -60,10 +60,6 @@ export declare class CouponService {
         usedBy: string | undefined;
         usedAt: Date | undefined;
         createdAt: Date;
-    }>;
-    claimVoucher(code: string, caller: CallerContext): Promise<{
-        message: string;
-        code: string;
     }>;
     getVoucherResponse(voucher: IVoucher): Promise<{
         id: string;

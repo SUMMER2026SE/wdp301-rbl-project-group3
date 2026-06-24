@@ -3,8 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.promotionService = exports.PromotionService = void 0;
 const mongoose_1 = require("mongoose");
 const promotion_repository_1 = require("../promotion.repository");
-const promotion_model_1 = require("../../../models/promotion.model");
-const voucher_model_1 = require("../../../models/voucher.model");
 const errorHandler_middleware_1 = require("../../../middlewares/errorHandler.middleware");
 function toPromotionResponse(p) {
     return {
@@ -99,60 +97,24 @@ class PromotionService {
             pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
         };
     }
-    async listActivePromotions(filter, caller) {
+    async listActivePromotions(filter) {
         const now = new Date();
-        const query = {
+        const { data } = await promotion_repository_1.promotionRepository.findPromotions({
             status: 'active',
-            startDate: { $lte: now },
-            endDate: { $gte: now },
-        };
-        if (filter.branchId) {
-            query.$or = [
-                { scope: 'global' },
-                { scope: 'branch', branchId: new mongoose_1.Types.ObjectId(filter.branchId) },
-            ];
-        }
-        else {
-            query.scope = 'global';
-        }
+            branchId: filter.branchId,
+            page: filter.page,
+            limit: filter.limit,
+        });
+        const filtered = data.filter((p) => p.startDate <= now && p.endDate >= now);
         const page = filter.page ?? 1;
         const limit = filter.limit ?? 20;
-        const skip = (page - 1) * limit;
-        const [data, total] = await Promise.all([
-            promotion_model_1.Promotion.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).exec(),
-            promotion_model_1.Promotion.countDocuments(query).exec(),
-        ]);
-        const callerUserId = caller.userId;
-        const dataWithVouchers = await Promise.all(data.map(async (p) => {
-            const queryVoucher = { promotionId: p._id, status: 'active', expiresAt: { $gt: now } };
-            const vouchers = await voucher_model_1.Voucher.find(queryVoucher).exec();
-            const vouchersList = vouchers.map((v) => {
-                const userClaim = v.claims?.find((c) => c.userId.toString() === callerUserId);
-                return {
-                    code: v.code,
-                    isClaimed: !!userClaim,
-                    claimStatus: userClaim ? userClaim.status : null,
-                };
-            });
-            let filteredVouchers = vouchersList;
-            if (filter.onlyClaimed) {
-                filteredVouchers = vouchersList.filter((v) => v.isClaimed && v.claimStatus === 'active');
-            }
-            const promoRes = toPromotionResponse(p);
-            return {
-                ...promoRes,
-                vouchers: filteredVouchers.map((v) => v.code),
-                vouchersDetail: filteredVouchers,
-            };
-        }));
-        const finalData = dataWithVouchers.filter((p) => p.vouchers.length > 0);
         return {
-            data: finalData,
+            data: filtered.map(toPromotionResponse),
             pagination: {
-                total: finalData.length,
+                total: filtered.length,
                 page,
                 limit,
-                totalPages: Math.ceil(finalData.length / limit),
+                totalPages: Math.ceil(filtered.length / limit),
             },
         };
     }

@@ -71,15 +71,8 @@ export declare class PromotionService {
         branchId?: string;
         page?: number;
         limit?: number;
-        onlyClaimed?: boolean;
-    }, caller: CallerContext): Promise<{
+    }): Promise<{
         data: {
-            vouchers: string[];
-            vouchersDetail: {
-                code: string;
-                isClaimed: boolean;
-                claimStatus: "active" | "used" | null;
-            }[];
             id: string;
             name: string;
             description: string | undefined;

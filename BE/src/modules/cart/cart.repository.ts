@@ -7,7 +7,7 @@ export class CartRepository {
         return Cart.findOne({ userId })
             .populate({
                 path: 'items.productId',
-                select: 'name salePrice unit status',
+                select: 'name salePrice unit status imageUrl',
             })
             .exec();
     }

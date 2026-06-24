@@ -4,7 +4,14 @@ exports.couponService = exports.CouponService = void 0;
 const mongoose_1 = require("mongoose");
 const promotion_repository_1 = require("../promotion.repository");
 const errorHandler_middleware_1 = require("../../../middlewares/errorHandler.middleware");
-const voucher_model_1 = require("../../../models/voucher.model");
+function generateVoucherCode(prefix = 'VC') {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = prefix;
+    for (let i = 0; i < 8; i++) {
+        code += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return code;
+}
 function toVoucherResponse(v) {
     return {
         id: v._id.toString(),
@@ -23,7 +30,10 @@ function toVoucherResponse(v) {
     };
 }
 class CouponService {
-    async generateVouchers(promotionId, code, caller) {
+    async generateVouchers(promotionId, quantity, caller) {
+        if (quantity < 1 || quantity > 500) {
+            throw new errorHandler_middleware_1.AppError('Quantity must be between 1 and 500', 400);
+        }
         const promotion = await promotion_repository_1.promotionRepository.findPromotionById(promotionId);
         if (!promotion)
             throw new errorHandler_middleware_1.AppError('Promotion not found', 404);
@@ -36,13 +46,25 @@ class CouponService {
         if (promotion.status === 'inactive') {
             throw new errorHandler_middleware_1.AppError('Cannot generate vouchers for an inactive promotion', 400);
         }
-        const normalizedCode = code.trim().toUpperCase();
-        const exists = await promotion_repository_1.promotionRepository.findVoucherByCode(normalizedCode);
-        if (exists) {
-            throw new errorHandler_middleware_1.AppError(`Voucher code "${normalizedCode}" already exists`, 400);
+        if (promotion.usageLimit !== undefined) {
+            const existing = await promotion_repository_1.promotionRepository.countActiveVouchersByPromotion(promotionId);
+            const remaining = promotion.usageLimit - promotion.usageCount - existing;
+            if (quantity > remaining) {
+                throw new errorHandler_middleware_1.AppError(`Cannot generate ${quantity} vouchers. Only ${remaining} slots remaining based on usage limit.`, 400);
+            }
         }
-        const voucherData = {
-            code: normalizedCode,
+        const generatedCodes = new Set();
+        const maxAttempts = quantity * 5;
+        let attempts = 0;
+        while (generatedCodes.size < quantity && attempts < maxAttempts) {
+            generatedCodes.add(generateVoucherCode('VC'));
+            attempts++;
+        }
+        if (generatedCodes.size < quantity) {
+            throw new errorHandler_middleware_1.AppError('Failed to generate unique voucher codes. Please try again.', 500);
+        }
+        const voucherData = Array.from(generatedCodes).map((code) => ({
+            code,
             promotionId: promotion._id,
             discountType: promotion.discountType,
             discountValue: promotion.discountValue,
@@ -52,11 +74,11 @@ class CouponService {
             expiresAt: promotion.endDate,
             status: 'active',
             createdBy: new mongoose_1.Types.ObjectId(caller.userId),
-        };
-        const voucher = await promotion_repository_1.promotionRepository.createVoucher(voucherData);
+        }));
+        const vouchers = await promotion_repository_1.promotionRepository.createManyVouchers(voucherData);
         return {
-            message: `Voucher "${normalizedCode}" created successfully`,
-            data: toVoucherResponse(voucher),
+            message: `${vouchers.length} vouchers generated successfully`,
+            data: vouchers.map(toVoucherResponse),
         };
     }
     async listVouchers(promotionId, filter, caller) {
@@ -94,40 +116,6 @@ class CouponService {
         }
         const updated = await promotion_repository_1.promotionRepository.updateVoucherStatus(voucherId, 'disabled');
         return toVoucherResponse(updated);
-    }
-    async claimVoucher(code, caller) {
-        const normalizedCode = code.trim().toUpperCase();
-        const voucher = await voucher_model_1.Voucher.findOne({ code: normalizedCode }).exec();
-        if (!voucher) {
-            throw new errorHandler_middleware_1.AppError('Mã giảm giá không tồn tại hoặc không hợp lệ', 404);
-        }
-        if (voucher.status === 'disabled') {
-            throw new errorHandler_middleware_1.AppError('Mã giảm giá này đã bị vô hiệu hóa', 400);
-        }
-        if (voucher.expiresAt < new Date()) {
-            throw new errorHandler_middleware_1.AppError('Mã giảm giá này đã hết hạn', 400);
-        }
-        const promotion = await promotion_repository_1.promotionRepository.findPromotionById(voucher.promotionId.toString());
-        if (!promotion || promotion.status !== 'active') {
-            throw new errorHandler_middleware_1.AppError('Chương trình khuyến mãi này đã kết thúc hoặc không khả dụng', 400);
-        }
-        // Kiểm tra xem người dùng đã claim mã này chưa
-        const alreadyClaimed = voucher.claims?.some((c) => c.userId.toString() === caller.userId);
-        if (alreadyClaimed) {
-            throw new errorHandler_middleware_1.AppError('Bạn đã nhận mã giảm giá này rồi', 400);
-        }
-        // Push claim mới vào mảng claims
-        voucher.claims = voucher.claims || [];
-        voucher.claims.push({
-            userId: new mongoose_1.Types.ObjectId(caller.userId),
-            status: 'active',
-            claimedAt: new Date(),
-        });
-        await voucher.save();
-        return {
-            message: 'Nhận mã giảm giá thành công',
-            code: voucher.code,
-        };
     }
     async getVoucherResponse(voucher) {
         return toVoucherResponse(voucher);
