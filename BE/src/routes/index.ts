@@ -11,6 +11,9 @@ import statisticsRoutes from '../modules/statistics/statistics.routes';
 import cartRoutes from '../modules/cart/cart.routes';
 import addressRoutes from '../modules/address/address.routes';
 import promotionRoutes from '../modules/promotion/promotion.routes';
+import employeeRoutes from '../modules/employee/employee.routes';
+import invoiceRoutes from '../modules/invoice/invoice.routes';
+import returnRoutes from '../modules/return/return.routes';
 import {
   adminSystemSettingRoutes,
   publicSystemSettingRoutes,
@@ -30,6 +33,9 @@ router.use('/statistics', statisticsRoutes);
 router.use('/cart', cartRoutes);
 router.use('/addresses', addressRoutes);
 router.use('/promotions', promotionRoutes);
+router.use('/employees', employeeRoutes);
+router.use('/invoices', invoiceRoutes);
+router.use('/returns', returnRoutes);
 router.use('/settings', publicSystemSettingRoutes);
 router.use('/admin/settings', adminSystemSettingRoutes);
 

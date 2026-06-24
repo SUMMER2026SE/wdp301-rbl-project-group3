@@ -9,17 +9,26 @@ export class OrderController {
     const orders = await orderService.getOrders({
       branchId: req.query.branchId as string | undefined,
       status: req.query.status as string | undefined,
+    }, {
+      userId: req.user!.userId,
+      role: req.user!.role,
     });
     sendSuccess(res, { orders }, 'Orders retrieved');
   });
 
   getById = asyncHandler(async (req: Request, res: Response) => {
-    const order = await orderService.getOrderById(String(req.params.id));
+    const order = await orderService.getOrderById(String(req.params.id), {
+      userId: req.user!.userId,
+      role: req.user!.role,
+    });
     sendSuccess(res, { order }, 'Order retrieved');
   });
 
   confirm = asyncHandler(async (req: Request, res: Response) => {
-    const order = await orderService.confirmOrder(String(req.params.id), req.user!.userId);
+    const order = await orderService.confirmOrder(String(req.params.id), {
+      userId: req.user!.userId,
+      role: req.user!.role,
+    });
     sendSuccess(res, { order }, 'Order confirmed');
   });
 
@@ -27,7 +36,10 @@ export class OrderController {
     const order = await orderService.updateStatus(
       String(req.params.id),
       req.body.status as OrderStatus,
-      req.user!.userId
+      {
+        userId: req.user!.userId,
+        role: req.user!.role,
+      }
     );
     sendSuccess(res, { order }, 'Order status updated');
   });

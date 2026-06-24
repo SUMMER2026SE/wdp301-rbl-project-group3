@@ -64,5 +64,16 @@ const UserSchema = new Schema<IUser>(
 
 UserSchema.index({ email: 1 });
 UserSchema.index({ googleId: 1 });
+UserSchema.index(
+  { branchId: 1, role: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      role: 'branch_manager',
+      status: 'active',
+      branchId: { $exists: true },
+    },
+  }
+);
 
 export const User = mongoose.model<IUser>('User', UserSchema);

@@ -151,12 +151,11 @@ export class AuthService {
     const isMatch = await comparePassword(data.password, user.passwordHash);
     if (!isMatch) throw new AppError('Invalid credentials', 401);
 
-    if (user.status === 'banned') throw new AppError('Account has been banned', 403);
-
     // Yêu cầu xác thực email trước khi đăng nhập
     if (!user.isEmailVerified) {
       throw new AppError('Please verify your email before logging in', 403);
     }
+    if (user.status !== 'active') throw new AppError('Account is not active', 403);
 
     const tokenId = uuidv4();
     const { accessToken, refreshToken } = generateTokenPair(user, tokenId);
@@ -226,7 +225,7 @@ export class AuthService {
       });
     }
 
-    if (user.status === 'banned') throw new AppError('Account has been banned', 403);
+    if (user.status !== 'active') throw new AppError('Account is not active', 403);
 
     const tokenId = uuidv4();
     const { accessToken, refreshToken } = generateTokenPair(user, tokenId);
@@ -259,7 +258,7 @@ export class AuthService {
     refreshToken: string,
     deviceInfo: DeviceInfo
   ): Promise<{ accessToken: string; refreshToken: string }> {
-    let payload: { userId: string; tokenId: string };
+    let payload: { userId: string; tokenId: string; tokenVersion: number };
     try {
       payload = verifyRefreshToken(refreshToken);
     } catch {
@@ -278,6 +277,10 @@ export class AuthService {
     const user = await authRepository.findUserById(payload.userId);
     if (!user) throw new AppError('User not found', 404);
     if (user.status !== 'active') throw new AppError('Account is not active', 403);
+    if (user.refreshTokenVersion !== payload.tokenVersion) {
+      await authRepository.revokeUserToken(payload.tokenId);
+      throw new AppError('Session is no longer valid. Please login again.', 401);
+    }
 
     const newTokenId = uuidv4();
     const { accessToken, refreshToken: newRefreshToken } = generateTokenPair(user, newTokenId);
