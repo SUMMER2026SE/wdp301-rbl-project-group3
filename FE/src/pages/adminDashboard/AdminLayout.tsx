@@ -77,13 +77,22 @@ export const AdminLayout = () => {
       description: 'Quản lý cửa hàng',
       icon: <MapPin size={20} />,
     },
-    {
+  ]
+
+  if (user?.role === 'admin' || user?.role === 'branch_manager') {
+    navItems.push({
       path: '/admin/promotions',
       label: 'Khuyến mãi',
       description: 'Quản lý ưu đãi & voucher',
       icon: <Ticket size={20} />,
-    },
-  ]
+    })
+    navItems.push({
+      path: '/admin/employees',
+      label: 'Nhân viên',
+      description: 'Quản lý nhân viên chi nhánh',
+      icon: <UserCheck size={20} />,
+    })
+  }
 
   if (user?.role === 'admin') {
     navItems.push({

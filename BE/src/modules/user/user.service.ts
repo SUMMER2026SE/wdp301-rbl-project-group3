@@ -18,6 +18,7 @@ type ProfileResponse = {
   lastLoginAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+  branchId?: string;
 };
 
 function toProfileResponse(user: IUser): ProfileResponse {
@@ -35,6 +36,7 @@ function toProfileResponse(user: IUser): ProfileResponse {
     lastLoginAt: user.lastLoginAt,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
+    branchId: user.branchId?.toString(),
   };
 }
 

@@ -26,7 +26,7 @@ export const authenticate = async (
 
     const payload = verifyAccessToken(token);
     const user = await User.findById(payload.userId)
-      .select('email role status refreshTokenVersion')
+      .select('email role status branchId refreshTokenVersion')
       .lean()
       .exec();
 
@@ -48,6 +48,7 @@ export const authenticate = async (
       email: user.email,
       role: user.role,
       tokenVersion: payload.tokenVersion,
+      branchId: user.branchId?.toString(),
     };
 
     next();
