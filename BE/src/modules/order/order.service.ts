@@ -1,8 +1,13 @@
 import { Types } from 'mongoose';
 import { AppError } from '../../middlewares/errorHandler.middleware';
-import { IOrder, OrderStatus } from '../../models/order.model';
+import { IOrder, Order, OrderStatus } from '../../models/order.model';
+import { Product } from '../../models/product.model';
 import { inventoryRepository } from '../inventory/inventory.repository';
 import { orderRepository } from './order.repository';
+import { cartRepository } from '../cart/cart.repository';
+import { promotionValidationService } from '../promotion/services/validation.service';
+import { promotionCalculationService } from '../promotion/services/calculation.service';
+import { promotionUsageService } from '../promotion/services/usage.service';
 
 const allowedTransitions: Record<OrderStatus, OrderStatus[]> = {
   pending: ['confirmed', 'cancelled'],
@@ -313,6 +318,110 @@ export class OrderService {
 
     if (!updatedOrder) throw new AppError('Failed to cancel order', 500);
     return this.buildCustomerOrderResponse(updatedOrder);
+  }
+
+  private generateOrderCode(): string {
+    const date = new Date();
+    const stamp = date.toISOString().slice(0, 10).replace(/-/g, '');
+    const random = Math.random().toString(36).slice(2, 8).toUpperCase();
+    return `ORD-${stamp}-${random}`;
+  }
+
+  async placeOrder(customerId: string, data: {
+    branchId: string;
+    shippingAddress: string;
+    phoneNumber: string;
+    note?: string;
+    paymentMethod: 'COD' | 'banking' | 'momo' | 'vnpay';
+    voucherCode?: string;
+  }): Promise<any> {
+    // 1. Lấy giỏ hàng của user
+    const cart = await cartRepository.findByUserId(customerId);
+    if (!cart || cart.items.length === 0) {
+      throw new AppError('Giỏ hàng trống, không thể đặt hàng.', 400);
+    }
+
+    // 2. Kiểm tra tồn kho và lấy thông tin sản phẩm
+    const orderItems: any[] = [];
+    let totalAmountBeforeDiscount = 0;
+
+    for (const item of cart.items) {
+      const product = item.productId as any; // populated product
+      if (!product || product.status === 'inactive') {
+        throw new AppError(`Sản phẩm ${product?.name || 'không xác định'} không còn bán.`, 400);
+      }
+
+      // Check stock
+      const stock = await inventoryRepository.findInventoryItem(
+        data.branchId,
+        product._id.toString()
+      );
+      if (!stock || stock.quantity < item.quantity) {
+        throw new AppError(
+          `Sản phẩm ${product.name} không đủ tồn kho tại chi nhánh đã chọn (Chỉ còn ${stock?.quantity ?? 0} sản phẩm).`,
+          400
+        );
+      }
+
+      const unitPrice = product.salePrice ?? 0;
+      const subtotal = unitPrice * item.quantity;
+      totalAmountBeforeDiscount += subtotal;
+
+      orderItems.push({
+        productId: product._id,
+        quantity: item.quantity,
+        unitPrice,
+        subtotal,
+      });
+    }
+
+    // 3. Xử lý voucher nếu có
+    let totalAmount = totalAmountBeforeDiscount;
+    let discountAmount = 0;
+    let appliedVoucherId: string | undefined;
+
+    if (data.voucherCode) {
+      const voucher = await promotionValidationService.validateVoucher(
+        data.voucherCode,
+        totalAmountBeforeDiscount,
+        data.branchId
+      );
+      discountAmount = promotionCalculationService.calculateDiscount(voucher, totalAmountBeforeDiscount);
+      totalAmount = Math.max(0, totalAmountBeforeDiscount - discountAmount);
+      appliedVoucherId = voucher._id.toString();
+    }
+
+    // 4. Tạo mã đơn hàng
+    const orderCode = this.generateOrderCode();
+
+    // 5. Lưu order vào database
+    const order = await Order.create({
+      code: orderCode,
+      customerId: new Types.ObjectId(customerId),
+      branchId: new Types.ObjectId(data.branchId),
+      items: orderItems,
+      totalAmount,
+      status: 'pending',
+      deliveryAddress: data.shippingAddress,
+      note: data.note,
+    });
+
+    // 6. Gắn tracking event ban đầu
+    await orderRepository.addTrackingEvent(
+      order._id.toString(),
+      'order_placed',
+      'Đơn hàng được đặt thành công.'
+    );
+
+    // 7. Áp dụng voucher (cập nhật trạng thái voucher và promotion usageCount)
+    if (appliedVoucherId) {
+      await promotionUsageService.applyVoucher(appliedVoucherId, customerId, order._id.toString());
+    }
+
+    // 8. Xóa sạch giỏ hàng
+    await cartRepository.clearCart(customerId);
+
+    return this.buildCustomerOrderResponse(order);
   }
 }
 

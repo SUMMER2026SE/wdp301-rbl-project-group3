@@ -45,4 +45,15 @@ export const cancelOrderSchema = z.object({
   }),
 });
 
+export const placeOrderSchema = z.object({
+  body: z.object({
+    branchId: objectId,
+    shippingAddress: z.string().min(1, 'Shipping address is required').max(500),
+    phoneNumber: z.string().min(10, 'Invalid phone number').max(15),
+    note: z.string().max(500).optional(),
+    paymentMethod: z.enum(['COD', 'banking', 'momo', 'vnpay']),
+    voucherCode: z.string().max(50).optional(),
+  }),
+});
+
 export { validate };

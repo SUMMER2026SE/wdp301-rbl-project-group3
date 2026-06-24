@@ -66,6 +66,12 @@ export class OrderController {
     );
     sendSuccess(res, { order }, 'Order cancelled successfully');
   });
+
+  placeOrder = asyncHandler(async (req: Request, res: Response) => {
+    const customerId = req.user!.userId;
+    const order = await orderService.placeOrder(customerId, req.body);
+    sendSuccess(res, order, 'Đơn hàng đã được tạo thành công', 201);
+  });
 }
 
 export const orderController = new OrderController();

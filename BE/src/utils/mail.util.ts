@@ -60,6 +60,7 @@ export const sendPasswordResetEmail = async (email: string, token: string): Prom
 };
 
 export const sendOtpEmail = async (email: string, otp: string): Promise<void> => {
+  console.log(`[Email OTP] Sending OTP to ${email}: ${otp}`);
   await transporter.sendMail({
     from: env.email.from,
     to: email,

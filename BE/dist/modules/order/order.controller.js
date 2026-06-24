@@ -45,6 +45,11 @@ class OrderController {
             const order = await order_service_1.orderService.cancelCustomerOrder(req.params['orderId'], req.user.userId, req.body.reason);
             (0, response_util_1.sendSuccess)(res, { order }, 'Order cancelled successfully');
         });
+        this.placeOrder = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
+            const customerId = req.user.userId;
+            const order = await order_service_1.orderService.placeOrder(customerId, req.body);
+            (0, response_util_1.sendSuccess)(res, order, 'Đơn hàng đã được tạo thành công', 201);
+        });
     }
 }
 exports.OrderController = OrderController;

@@ -59,5 +59,20 @@ export declare const cancelOrderSchema: z.ZodObject<{
         reason: z.ZodOptional<z.ZodString>;
     }, z.core.$strip>;
 }, z.core.$strip>;
+export declare const placeOrderSchema: z.ZodObject<{
+    body: z.ZodObject<{
+        branchId: z.ZodString;
+        shippingAddress: z.ZodString;
+        phoneNumber: z.ZodString;
+        note: z.ZodOptional<z.ZodString>;
+        paymentMethod: z.ZodEnum<{
+            COD: "COD";
+            banking: "banking";
+            momo: "momo";
+            vnpay: "vnpay";
+        }>;
+        voucherCode: z.ZodOptional<z.ZodString>;
+    }, z.core.$strip>;
+}, z.core.$strip>;
 export { validate };
 //# sourceMappingURL=order.validation.d.ts.map

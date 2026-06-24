@@ -4,7 +4,8 @@ import { useCart } from '@/contexts/CartContext'
 import { orderService } from '@/services/orderService'
 import { promotionService } from '@/services/promotionService'
 import { branchService } from '@/services/branchService'
-import type { Branch } from '@/types'
+import { addressService } from '@/services/addressService'
+import type { Branch, UserAddress } from '@/types'
 
 const formatVND = (num: number) => {
   return new Intl.NumberFormat('vi-VN', {
@@ -69,6 +70,10 @@ export const CheckoutPage = () => {
   const [voucherError, setVoucherError] = useState<string | null>(null)
   const [voucherSuccessMsg, setVoucherSuccessMsg] = useState<string | null>(null)
 
+  // Saved Address states
+  const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>([])
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
+
   useEffect(() => {
     const fetchBranches = async () => {
       try {
@@ -101,6 +106,47 @@ export const CheckoutPage = () => {
     }
     fetchBranches()
   }, [])
+
+  useEffect(() => {
+    const fetchSavedAddresses = async () => {
+      try {
+        const res = await addressService.getAddresses()
+        if (res.success && res.data) {
+          const list = Array.isArray(res.data) ? res.data : (res.data as any).addresses || []
+          setSavedAddresses(list)
+          const defaultAddr = list.find((addr: any) => addr.isDefault)
+          if (defaultAddr) {
+            setSelectedAddressId(defaultAddr._id)
+            setFullName(defaultAddr.receiverName)
+            setPhoneNumber(defaultAddr.phoneNumber)
+            setShippingAddress(defaultAddr.addressDetail)
+          } else if (list.length > 0) {
+            setSelectedAddressId(list[0]._id)
+            setFullName(list[0].receiverName)
+            setPhoneNumber(list[0].phoneNumber)
+            setShippingAddress(list[0].addressDetail)
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch saved addresses:', err)
+      }
+    }
+    fetchSavedAddresses()
+  }, [])
+
+  const handleSelectSavedAddress = (addr: UserAddress) => {
+    setSelectedAddressId(addr._id)
+    setFullName(addr.receiverName)
+    setPhoneNumber(addr.phoneNumber)
+    setShippingAddress(addr.addressDetail)
+  }
+
+  const handleUseNewAddress = () => {
+    setSelectedAddressId(null)
+    setFullName('')
+    setPhoneNumber('')
+    setShippingAddress('')
+  }
 
   const filteredBranches = useMemo(() => {
     const kw = branchSearch.trim().toLowerCase()
@@ -316,6 +362,59 @@ export const CheckoutPage = () => {
                   Delivery Details
                 </h3>
 
+                {savedAddresses.length > 0 && (
+                  <div className="space-y-2 mb-4 pb-4 border-b border-outline-variant/30">
+                    <label className="text-[12px] text-on-surface-variant font-bold uppercase tracking-wider">
+                      Chọn địa chỉ đã lưu
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {savedAddresses.map((addr) => {
+                        const isSelected = selectedAddressId === addr._id
+                        return (
+                          <div
+                            key={addr._id}
+                            onClick={() => handleSelectSavedAddress(addr)}
+                            className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                              isSelected
+                                ? 'border-primary bg-primary/5'
+                                : 'border-outline-variant/40 hover:border-primary/20 hover:bg-surface-container-high'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-sm truncate max-w-[150px]">
+                                {addr.receiverName}
+                              </span>
+                              {addr.isDefault && (
+                                <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">
+                                  Default
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-on-surface-variant mt-1.5 leading-relaxed">
+                              SĐT: {addr.phoneNumber}
+                            </p>
+                            <p className="text-xs text-on-surface-variant mt-0.5 line-clamp-1">
+                              Đ/C: {addr.addressDetail}
+                            </p>
+                          </div>
+                        )
+                      })}
+                      <div
+                        onClick={handleUseNewAddress}
+                        className={`p-4 rounded-xl border-2 border-dashed cursor-pointer transition-all duration-200 flex flex-col items-center justify-center min-h-[96px] ${
+                          selectedAddressId === null
+                            ? 'border-primary bg-primary/5'
+                            : 'border-outline-variant/60 hover:border-primary/30 hover:bg-surface-container-high'
+                        }`}
+                      >
+                        <span className="text-xs font-bold text-primary flex items-center gap-1">
+                          + Nhập địa chỉ mới
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-label-md text-on-surface-variant font-bold flex items-center gap-1.5">
@@ -379,15 +478,11 @@ export const CheckoutPage = () => {
                 <div className="flex justify-between items-center border-b border-outline-variant/30 pb-3 mb-4">
                   <h3 className="text-lg font-bold flex items-center gap-2">
                     <MapPin className="text-primary w-5 h-5" />
-                    Select Branch
+                    Chi nhánh mua hàng
                   </h3>
-                  <button
-                    type="button"
-                    onClick={() => setIsBranchModalOpen(true)}
-                    className="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    Change Branch
-                  </button>
+                  <span className="text-[11px] font-bold text-on-surface-variant bg-surface-container-high px-2.5 py-1 rounded-full shrink-0">
+                    Cố định theo giỏ hàng
+                  </span>
                 </div>
                 {selectedBranch ? (
                   <div className="flex items-center gap-3 bg-surface p-4 rounded-xl border border-primary/20">
@@ -408,14 +503,7 @@ export const CheckoutPage = () => {
                   </div>
                 ) : (
                   <div className="text-center py-6 text-on-surface-variant border border-dashed border-outline-variant rounded-xl">
-                    <p className="text-sm font-bold text-error">No branch selected</p>
-                    <button
-                      type="button"
-                      onClick={() => setIsBranchModalOpen(true)}
-                      className="mt-2 text-xs font-bold text-primary underline"
-                    >
-                      Click here to select a branch
-                    </button>
+                    <p className="text-sm font-bold text-error">Vui lòng chọn chi nhánh mua hàng tại Trang chủ trước khi thêm sản phẩm.</p>
                   </div>
                 )}
               </div>
@@ -472,7 +560,7 @@ export const CheckoutPage = () => {
 
                 <div className="divide-y divide-outline-variant/30 max-h-96 overflow-y-auto pr-2">
                   {cart.items.map((item) => {
-                    const image = productImageMap[item.product.name] || '/assets/winmart/tomatoes.png'
+                    const image = item.product.imageUrl || productImageMap[item.product.name] || '/assets/winmart/tomatoes.png'
                     return (
                       <div key={item.itemId} className="flex gap-4 py-3 first:pt-0 last:pb-0">
                         <div className="w-12 h-12 rounded-lg bg-surface overflow-hidden border border-outline-variant/30 flex-shrink-0">

@@ -10,6 +10,7 @@ interface CartItemResponse {
         name: string;
         price: number;
         unit?: string;
+        imageUrl?: string;
     };
     quantity: number;
     subtotal: number;
@@ -36,6 +37,7 @@ function buildCartResponse(cart: any): CartResponse {
                     name: product?.name ?? 'Unknown',
                     price,
                     unit: product?.unit,
+                    imageUrl: product?.imageUrl,
                 },
                 quantity: item.quantity,
                 subtotal: price * item.quantity,

@@ -17,6 +17,7 @@ function buildCartResponse(cart) {
                 name: product?.name ?? 'Unknown',
                 price,
                 unit: product?.unit,
+                imageUrl: product?.imageUrl,
             },
             quantity: item.quantity,
             subtotal: price * item.quantity,

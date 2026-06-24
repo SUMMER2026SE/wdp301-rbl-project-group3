@@ -925,7 +925,7 @@ export const HomePage = () => {
           <div className="flex items-center gap-3 md:gap-4 min-w-0">
             <div className="flex -space-x-4">
               {cart.items.slice(0, 3).map((item) => {
-                const image = productImageMap[item.product.name] || '/assets/winmart/tomatoes.png'
+                const image = item.product.imageUrl || productImageMap[item.product.name] || '/assets/winmart/tomatoes.png'
                 return (
                   <div
                     key={item.itemId}
@@ -1100,7 +1100,7 @@ export const HomePage = () => {
                   </div>
                 ) : (
                   cart.items.map((item) => {
-                    const image = productImageMap[item.product.name] || '/assets/winmart/tomatoes.png'
+                    const image = item.product.imageUrl || productImageMap[item.product.name] || '/assets/winmart/tomatoes.png'
                     return (
                       <div
                         key={item.itemId}
