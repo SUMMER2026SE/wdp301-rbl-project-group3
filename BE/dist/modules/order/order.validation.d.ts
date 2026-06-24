@@ -25,6 +25,7 @@ export declare const updateOrderStatusSchema: z.ZodObject<{
     body: z.ZodObject<{
         status: z.ZodEnum<{
             cancelled: "cancelled";
+            pending: "pending";
             confirmed: "confirmed";
             preparing: "preparing";
             delivering: "delivering";
