@@ -1,4 +1,5 @@
 import { Types } from 'mongoose';
+import crypto from 'crypto';
 import { IOrder, Order, OrderStatus } from '../../models/order.model';
 import { DeliveryTracking, IDeliveryTracking, TrackingStatus } from '../../models/deliveryTracking.model';
 
@@ -42,8 +43,13 @@ export class OrderRepository {
     confirmedBy?: string;
     confirmedAt?: Date;
   }): Promise<IOrder | null> {
+    const query: Record<string, unknown> = { _id: id, status: currentStatus };
+    if (data.status === 'cancelled') {
+      query.invoiceIssuedAt = { $exists: false };
+      query.invoiceReservationAt = { $exists: false };
+    }
     return Order.findOneAndUpdate(
-      { _id: id, status: currentStatus },
+      query,
       data,
       { new: true }
     )
@@ -92,11 +98,15 @@ export class OrderRepository {
   }
 
 
-  async cancelByCustomer(orderId: string): Promise<IOrder | null> {
-    return Order.findByIdAndUpdate(
-      orderId,
+  async cancelByCustomer(orderId: string, customerId: string): Promise<IOrder | null> {
+    return Order.findOneAndUpdate(
+      {
+        _id: new Types.ObjectId(orderId),
+        customerId: new Types.ObjectId(customerId),
+        status: 'pending',
+      },
       { $set: { status: 'cancelled' } },
-      { returnDocument: 'after' }
+      { new: true }
     )
       .populate('branchId', 'name code address')
       .populate('items.productId', 'name sku unit')
@@ -105,6 +115,7 @@ export class OrderRepository {
 
   async findTrackingByOrderId(orderId: string): Promise<IDeliveryTracking[]> {
     return DeliveryTracking.find({ orderId: new Types.ObjectId(orderId) })
+      .populate('changedBy', 'fullName email role')
       .sort({ createdAt: 1 })
       .exec();
   }
@@ -112,15 +123,45 @@ export class OrderRepository {
   async addTrackingEvent(
     orderId: string,
     status: TrackingStatus,
+    changedBy?: string,
     note?: string,
     location?: string
   ): Promise<IDeliveryTracking> {
-    return DeliveryTracking.create({
+    const existing = await DeliveryTracking.findOne({
       orderId: new Types.ObjectId(orderId),
       status,
-      note,
-      location,
-    });
+    }).exec();
+    if (existing) {
+      if (!existing.changedBy && changedBy) {
+        existing.changedBy = new Types.ObjectId(changedBy);
+        return existing.save();
+      }
+      return existing;
+    }
+
+    const trackingId = crypto
+      .createHash('sha256')
+      .update(`${orderId}:${status}`)
+      .digest('hex')
+      .slice(0, 24);
+    return DeliveryTracking.findByIdAndUpdate(
+      trackingId,
+      {
+        $setOnInsert: {
+          _id: new Types.ObjectId(trackingId),
+          orderId: new Types.ObjectId(orderId),
+          status,
+          changedBy: changedBy ? new Types.ObjectId(changedBy) : undefined,
+          note,
+          location,
+        },
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    ).exec() as Promise<IDeliveryTracking>;
+  }
+
+  async findRawById(id: string): Promise<IOrder | null> {
+    return Order.findById(id).exec();
   }
 
 }

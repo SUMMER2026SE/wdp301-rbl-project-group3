@@ -1,68 +1,93 @@
 import { Types } from 'mongoose';
 import { AppError } from '../../middlewares/errorHandler.middleware';
 import { IOrder, Order, OrderStatus } from '../../models/order.model';
-import { Product } from '../../models/product.model';
+import { TrackingStatus } from '../../models/deliveryTracking.model';
 import { inventoryRepository } from '../inventory/inventory.repository';
 import { orderRepository } from './order.repository';
 import { cartRepository } from '../cart/cart.repository';
 import { promotionValidationService } from '../promotion/services/validation.service';
 import { promotionCalculationService } from '../promotion/services/calculation.service';
 import { promotionUsageService } from '../promotion/services/usage.service';
+import { invoiceRepository } from '../invoice/invoice.repository';
+import {
+  BackOfficeActor,
+  assertBackOfficeBranchAccess,
+  resolveBackOfficeBranch,
+} from '../../utils/backOfficeAccess.util';
 
 const allowedTransitions: Record<OrderStatus, OrderStatus[]> = {
   pending: ['confirmed', 'cancelled'],
-  confirmed: ['pending', 'preparing', 'cancelled'],
-  preparing: ['confirmed', 'delivering', 'cancelled'],
-  delivering: ['preparing', 'delivered', 'cancelled'],
+  confirmed: ['preparing', 'cancelled'],
+  preparing: ['delivering', 'cancelled'],
+  delivering: ['delivered'],
   delivered: [],
   cancelled: [],
 };
 
 export class OrderService {
-  async getOrders(filters: { branchId?: string; status?: string }): Promise<IOrder[]> {
-    return orderRepository.findAll(filters);
+  async getOrders(
+    filters: { branchId?: string; status?: string },
+    actor: BackOfficeActor
+  ): Promise<IOrder[]> {
+    const branchId = await resolveBackOfficeBranch(actor, filters.branchId);
+    return orderRepository.findAll({ ...filters, branchId });
   }
 
-  async getOrderById(id: string): Promise<IOrder> {
+  async getOrderById(id: string, actor?: BackOfficeActor): Promise<IOrder> {
     const order = await orderRepository.findById(id);
     if (!order) throw new AppError('Order not found', 404);
+    if (actor) {
+      await assertBackOfficeBranchAccess(actor, this.getObjectIdString(order.branchId));
+    }
     return order;
   }
 
-  async confirmOrder(id: string, staffId: string): Promise<IOrder> {
-    const order = await this.getOrderById(id);
+  async confirmOrder(id: string, actor: BackOfficeActor): Promise<IOrder> {
+    const order = await this.getOrderById(id, actor);
     if (order.status !== 'pending') {
       throw new AppError('Only pending orders can be confirmed', 400);
     }
 
-    await this.ensureStockAvailable(order);
-    await this.decreaseOrderStock(order, staffId);
+    await this.decreaseOrderStock(order, actor.userId);
 
     let updated: IOrder | null;
     try {
       updated = await orderRepository.updateStatusIfCurrent(id, order.status, {
         status: 'confirmed',
-        confirmedBy: staffId,
+        confirmedBy: actor.userId,
         confirmedAt: new Date(),
       });
     } catch (error) {
-      await this.increaseOrderStock(order, staffId);
+      await this.reconcileOrderStock(order, actor.userId);
       throw error;
     }
 
     if (!updated) {
-      await this.increaseOrderStock(order, staffId);
+      await this.reconcileOrderStock(order, actor.userId);
       throw new AppError('Order status changed by another request. Please reload and try again.', 409);
     }
+    await this.recordTrackingEvent(
+      id,
+      'confirmed',
+      actor.userId,
+      'Order confirmed by back-office staff'
+    );
     return updated;
   }
 
-  async updateStatus(id: string, status: OrderStatus, staffId: string): Promise<IOrder> {
-    const order = await this.getOrderById(id);
+  async updateStatus(
+    id: string,
+    status: OrderStatus,
+    actor: BackOfficeActor
+  ): Promise<IOrder> {
+    const order = await this.getOrderById(id, actor);
     const nextStatuses = allowedTransitions[order.status];
 
     if (!nextStatuses.includes(status)) {
       throw new AppError(`Cannot change order status from ${order.status} to ${status}`, 400);
+    }
+    if (status === 'cancelled') {
+      await this.ensureNoIssuedInvoice(id);
     }
 
     const update: {
@@ -71,132 +96,142 @@ export class OrderService {
       confirmedAt?: Date;
     } = { status };
 
-    let stockDecreased = false;
-    let stockIncreased = false;
-
     const isProcessingState = (s: OrderStatus) => ['confirmed', 'preparing', 'delivering'].includes(s);
 
     // If moving from pending to a processing state, decrease stock
     if (order.status === 'pending' && isProcessingState(status)) {
-      await this.ensureStockAvailable(order);
-      await this.decreaseOrderStock(order, staffId);
-      stockDecreased = true;
+      await this.decreaseOrderStock(order, actor.userId);
       if (status === 'confirmed') {
-        update.confirmedBy = staffId;
+        update.confirmedBy = actor.userId;
         update.confirmedAt = new Date();
       }
     }
 
     // If moving from a processing state back to pending or to cancelled, increase/restore stock
     if (isProcessingState(order.status) && (status === 'pending' || status === 'cancelled')) {
-      await this.increaseOrderStock(order, staffId);
-      stockIncreased = true;
+      await this.increaseOrderStock(order, actor.userId, true);
     }
 
     let updated: IOrder | null;
     try {
       updated = await orderRepository.updateStatusIfCurrent(id, order.status, update);
     } catch (error) {
-      await this.rollbackStockChange(order, staffId, stockDecreased, stockIncreased);
+      await this.reconcileOrderStock(order, actor.userId);
       throw error;
     }
 
     if (!updated) {
-      await this.rollbackStockChange(order, staffId, stockDecreased, stockIncreased);
+      await this.reconcileOrderStock(order, actor.userId);
       throw new AppError('Order status changed by another request. Please reload and try again.', 409);
     }
+    await this.recordTrackingEvent(
+      id,
+      status as TrackingStatus,
+      actor.userId,
+      `Order status changed from ${order.status} to ${status}`
+    );
     return updated;
-  }
-
-  private async ensureStockAvailable(order: IOrder): Promise<void> {
-    const branchId = this.getObjectIdString(order.branchId);
-
-    for (const item of order.items) {
-      const productId = this.getObjectIdString(item.productId);
-      const stock = await inventoryRepository.findInventoryItem(
-        branchId,
-        productId
-      );
-
-      if (!stock || stock.quantity < item.quantity) {
-        throw new AppError(`Insufficient stock for product ${productId}`, 400);
-      }
-    }
   }
 
   private async decreaseOrderStock(order: IOrder, staffId: string): Promise<void> {
     const branchId = this.getObjectIdString(order.branchId);
-    const decreasedItems: { productId: string; quantity: number }[] = [];
 
-    for (const item of order.items) {
-      const productId = this.getObjectIdString(item.productId);
+    for (const item of this.aggregateOrderItems(order)) {
+      const productId = item.productId;
 
       try {
-        const updated = await inventoryRepository.decreaseStock({
+        const result = await inventoryRepository.applyOrderStockDeduction({
+          orderId: order._id.toString(),
           branchId,
           productId,
           quantity: item.quantity,
           updatedBy: staffId,
         });
 
-        if (!updated) {
+        if (!result.inventory) {
           throw new AppError(`Insufficient stock for product ${productId}`, 400);
         }
 
-        decreasedItems.push({ productId, quantity: item.quantity });
       } catch (error) {
-        await this.restoreDecreasedStock(branchId, decreasedItems, staffId);
+        await this.increaseOrderStock(order, staffId, false);
         throw error;
       }
     }
   }
 
-  private async restoreDecreasedStock(
-    branchId: string,
-    items: { productId: string; quantity: number }[],
-    staffId: string
+  private async increaseOrderStock(
+    order: IOrder,
+    staffId: string,
+    allowLegacy: boolean
   ): Promise<void> {
-    for (const item of items) {
-      await inventoryRepository.increaseStock({
-        branchId,
-        productId: item.productId,
-        quantity: item.quantity,
-        updatedBy: staffId,
-      });
-    }
-  }
-
-  private async increaseOrderStock(order: IOrder, staffId: string): Promise<void> {
     const branchId = this.getObjectIdString(order.branchId);
+    const restoredItems: { productId: string; quantity: number }[] = [];
 
-    for (const item of order.items) {
-      const productId = this.getObjectIdString(item.productId);
-      const updated = await inventoryRepository.increaseStock({
-        branchId,
-        productId,
-        quantity: item.quantity,
-        updatedBy: staffId,
-      });
+    for (const item of this.aggregateOrderItems(order)) {
+      const productId = item.productId;
 
-      if (!updated) {
-        throw new AppError(`Inventory record not found for product ${productId}`, 404);
+      try {
+        const result = await inventoryRepository.restoreOrderStockDeduction({
+          orderId: order._id.toString(),
+          branchId,
+          productId,
+          quantity: item.quantity,
+          updatedBy: staffId,
+          allowLegacy,
+        });
+
+        if (!result.inventory) {
+          throw new AppError(`Inventory record not found for product ${productId}`, 404);
+        }
+        if (result.restored) {
+          restoredItems.push({ productId, quantity: item.quantity });
+        }
+      } catch (error) {
+        for (const restored of restoredItems.reverse()) {
+          await inventoryRepository.applyOrderStockDeduction({
+            orderId: order._id.toString(),
+            branchId,
+            productId: restored.productId,
+            quantity: restored.quantity,
+            updatedBy: staffId,
+          });
+        }
+        throw error;
       }
     }
   }
 
-  private async rollbackStockChange(
+  private async reconcileOrderStock(
     order: IOrder,
-    staffId: string,
-    stockDecreased: boolean,
-    stockIncreased: boolean
+    staffId: string
   ): Promise<void> {
-    if (stockDecreased) {
-      await this.increaseOrderStock(order, staffId);
-    }
-
-    if (stockIncreased) {
+    const current = await orderRepository.findRawById(order._id.toString());
+    if (!current) return;
+    const shouldBeDeducted = [
+      'confirmed',
+      'preparing',
+      'delivering',
+      'delivered',
+    ].includes(current.status);
+    if (shouldBeDeducted) {
       await this.decreaseOrderStock(order, staffId);
+    } else {
+      await this.increaseOrderStock(order, staffId, false);
     }
+  }
+
+  private aggregateOrderItems(
+    order: IOrder
+  ): { productId: string; quantity: number }[] {
+    const quantities = new Map<string, number>();
+    for (const item of order.items) {
+      const productId = this.getObjectIdString(item.productId);
+      quantities.set(productId, (quantities.get(productId) || 0) + item.quantity);
+    }
+    return [...quantities.entries()].map(([productId, quantity]) => ({
+      productId,
+      quantity,
+    }));
   }
 
   private getObjectIdString(value: unknown): string {
@@ -205,6 +240,39 @@ export class OrderService {
       return String((value as { _id: { toString(): string } })._id);
     }
     return String(value);
+  }
+
+  private async recordTrackingEvent(
+    orderId: string,
+    status: TrackingStatus,
+    changedBy: string,
+    note: string
+  ): Promise<void> {
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        await orderRepository.addTrackingEvent(orderId, status, changedBy, note);
+        return;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    console.error('[ORDER_TRACKING_WRITE_FAILED]', {
+      orderId,
+      status,
+      error: lastError,
+    });
+  }
+
+  private async ensureNoIssuedInvoice(orderId: string): Promise<void> {
+    const invoice = await invoiceRepository.findByOrderId(orderId);
+    if (invoice) {
+      throw new AppError(
+        'This order already has an issued invoice and cannot be cancelled. Use the return workflow after fulfillment.',
+        409
+      );
+    }
+    await invoiceRepository.releaseStaleOrderInvoiceReservation(orderId);
   }
 
   private buildCustomerOrderResponse(order: IOrder) {
@@ -237,6 +305,8 @@ export class OrderService {
       }),
       totalAmount: order.totalAmount,
       deliveryAddress: order.deliveryAddress ?? null,
+      phoneNumber: order.phoneNumber ?? null,
+      paymentMethod: order.paymentMethod ?? 'COD',
       note: order.note ?? null,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
@@ -282,6 +352,7 @@ export class OrderService {
       tracking: trackingEvents.map((e) => ({
         trackingId: e._id.toString(),
         status: e.status,
+        changedBy: this.buildTrackingActor(e.changedBy),
         location: e.location ?? null,
         note: e.note ?? null,
         timestamp: e.createdAt,
@@ -307,16 +378,18 @@ export class OrderService {
       );
     }
 
-    const [updatedOrder] = await Promise.all([
-      orderRepository.cancelByCustomer(orderId),
-      orderRepository.addTrackingEvent(
-        orderId,
-        'cancelled',
-        reason ?? 'Cancelled by customer'
-      ),
-    ]);
-
-    if (!updatedOrder) throw new AppError('Failed to cancel order', 500);
+    await this.increaseOrderStock(order, customerId, false);
+    const updatedOrder = await orderRepository.cancelByCustomer(orderId, customerId);
+    if (!updatedOrder) {
+      await this.reconcileOrderStock(order, customerId);
+      throw new AppError('Order status changed and can no longer be cancelled', 409);
+    }
+    await this.recordTrackingEvent(
+      orderId,
+      'cancelled',
+      customerId,
+      reason ?? 'Cancelled by customer'
+    );
     return this.buildCustomerOrderResponse(updatedOrder);
   }
 
@@ -403,6 +476,8 @@ export class OrderService {
       totalAmount,
       status: 'pending',
       deliveryAddress: data.shippingAddress,
+      phoneNumber: data.phoneNumber,
+      paymentMethod: data.paymentMethod,
       note: data.note,
     });
 
@@ -410,6 +485,7 @@ export class OrderService {
     await orderRepository.addTrackingEvent(
       order._id.toString(),
       'order_placed',
+      customerId,
       'Đơn hàng được đặt thành công.'
     );
 
@@ -422,6 +498,24 @@ export class OrderService {
     await cartRepository.clearCart(customerId);
 
     return this.buildCustomerOrderResponse(order);
+  }
+
+  private buildTrackingActor(value: unknown) {
+    if (value && typeof value === 'object' && '_id' in value) {
+      const actor = value as {
+        _id: Types.ObjectId;
+        fullName?: string;
+        email?: string;
+        role?: string;
+      };
+      return {
+        userId: actor._id.toString(),
+        fullName: actor.fullName ?? null,
+        email: actor.email ?? null,
+        role: actor.role ?? null,
+      };
+    }
+    return value ? { userId: String(value) } : null;
   }
 }
 
