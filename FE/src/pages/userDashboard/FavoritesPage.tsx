@@ -19,37 +19,7 @@ type Product = {
   unit: string
 }
 
-const favorites: Product[] = [
-  {
-    id: '1',
-    name: 'Fresh Organic Tomato',
-    price: 30000,
-    originalPrice: 40000,
-    image: '/assets/winmart/tomatoes.png',
-    inStock: true,
-    rating: 4.8,
-    unit: '500g / box',
-  },
-  {
-    id: '2',
-    name: 'Premium Ribeye Steak',
-    price: 210000,
-    originalPrice: 250000,
-    image: '/assets/winmart/ribeye.png',
-    inStock: true,
-    rating: 4.9,
-    unit: '300g / pack',
-  },
-  {
-    id: '3',
-    name: 'Organic Bunch Carrots',
-    price: 60000,
-    image: '/assets/winmart/carrots.png',
-    inStock: false,
-    rating: 4.7,
-    unit: '1 kg',
-  },
-]
+const favorites: Product[] = []
 
 export const FavoritesPage = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
@@ -58,12 +28,12 @@ export const FavoritesPage = () => {
     <div className="space-y-6">
       <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-bold uppercase tracking-wide text-primary">Favorites</p>
+          <p className="text-sm font-bold uppercase tracking-wide text-primary">Yêu thích</p>
           <h1 className="mt-1 text-2xl font-black text-on-surface sm:text-3xl">
-            Saved products
+            Sản phẩm đã lưu
           </h1>
           <p className="mt-2 text-sm text-on-surface-variant">
-            {favorites.length} items saved for later.
+            {favorites.length} sản phẩm được lưu.
           </p>
         </div>
 
@@ -196,10 +166,10 @@ export const FavoritesPage = () => {
 
       {favorites.length === 0 ? (
         <div className="rounded-xl border border-dashed border-outline-variant bg-surface-container-lowest py-16 text-center">
-          <Heart size={54} className="mx-auto mb-4 text-on-surface-variant" />
-          <h3 className="text-lg font-black text-on-surface">No favorites yet</h3>
+          <Heart size={54} className="mx-auto mb-4 text-on-surface-variant/40 animate-pulse" />
+          <h3 className="text-lg font-black text-on-surface">Chưa có sản phẩm yêu thích nào</h3>
           <p className="mt-2 text-sm text-on-surface-variant">
-            Save products to compare and buy them later.
+            Lưu các sản phẩm bạn yêu thích để dễ dàng mua sắm sau này.
           </p>
         </div>
       ) : null}
