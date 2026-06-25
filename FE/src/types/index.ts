@@ -14,6 +14,27 @@ export interface User {
   memberLevel?: 'new' | 'bronze' | 'silver' | 'gold' | 'diamond'
   createdAt?: Date
   updatedAt?: Date
+  branchId?: string
+}
+
+export interface Employee {
+  id: string
+  fullName: string
+  email: string
+  phone: string | null
+  address: string | null
+  role: 'branch_manager' | 'staff'
+  status: 'active' | 'inactive' | 'banned'
+  branch: {
+    id: string
+    name?: string
+    code?: string
+    address?: string
+    status?: string
+  } | null
+  lastLoginAt: string | Date | null
+  createdAt: string | Date
+  updatedAt: string | Date
 }
 
 export interface AuthResponse {
@@ -164,6 +185,9 @@ export interface Branch {
   phone?: string
   managerId?: string
   status: 'active' | 'inactive'
+  openingTime?: string
+  closingTime?: string
+  activeDays?: string[]
   createdAt?: string
   updatedAt?: string
 }

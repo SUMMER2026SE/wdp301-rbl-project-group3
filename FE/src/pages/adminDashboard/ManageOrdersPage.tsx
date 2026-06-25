@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { orderService } from '@services/orderService'
 import { branchService } from '@services/branchService'
+import { useAuth } from '@hooks/useAuth'
 import type { AdminOrder, AdminOrderStatus, Branch } from '@/types'
 
 // Format currency in VND
@@ -92,6 +93,10 @@ const getStatusConfig = (status: AdminOrderStatus) => {
 }
 
 export const ManageOrdersPage = () => {
+  const { user, loading: authLoading } = useAuth()
+  const isManagerOrStaff = user?.role === 'branch_manager' || user?.role === 'staff'
+  const userBranchId = user?.branchId || ''
+
   const [orders, setOrders] = useState<AdminOrder[]>([])
   const [branches, setBranches] = useState<Branch[]>([])
   const [selectedBranch, setSelectedBranch] = useState<string>('')
@@ -114,29 +119,24 @@ export const ManageOrdersPage = () => {
   // Auto-refresh state
   const [autoRefresh, setAutoRefresh] = useState(false)
 
+  // Sync selected branch when user info loads and user is manager/staff
+  useEffect(() => {
+    if (!authLoading && isManagerOrStaff && userBranchId) {
+      setSelectedBranch(userBranchId)
+    }
+  }, [authLoading, isManagerOrStaff, userBranchId])
+
   // Fetch initial data
   const fetchData = async () => {
     try {
-      setLoading(true)
       setError(null)
-
       // Get branches for filter dropdown
       const branchesResponse = await branchService.getBranches()
       if (branchesResponse.success) {
         setBranches(branchesResponse.data)
       }
-
-      // Get orders
-      const ordersResponse = await orderService.getAdminOrders()
-      if (ordersResponse.success) {
-        setOrders(ordersResponse.data)
-      } else {
-        setError(ordersResponse.message || 'Không thể tải danh sách đơn hàng.')
-      }
     } catch (err: any) {
       setError(err.message || 'Đã có lỗi xảy ra khi tải dữ liệu.')
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -167,8 +167,9 @@ export const ManageOrdersPage = () => {
 
   // Effect to fetch filtered list whenever active dropdowns change
   useEffect(() => {
+    if (authLoading) return
     fetchFilteredOrders()
-  }, [selectedBranch, selectedStatus])
+  }, [selectedBranch, selectedStatus, authLoading])
   
   // Auto-refresh effect
   useEffect(() => {
@@ -479,10 +480,11 @@ export const ManageOrdersPage = () => {
               <select
                 id="filter-branch"
                 value={selectedBranch}
+                disabled={isManagerOrStaff}
                 onChange={(e) => setSelectedBranch(e.target.value)}
-                className="w-full rounded-lg border border-outline bg-transparent py-2.5 pl-10 pr-3 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
+                className="w-full rounded-lg border border-outline bg-transparent py-2.5 pl-10 pr-3 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-75 disabled:cursor-not-allowed"
               >
-                <option value="">Tất cả chi nhánh</option>
+                {isManagerOrStaff ? null : <option value="">Tất cả chi nhánh</option>}
                 {branches.map((b) => (
                   <option key={b._id} value={b._id}>
                     {b.name}

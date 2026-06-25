@@ -18,7 +18,19 @@ import {
   VouchersPage,
   SettingsPage,
 } from './pages/userDashboard'
-import { AdminLayout, ManageInventoryPage, ManageOrdersPage, ManageBranchesPage, ManageUsersPage, ManageCategoriesPage, ManagePromotionsPage, ManageSystemSettingsPage, ManageFlashSalesPage, ManageBannersPage } from './pages/adminDashboard'
+import {
+  AdminLayout,
+  ManageInventoryPage,
+  ManageOrdersPage,
+  ManageBranchesPage,
+  ManageUsersPage,
+  ManageCategoriesPage,
+  ManagePromotionsPage,
+  ManageSystemSettingsPage,
+  ManageFlashSalesPage,
+  ManageBannersPage,
+  ManageEmployeesPage,
+} from './pages/adminDashboard'
 import './App.css'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
@@ -103,6 +115,7 @@ function AppRoutes() {
         <Route path="settings" element={<ManageSystemSettingsPage />} />
         <Route path="flash-sales" element={<ManageFlashSalesPage />} />
         <Route path="banners" element={<ManageBannersPage />} />
+        <Route path="employees" element={<ManageEmployeesPage />} />
       </Route>
     </Routes>
   )

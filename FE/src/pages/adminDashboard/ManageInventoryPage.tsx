@@ -27,6 +27,7 @@ import { inventoryService } from '@services/inventoryService'
 import { branchService } from '@services/branchService'
 import { productService } from '@services/productService'
 import { categoryService } from '@services/categoryService'
+import { useAuth } from '@hooks/useAuth'
 import type { Inventory, ImportReceipt, Branch, Product, Category } from '@/types'
 
 const formatVND = (num: number) => {
@@ -37,6 +38,11 @@ const formatVND = (num: number) => {
 }
 
 export const ManageInventoryPage = () => {
+  const { user, loading: authLoading } = useAuth()
+  const isManagerOrStaff = user?.role === 'branch_manager' || user?.role === 'staff'
+  const userBranchId = user?.branchId || ''
+  const isAdmin = user?.role === 'admin'
+
   const [activeTab, setActiveTab] = useState<'stock' | 'import' | 'catalog'>('stock')
 
   // Master data
@@ -132,10 +138,6 @@ export const ManageInventoryPage = () => {
         if (response.success) {
           const activeBranches = response.data.filter(b => b.status === 'active')
           setBranches(activeBranches)
-          if (activeBranches.length > 0) {
-            setSelectedBranchId(activeBranches[0]._id)
-            setImportBranchId(activeBranches[0]._id)
-          }
         }
       } catch (err: any) {
         console.error('Failed to load branches:', err)
@@ -156,6 +158,26 @@ export const ManageInventoryPage = () => {
     fetchBranches()
     fetchCategories()
   }, [])
+
+  // Sync selected branch and default values when branches or user changes
+  useEffect(() => {
+    if (authLoading) return
+
+    if (isManagerOrStaff) {
+      if (userBranchId) {
+        setSelectedBranchId(userBranchId)
+        setImportBranchId(userBranchId)
+        setManualStockBranchId(userBranchId)
+      }
+    } else {
+      // For Admin, default to first active branch when branches load and none is selected yet
+      if (branches.length > 0 && !selectedBranchId) {
+        setSelectedBranchId(branches[0]._id)
+        setImportBranchId(branches[0]._id)
+        setManualStockBranchId(branches[0]._id)
+      }
+    }
+  }, [authLoading, isManagerOrStaff, userBranchId, branches])
 
   // Reset page to 1 when search query changes
   useEffect(() => {
@@ -237,6 +259,7 @@ export const ManageInventoryPage = () => {
 
   // Fetch import receipts for Tab 2
   const fetchReceipts = async () => {
+    if (isManagerOrStaff && !selectedBranchId) return
     try {
       setReceiptsLoading(true)
       setReceiptsError(null)
@@ -255,10 +278,10 @@ export const ManageInventoryPage = () => {
   }
 
   useEffect(() => {
-    if (activeTab === 'import') {
+    if (activeTab === 'import' && (!isManagerOrStaff || selectedBranchId)) {
       fetchReceipts()
     }
-  }, [activeTab, selectedBranchId])
+  }, [activeTab, selectedBranchId, isManagerOrStaff])
 
   // Fetch target branch inventory for cost suggestions
   useEffect(() => {
@@ -1005,8 +1028,8 @@ export const ManageInventoryPage = () => {
               <button
                 onClick={() => setAutoRefresh(!autoRefresh)}
                 className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-bold transition-colors ${autoRefresh
-                    ? 'bg-primary text-white border-primary'
-                    : 'bg-surface-container-low border-outline hover:bg-surface-container-high'
+                  ? 'bg-primary text-white border-primary'
+                  : 'bg-surface-container-low border-outline hover:bg-surface-container-high'
                   }`}
               >
                 {autoRefresh ? 'Tự động: Bật' : 'Tự động: Tắt'}
@@ -1207,8 +1230,8 @@ export const ManageInventoryPage = () => {
         <button
           onClick={() => setActiveTab('stock')}
           className={`pb-3 border-b-2 transition-all flex items-center gap-2 ${activeTab === 'stock'
-              ? 'border-primary text-primary font-black'
-              : 'border-transparent text-on-surface-variant hover:text-on-surface'
+            ? 'border-primary text-primary font-black'
+            : 'border-transparent text-on-surface-variant hover:text-on-surface'
             }`}
         >
           <Package size={18} />
@@ -1217,23 +1240,25 @@ export const ManageInventoryPage = () => {
         <button
           onClick={() => setActiveTab('import')}
           className={`pb-3 border-b-2 transition-all flex items-center gap-2 ${activeTab === 'import'
-              ? 'border-primary text-primary font-black'
-              : 'border-transparent text-on-surface-variant hover:text-on-surface'
+            ? 'border-primary text-primary font-black'
+            : 'border-transparent text-on-surface-variant hover:text-on-surface'
             }`}
         >
           <History size={18} />
           Lịch sử Nhập kho
         </button>
-        <button
-          onClick={() => setActiveTab('catalog')}
-          className={`pb-3 border-b-2 transition-all flex items-center gap-2 ${activeTab === 'catalog'
+        {isAdmin && (
+          <button
+            onClick={() => setActiveTab('catalog')}
+            className={`pb-3 border-b-2 transition-all flex items-center gap-2 ${activeTab === 'catalog'
               ? 'border-primary text-primary font-black'
               : 'border-transparent text-on-surface-variant hover:text-on-surface'
-            }`}
-        >
-          <Layers size={18} />
-          Danh mục Sản phẩm gốc
-        </button>
+              }`}
+          >
+            <Layers size={18} />
+            Danh mục Sản phẩm gốc
+          </button>
+        )}
       </div>
 
       {/* ── TAB 1: STOCK REPORT ── */}
@@ -1247,7 +1272,8 @@ export const ManageInventoryPage = () => {
               <select
                 value={selectedBranchId}
                 onChange={(e) => setSelectedBranchId(e.target.value)}
-                className="bg-surface-container-low border-none rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-primary text-sm font-semibold transition-all"
+                disabled={isManagerOrStaff}
+                className="bg-surface-container-low border-none rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-primary text-sm font-semibold transition-all disabled:opacity-75 disabled:cursor-not-allowed"
               >
                 {branches.map((b) => (
                   <option key={b._id} value={b._id}>
@@ -1362,8 +1388,8 @@ export const ManageInventoryPage = () => {
                           <td className="p-4 text-center">
                             <span
                               className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${isLow
-                                  ? 'bg-error-container text-on-error-container'
-                                  : 'bg-success-container text-on-success-container'
+                                ? 'bg-error-container text-on-error-container'
+                                : 'bg-success-container text-on-success-container'
                                 }`}
                             >
                               {isLow ? (
@@ -1421,9 +1447,10 @@ export const ManageInventoryPage = () => {
                 <select
                   value={selectedBranchId}
                   onChange={(e) => setSelectedBranchId(e.target.value)}
-                  className="bg-surface-container-low border-none rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-primary text-sm font-semibold transition-all"
+                  disabled={isManagerOrStaff}
+                  className="bg-surface-container-low border-none rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-primary text-sm font-semibold transition-all disabled:opacity-75 disabled:cursor-not-allowed"
                 >
-                  <option value="">Tất cả chi nhánh</option>
+                  {isManagerOrStaff ? null : <option value="">Tất cả chi nhánh</option>}
                   {branches.map((b) => (
                     <option key={b._id} value={b._id}>
                       {b.name}
@@ -1684,8 +1711,8 @@ export const ManageInventoryPage = () => {
                           <td className="p-4 text-center">
                             <span
                               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${isActive
-                                  ? 'bg-success-container text-on-success-container'
-                                  : 'bg-surface-container-high text-on-surface-variant'
+                                ? 'bg-success-container text-on-success-container'
+                                : 'bg-surface-container-high text-on-surface-variant'
                                 }`}
                             >
                               {isActive ? 'Đang bán' : 'Dừng bán'}
@@ -1706,8 +1733,8 @@ export const ManageInventoryPage = () => {
                               <button
                                 onClick={() => handleToggleProductStatus(product)}
                                 className={`rounded-lg p-2 transition-colors ${isActive
-                                    ? 'text-error hover:bg-error-container/20'
-                                    : 'text-success hover:bg-success-container/20'
+                                  ? 'text-error hover:bg-error-container/20'
+                                  : 'text-success hover:bg-success-container/20'
                                   }`}
                                 title={isActive ? 'Dừng bán sản phẩm' : 'Kích hoạt lại sản phẩm'}
                               >
@@ -1797,7 +1824,8 @@ export const ManageInventoryPage = () => {
                     value={importBranchId}
                     onChange={(e) => setImportBranchId(e.target.value)}
                     required
-                    className="w-full bg-surface-container-low border-none rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary text-sm font-semibold transition-all"
+                    disabled={isManagerOrStaff}
+                    className="w-full bg-surface-container-low border-none rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary text-sm font-semibold transition-all disabled:opacity-75 disabled:cursor-not-allowed"
                   >
                     {branches.map((b) => (
                       <option key={b._id} value={b._id}>
@@ -2316,8 +2344,8 @@ export const ManageInventoryPage = () => {
                 <select
                   value={manualStockBranchId}
                   onChange={(e) => setManualStockBranchId(e.target.value)}
-                  className="w-full bg-surface-container-low border-none rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary text-sm font-semibold transition-all disabled:opacity-60"
-                  disabled
+                  className="w-full bg-surface-container-low border-none rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary text-sm font-semibold transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                  disabled={isManagerOrStaff}
                 >
                   {branches.map((b) => (
                     <option key={b._id} value={b._id}>

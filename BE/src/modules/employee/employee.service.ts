@@ -147,7 +147,7 @@ export class EmployeeService {
     }
 
     const employee = await this.getAccessibleEmployee(id, actor, true);
-    const currentBranchId = employee.branchId!.toString();
+    const currentBranchId = employee.branchId ? employee.branchId.toString() : '';
     const nextRole = data.role || (employee.role as EmployeeRole);
     const nextStatus = data.status || employee.status;
     const nextBranchId =
@@ -268,10 +268,12 @@ export class EmployeeService {
     }
 
     this.assertRoleCanBeManaged(actor, employee.role as EmployeeRole);
-    if (!employee.branchId) {
+    if (actor.role !== 'admin' && !employee.branchId) {
       throw new AppError('Employee is not assigned to a branch', 409);
     }
-    await resolveBackOfficeBranch(actor, employee.branchId.toString(), true);
+    if (employee.branchId) {
+      await resolveBackOfficeBranch(actor, employee.branchId.toString(), true);
+    }
     return employee;
   }
 
@@ -297,6 +299,7 @@ export class EmployeeService {
     status: UserStatus
   ): Promise<void> {
     if (
+      oldBranchId &&
       oldRole === 'branch_manager' &&
       (newRole !== 'branch_manager' || oldBranchId !== newBranchId || status !== 'active')
     ) {
