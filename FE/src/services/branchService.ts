@@ -60,4 +60,15 @@ export const branchService = {
     const response = await apiClient.delete(`/api/branches/${id}`)
     return response.data
   },
+
+  // Get quick statistics of a branch by ID
+  getBranchQuickStats: async (id: string): Promise<ApiResponse<{
+    employeeCount: number
+    productCount: number
+    todayRevenue: number
+    todayOrderCount: number
+  }>> => {
+    const response = await apiClient.get(`/api/branches/${id}/quick-stats`)
+    return response.data
+  },
 }

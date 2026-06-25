@@ -20,6 +20,7 @@ import {
 import { promotionService } from '@services/promotionService'
 import { branchService } from '@services/branchService'
 import type { Promotion, Voucher, Branch } from '@/types'
+import { useAuth } from '@hooks/useAuth'
 
 const formatVND = (num: number) => {
   return new Intl.NumberFormat('vi-VN', {
@@ -29,6 +30,7 @@ const formatVND = (num: number) => {
 }
 
 export const ManagePromotionsPage = () => {
+  const { user } = useAuth()
   // State lists
   const [promotions, setPromotions] = useState<Promotion[]>([])
   const [branches, setBranches] = useState<Branch[]>([])
@@ -132,6 +134,12 @@ export const ManagePromotionsPage = () => {
     loadBranches()
   }, [])
 
+  useEffect(() => {
+    if (user?.role === 'branch_manager') {
+      setFilterScope('branch')
+    }
+  }, [user])
+
   // Auto clear alerts
   useEffect(() => {
     if (successMsg) {
@@ -185,6 +193,8 @@ export const ManagePromotionsPage = () => {
       ...prev,
       startDate: today.toISOString().substring(0, 16),
       endDate: nextWeek.toISOString().substring(0, 16),
+      scope: user?.role === 'branch_manager' ? 'branch' : 'global',
+      branchId: user?.role === 'branch_manager' ? (user.branchId || '') : '',
     }))
     setIsFormModalOpen(true)
   }
@@ -494,15 +504,22 @@ export const ManagePromotionsPage = () => {
             <span className="text-xs font-bold text-on-surface-variant uppercase">Phạm vi:</span>
             <select
               value={filterScope}
+              disabled={user?.role === 'branch_manager'}
               onChange={(e) => {
                 setFilterScope(e.target.value)
                 setPage(1)
               }}
-              className="rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2 text-sm font-semibold outline-none focus:border-primary"
+              className="rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2 text-sm font-semibold outline-none focus:border-primary disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <option value="all">Tất cả</option>
-              <option value="global">Toàn hệ thống (Global)</option>
-              <option value="branch">Theo Chi nhánh</option>
+              {user?.role === 'branch_manager' ? (
+                <option value="branch">Theo Chi nhánh</option>
+              ) : (
+                <>
+                  <option value="all">Tất cả</option>
+                  <option value="global">Toàn hệ thống (Global)</option>
+                  <option value="branch">Theo Chi nhánh</option>
+                </>
+              )}
             </select>
           </div>
 
@@ -901,8 +918,9 @@ export const ManagePromotionsPage = () => {
                   <select
                     id="scope"
                     value={formData.scope}
+                    disabled={user?.role === 'branch_manager'}
                     onChange={(e) => setFormData({ ...formData, scope: e.target.value as any })}
-                    className="w-full rounded-lg border border-outline-variant bg-surface-container-low py-2.5 px-3.5 text-sm font-semibold outline-none focus:border-primary"
+                    className="w-full rounded-lg border border-outline-variant bg-surface-container-low py-2.5 px-3.5 text-sm font-semibold outline-none focus:border-primary disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <option value="global">Toàn hệ thống (Global)</option>
                     <option value="branch">Theo chi nhánh</option>
@@ -919,8 +937,9 @@ export const ManagePromotionsPage = () => {
                       id="branchId"
                       required
                       value={formData.branchId}
+                      disabled={user?.role === 'branch_manager'}
                       onChange={(e) => setFormData({ ...formData, branchId: e.target.value })}
-                      className="w-full rounded-lg border border-outline-variant bg-surface-container-low py-2.5 px-3.5 text-sm font-semibold outline-none focus:border-primary"
+                      className="w-full rounded-lg border border-outline-variant bg-surface-container-low py-2.5 px-3.5 text-sm font-semibold outline-none focus:border-primary disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       <option value="">-- Chọn chi nhánh --</option>
                       {branches.map((b) => (
