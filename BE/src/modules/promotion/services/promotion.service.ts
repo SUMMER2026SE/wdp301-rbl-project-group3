@@ -2,6 +2,7 @@ import { Types } from 'mongoose';
 import { promotionRepository, PromotionFilter } from '../promotion.repository';
 import { Promotion, IPromotion, PromotionStatus } from '../../../models/promotion.model';
 import { Voucher } from '../../../models/voucher.model';
+import { User } from '../../../models/user.model';
 import { AppError } from '../../../middlewares/errorHandler.middleware';
 import { CallerContext } from '../types';
 
@@ -14,6 +15,8 @@ function toPromotionResponse(p: IPromotion) {
     discountValue: p.discountValue,
     maxDiscountAmount: p.maxDiscountAmount,
     minOrderAmount: p.minOrderAmount,
+    pointCost: p.pointCost || 0,
+    targetMemberLevel: p.targetMemberLevel || 'all',
     scope: p.scope,
     branchId: p.branchId?.toString(),
     startDate: p.startDate,
@@ -53,6 +56,8 @@ export class PromotionService {
       discountValue: number;
       maxDiscountAmount?: number;
       minOrderAmount?: number;
+      pointCost?: number;
+      targetMemberLevel?: 'all' | 'new' | 'bronze' | 'silver' | 'gold' | 'diamond';
       scope: 'global' | 'branch';
       branchId?: string;
       startDate: Date;
@@ -163,6 +168,11 @@ export class PromotionService {
     ]);
 
     const callerUserId = caller.userId;
+    const user = await User.findById(callerUserId).select('memberLevel').lean().exec();
+    const userLevel = user?.memberLevel || 'new';
+
+    const levelRanks: Record<string, number> = { new: 0, bronze: 1, silver: 2, gold: 3, diamond: 4 };
+    const levelNames: Record<string, string> = { new: 'Mới', bronze: 'Đồng', silver: 'Bạc', gold: 'Vàng', diamond: 'Kim cương' };
 
     const dataWithVouchers = await Promise.all(
       data.map(async (p) => {
@@ -177,6 +187,7 @@ export class PromotionService {
             code: v.code,
             isClaimed: !!userClaim,
             claimStatus: userClaim ? userClaim.status : null,
+            pointCost: v.pointCost || 0,
           };
         });
 
@@ -188,10 +199,32 @@ export class PromotionService {
         }
 
         const promoRes = toPromotionResponse(p);
+
+        // Kiểm tra điều kiện cấp độ thành viên
+        let isEligible = true;
+        let ineligibleReason = '';
+        if (p.targetMemberLevel && p.targetMemberLevel !== 'all') {
+          if (p.targetMemberLevel === 'new') {
+            if (userLevel !== 'new') {
+              isEligible = false;
+              ineligibleReason = 'Chỉ dành cho khách hàng mới';
+            }
+          } else {
+            const userRank = levelRanks[userLevel] || 0;
+            const requiredRank = levelRanks[p.targetMemberLevel] || 0;
+            if (userRank < requiredRank) {
+              isEligible = false;
+              ineligibleReason = `Yêu cầu cấp độ ${levelNames[p.targetMemberLevel]} trở lên`;
+            }
+          }
+        }
+
         return {
           ...promoRes,
           vouchers: filteredVouchers.map((v) => v.code),
           vouchersDetail: filteredVouchers,
+          isEligible,
+          ineligibleReason,
         };
       })
     );
@@ -235,6 +268,8 @@ export class PromotionService {
       discountValue?: number;
       maxDiscountAmount?: number;
       minOrderAmount?: number;
+      pointCost?: number;
+      targetMemberLevel?: 'all' | 'new' | 'bronze' | 'silver' | 'gold' | 'diamond';
       startDate?: Date;
       endDate?: Date;
       usageLimit?: number;

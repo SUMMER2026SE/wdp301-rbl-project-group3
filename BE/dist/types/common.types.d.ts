@@ -11,6 +11,7 @@ export interface JwtAccessPayload {
 export interface JwtRefreshPayload {
     userId: string;
     tokenId: string;
+    tokenVersion: number;
 }
 export interface DeviceInfo {
     deviceType: DeviceType;

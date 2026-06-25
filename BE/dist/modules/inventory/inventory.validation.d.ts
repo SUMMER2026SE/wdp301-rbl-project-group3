@@ -51,5 +51,29 @@ export declare const updateImportReceiptSchema: z.ZodObject<{
         }, z.core.$strip>>>;
     }, z.core.$strip>;
 }, z.core.$strip>;
+export declare const inventoryIdParamSchema: z.ZodObject<{
+    params: z.ZodObject<{
+        id: z.ZodString;
+    }, z.core.$strip>;
+}, z.core.$strip>;
+export declare const createInventorySchema: z.ZodObject<{
+    body: z.ZodObject<{
+        branchId: z.ZodString;
+        productId: z.ZodString;
+        quantity: z.ZodDefault<z.ZodNumber>;
+        averageCost: z.ZodDefault<z.ZodNumber>;
+        lowStockThreshold: z.ZodDefault<z.ZodNumber>;
+    }, z.core.$strip>;
+}, z.core.$strip>;
+export declare const updateInventorySchema: z.ZodObject<{
+    params: z.ZodObject<{
+        id: z.ZodString;
+    }, z.core.$strip>;
+    body: z.ZodObject<{
+        quantity: z.ZodOptional<z.ZodNumber>;
+        averageCost: z.ZodOptional<z.ZodNumber>;
+        lowStockThreshold: z.ZodOptional<z.ZodNumber>;
+    }, z.core.$strip>;
+}, z.core.$strip>;
 export { validate };
 //# sourceMappingURL=inventory.validation.d.ts.map

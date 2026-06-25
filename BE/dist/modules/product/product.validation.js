@@ -15,7 +15,7 @@ exports.listProductsSchema = zod_1.z
     .object({
     query: zod_1.z.object({
         page: zod_1.z.coerce.number().int().min(1).default(1),
-        limit: zod_1.z.coerce.number().int().min(1).max(100).default(10),
+        limit: zod_1.z.coerce.number().int().min(1).max(10000).default(10),
         status: zod_1.z.enum(['active', 'inactive']).optional(),
         keyword: zod_1.z.string().max(100).optional(),
         categoryId: objectId.optional(),

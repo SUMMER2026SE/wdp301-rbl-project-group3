@@ -10,10 +10,10 @@ export declare const listSettingsSchema: z.ZodObject<{
         page: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
         limit: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
         group: z.ZodOptional<z.ZodEnum<{
+            inventory: "inventory";
             order: "order";
             general: "general";
             delivery: "delivery";
-            inventory: "inventory";
             payment: "payment";
             notification: "notification";
         }>>;
@@ -29,10 +29,10 @@ export declare const createSettingSchema: z.ZodObject<{
         key: z.ZodString;
         label: z.ZodString;
         group: z.ZodEnum<{
+            inventory: "inventory";
             order: "order";
             general: "general";
             delivery: "delivery";
-            inventory: "inventory";
             payment: "payment";
             notification: "notification";
         }>;
@@ -53,10 +53,10 @@ export declare const updateSettingSchema: z.ZodObject<{
     body: z.ZodObject<{
         label: z.ZodOptional<z.ZodString>;
         group: z.ZodOptional<z.ZodEnum<{
+            inventory: "inventory";
             order: "order";
             general: "general";
             delivery: "delivery";
-            inventory: "inventory";
             payment: "payment";
             notification: "notification";
         }>>;

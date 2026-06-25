@@ -13,6 +13,7 @@ class ProductRepository {
             query.status = filters.status;
         if (filters.categoryId)
             query.categoryId = filters.categoryId;
+        // Lọc theo chi nhánh - chỉ lấy sản phẩm có tồn kho
         if (filters.branchId) {
             const inventories = await inventory_model_1.Inventory.find({
                 branchId: filters.branchId,
@@ -45,12 +46,32 @@ class ProductRepository {
             ];
         }
         const skip = (page - 1) * limit;
-        const [items, total] = await Promise.all([
-            product_model_1.Product.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).exec(),
+        const [products, total] = await Promise.all([
+            product_model_1.Product.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean().exec(),
             product_model_1.Product.countDocuments(query).exec(),
         ]);
+        // Lấy giá bán thực tế từ Inventory (lastImportCost)
+        const items = [];
+        for (const product of products) {
+            let actualPrice = product.salePrice || 0;
+            if (filters.branchId) {
+                const inventory = await inventory_model_1.Inventory.findOne({
+                    branchId: filters.branchId,
+                    productId: product._id
+                }).select('lastImportCost').lean().exec();
+                // Dùng lastImportCost làm giá bán nếu có
+                if (inventory?.lastImportCost) {
+                    actualPrice = inventory.lastImportCost;
+                }
+            }
+            items.push({
+                ...product,
+                price: actualPrice, // Giá hiển thị cho khách
+                salePrice: actualPrice,
+            });
+        }
         return {
-            items,
+            items: items,
             total,
             page,
             limit,

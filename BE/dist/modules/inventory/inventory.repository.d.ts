@@ -29,6 +29,44 @@ export declare class InventoryRepository {
         quantity: number;
         updatedBy: string;
     }): Promise<IInventory | null>;
+    applyOrderStockDeduction(params: {
+        orderId: string;
+        branchId: string;
+        productId: string;
+        quantity: number;
+        updatedBy: string;
+    }): Promise<{
+        inventory: IInventory | null;
+        applied: boolean;
+    }>;
+    restoreOrderStockDeduction(params: {
+        orderId: string;
+        branchId: string;
+        productId: string;
+        quantity: number;
+        updatedBy: string;
+        allowLegacy: boolean;
+    }): Promise<{
+        inventory: IInventory | null;
+        restored: boolean;
+    }>;
+    applyReturnStock(params: {
+        returnId: string;
+        branchId: string;
+        productId: string;
+        quantity: number;
+        updatedBy: string;
+    }): Promise<{
+        inventory: IInventory | null;
+        applied: boolean;
+    }>;
+    rollbackReturnStock(params: {
+        returnId: string;
+        branchId: string;
+        productId: string;
+        quantity: number;
+        updatedBy: string;
+    }): Promise<boolean>;
     upsertStock(params: {
         branchId: string;
         productId: string;

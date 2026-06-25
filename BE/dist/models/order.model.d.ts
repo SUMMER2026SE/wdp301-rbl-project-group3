@@ -1,5 +1,6 @@
 import mongoose, { Document, Types } from 'mongoose';
 export type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'delivering' | 'delivered' | 'cancelled';
+export type PaymentMethod = 'COD' | 'banking' | 'momo' | 'vnpay';
 export interface IOrderItem {
     productId: Types.ObjectId;
     quantity: number;
@@ -15,9 +16,16 @@ export interface IOrder extends Document {
     totalAmount: number;
     status: OrderStatus;
     deliveryAddress?: string;
+    phoneNumber?: string;
+    paymentMethod?: PaymentMethod;
     note?: string;
     confirmedBy?: Types.ObjectId;
     confirmedAt?: Date;
+    invoiceId?: Types.ObjectId;
+    invoiceReservationAt?: Date;
+    invoiceIssuedAt?: Date;
+    returnMutationLockedAt?: Date;
+    returnMutationLockId?: string;
     createdAt: Date;
     updatedAt: Date;
 }

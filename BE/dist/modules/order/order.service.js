@@ -10,153 +10,211 @@ const cart_repository_1 = require("../cart/cart.repository");
 const validation_service_1 = require("../promotion/services/validation.service");
 const calculation_service_1 = require("../promotion/services/calculation.service");
 const usage_service_1 = require("../promotion/services/usage.service");
+const invoice_repository_1 = require("../invoice/invoice.repository");
+const user_model_1 = require("../../models/user.model");
+const backOfficeAccess_util_1 = require("../../utils/backOfficeAccess.util");
 const allowedTransitions = {
     pending: ['confirmed', 'cancelled'],
-    confirmed: ['pending', 'preparing', 'cancelled'],
-    preparing: ['confirmed', 'delivering', 'cancelled'],
-    delivering: ['preparing', 'delivered', 'cancelled'],
+    confirmed: ['preparing', 'cancelled'],
+    preparing: ['delivering', 'cancelled'],
+    delivering: ['delivered'],
     delivered: [],
     cancelled: [],
 };
 class OrderService {
-    async getOrders(filters) {
-        return order_repository_1.orderRepository.findAll(filters);
+    async getOrders(filters, actor) {
+        const branchId = await (0, backOfficeAccess_util_1.resolveBackOfficeBranch)(actor, filters.branchId);
+        return order_repository_1.orderRepository.findAll({ ...filters, branchId });
     }
-    async getOrderById(id) {
+    async getOrderById(id, actor) {
         const order = await order_repository_1.orderRepository.findById(id);
         if (!order)
             throw new errorHandler_middleware_1.AppError('Order not found', 404);
+        if (actor) {
+            await (0, backOfficeAccess_util_1.assertBackOfficeBranchAccess)(actor, this.getObjectIdString(order.branchId));
+        }
         return order;
     }
-    async confirmOrder(id, staffId) {
-        const order = await this.getOrderById(id);
+    async confirmOrder(id, actor) {
+        const order = await this.getOrderById(id, actor);
         if (order.status !== 'pending') {
             throw new errorHandler_middleware_1.AppError('Only pending orders can be confirmed', 400);
         }
-        await this.ensureStockAvailable(order);
-        await this.decreaseOrderStock(order, staffId);
+        await this.decreaseOrderStock(order, actor.userId);
         let updated;
         try {
             updated = await order_repository_1.orderRepository.updateStatusIfCurrent(id, order.status, {
                 status: 'confirmed',
-                confirmedBy: staffId,
+                confirmedBy: actor.userId,
                 confirmedAt: new Date(),
             });
         }
         catch (error) {
-            await this.increaseOrderStock(order, staffId);
+            await this.reconcileOrderStock(order, actor.userId);
             throw error;
         }
         if (!updated) {
-            await this.increaseOrderStock(order, staffId);
+            await this.reconcileOrderStock(order, actor.userId);
             throw new errorHandler_middleware_1.AppError('Order status changed by another request. Please reload and try again.', 409);
         }
+        await this.recordTrackingEvent(id, 'confirmed', actor.userId, 'Order confirmed by back-office staff');
         return updated;
     }
-    async updateStatus(id, status, staffId) {
-        const order = await this.getOrderById(id);
+    async updateStatus(id, status, actor) {
+        const order = await this.getOrderById(id, actor);
         const nextStatuses = allowedTransitions[order.status];
         if (!nextStatuses.includes(status)) {
             throw new errorHandler_middleware_1.AppError(`Cannot change order status from ${order.status} to ${status}`, 400);
         }
+        if (status === 'cancelled') {
+            await this.ensureNoIssuedInvoice(id);
+        }
         const update = { status };
-        let stockDecreased = false;
-        let stockIncreased = false;
         const isProcessingState = (s) => ['confirmed', 'preparing', 'delivering'].includes(s);
         // If moving from pending to a processing state, decrease stock
         if (order.status === 'pending' && isProcessingState(status)) {
-            await this.ensureStockAvailable(order);
-            await this.decreaseOrderStock(order, staffId);
-            stockDecreased = true;
+            await this.decreaseOrderStock(order, actor.userId);
             if (status === 'confirmed') {
-                update.confirmedBy = staffId;
+                update.confirmedBy = actor.userId;
                 update.confirmedAt = new Date();
             }
         }
         // If moving from a processing state back to pending or to cancelled, increase/restore stock
         if (isProcessingState(order.status) && (status === 'pending' || status === 'cancelled')) {
-            await this.increaseOrderStock(order, staffId);
-            stockIncreased = true;
+            await this.increaseOrderStock(order, actor.userId, true);
         }
         let updated;
         try {
             updated = await order_repository_1.orderRepository.updateStatusIfCurrent(id, order.status, update);
         }
         catch (error) {
-            await this.rollbackStockChange(order, staffId, stockDecreased, stockIncreased);
+            await this.reconcileOrderStock(order, actor.userId);
             throw error;
         }
         if (!updated) {
-            await this.rollbackStockChange(order, staffId, stockDecreased, stockIncreased);
+            await this.reconcileOrderStock(order, actor.userId);
             throw new errorHandler_middleware_1.AppError('Order status changed by another request. Please reload and try again.', 409);
+        }
+        await this.recordTrackingEvent(id, status, actor.userId, `Order status changed from ${order.status} to ${status}`);
+        // Tích điểm tích lũy cho khách hàng khi giao hàng thành công
+        if (status === 'delivered' && updated.customerId) {
+            const pointsEarned = Math.floor(updated.totalAmount / 10000);
+            if (pointsEarned > 0) {
+                try {
+                    const user = await user_model_1.User.findById(updated.customerId).exec();
+                    if (user) {
+                        user.points = (user.points || 0) + pointsEarned;
+                        user.lifetimePoints = (user.lifetimePoints || 0) + pointsEarned;
+                        // Tính toán lại hạng thành viên dựa trên điểm trọn đời
+                        const lp = user.lifetimePoints;
+                        let newLevel = 'new';
+                        if (lp >= 1000) {
+                            newLevel = 'diamond';
+                        }
+                        else if (lp >= 600) {
+                            newLevel = 'gold';
+                        }
+                        else if (lp >= 300) {
+                            newLevel = 'silver';
+                        }
+                        else if (lp >= 100) {
+                            newLevel = 'bronze';
+                        }
+                        user.memberLevel = newLevel;
+                        await user.save();
+                    }
+                }
+                catch (err) {
+                    console.error('[LOYALTY_POINTS_AWARD_FAILED]', err);
+                }
+            }
         }
         return updated;
     }
-    async ensureStockAvailable(order) {
-        const branchId = this.getObjectIdString(order.branchId);
-        for (const item of order.items) {
-            const productId = this.getObjectIdString(item.productId);
-            const stock = await inventory_repository_1.inventoryRepository.findInventoryItem(branchId, productId);
-            if (!stock || stock.quantity < item.quantity) {
-                throw new errorHandler_middleware_1.AppError(`Insufficient stock for product ${productId}`, 400);
-            }
-        }
-    }
     async decreaseOrderStock(order, staffId) {
         const branchId = this.getObjectIdString(order.branchId);
-        const decreasedItems = [];
-        for (const item of order.items) {
-            const productId = this.getObjectIdString(item.productId);
+        for (const item of this.aggregateOrderItems(order)) {
+            const productId = item.productId;
             try {
-                const updated = await inventory_repository_1.inventoryRepository.decreaseStock({
+                const result = await inventory_repository_1.inventoryRepository.applyOrderStockDeduction({
+                    orderId: order._id.toString(),
                     branchId,
                     productId,
                     quantity: item.quantity,
                     updatedBy: staffId,
                 });
-                if (!updated) {
+                if (!result.inventory) {
                     throw new errorHandler_middleware_1.AppError(`Insufficient stock for product ${productId}`, 400);
                 }
-                decreasedItems.push({ productId, quantity: item.quantity });
             }
             catch (error) {
-                await this.restoreDecreasedStock(branchId, decreasedItems, staffId);
+                await this.increaseOrderStock(order, staffId, false);
                 throw error;
             }
         }
     }
-    async restoreDecreasedStock(branchId, items, staffId) {
-        for (const item of items) {
-            await inventory_repository_1.inventoryRepository.increaseStock({
-                branchId,
-                productId: item.productId,
-                quantity: item.quantity,
-                updatedBy: staffId,
-            });
-        }
-    }
-    async increaseOrderStock(order, staffId) {
+    async increaseOrderStock(order, staffId, allowLegacy) {
         const branchId = this.getObjectIdString(order.branchId);
-        for (const item of order.items) {
-            const productId = this.getObjectIdString(item.productId);
-            const updated = await inventory_repository_1.inventoryRepository.increaseStock({
-                branchId,
-                productId,
-                quantity: item.quantity,
-                updatedBy: staffId,
-            });
-            if (!updated) {
-                throw new errorHandler_middleware_1.AppError(`Inventory record not found for product ${productId}`, 404);
+        const restoredItems = [];
+        for (const item of this.aggregateOrderItems(order)) {
+            const productId = item.productId;
+            try {
+                const result = await inventory_repository_1.inventoryRepository.restoreOrderStockDeduction({
+                    orderId: order._id.toString(),
+                    branchId,
+                    productId,
+                    quantity: item.quantity,
+                    updatedBy: staffId,
+                    allowLegacy,
+                });
+                if (!result.inventory) {
+                    throw new errorHandler_middleware_1.AppError(`Inventory record not found for product ${productId}`, 404);
+                }
+                if (result.restored) {
+                    restoredItems.push({ productId, quantity: item.quantity });
+                }
+            }
+            catch (error) {
+                for (const restored of restoredItems.reverse()) {
+                    await inventory_repository_1.inventoryRepository.applyOrderStockDeduction({
+                        orderId: order._id.toString(),
+                        branchId,
+                        productId: restored.productId,
+                        quantity: restored.quantity,
+                        updatedBy: staffId,
+                    });
+                }
+                throw error;
             }
         }
     }
-    async rollbackStockChange(order, staffId, stockDecreased, stockIncreased) {
-        if (stockDecreased) {
-            await this.increaseOrderStock(order, staffId);
-        }
-        if (stockIncreased) {
+    async reconcileOrderStock(order, staffId) {
+        const current = await order_repository_1.orderRepository.findRawById(order._id.toString());
+        if (!current)
+            return;
+        const shouldBeDeducted = [
+            'confirmed',
+            'preparing',
+            'delivering',
+            'delivered',
+        ].includes(current.status);
+        if (shouldBeDeducted) {
             await this.decreaseOrderStock(order, staffId);
         }
+        else {
+            await this.increaseOrderStock(order, staffId, false);
+        }
+    }
+    aggregateOrderItems(order) {
+        const quantities = new Map();
+        for (const item of order.items) {
+            const productId = this.getObjectIdString(item.productId);
+            quantities.set(productId, (quantities.get(productId) || 0) + item.quantity);
+        }
+        return [...quantities.entries()].map(([productId, quantity]) => ({
+            productId,
+            quantity,
+        }));
     }
     getObjectIdString(value) {
         if (value instanceof mongoose_1.Types.ObjectId)
@@ -165,6 +223,30 @@ class OrderService {
             return String(value._id);
         }
         return String(value);
+    }
+    async recordTrackingEvent(orderId, status, changedBy, note) {
+        let lastError;
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+            try {
+                await order_repository_1.orderRepository.addTrackingEvent(orderId, status, changedBy, note);
+                return;
+            }
+            catch (error) {
+                lastError = error;
+            }
+        }
+        console.error('[ORDER_TRACKING_WRITE_FAILED]', {
+            orderId,
+            status,
+            error: lastError,
+        });
+    }
+    async ensureNoIssuedInvoice(orderId) {
+        const invoice = await invoice_repository_1.invoiceRepository.findByOrderId(orderId);
+        if (invoice) {
+            throw new errorHandler_middleware_1.AppError('This order already has an issued invoice and cannot be cancelled. Use the return workflow after fulfillment.', 409);
+        }
+        await invoice_repository_1.invoiceRepository.releaseStaleOrderInvoiceReservation(orderId);
     }
     buildCustomerOrderResponse(order) {
         const branch = order.branchId;
@@ -196,6 +278,8 @@ class OrderService {
             }),
             totalAmount: order.totalAmount,
             deliveryAddress: order.deliveryAddress ?? null,
+            phoneNumber: order.phoneNumber ?? null,
+            paymentMethod: order.paymentMethod ?? 'COD',
             note: order.note ?? null,
             createdAt: order.createdAt,
             updatedAt: order.updatedAt,
@@ -229,6 +313,7 @@ class OrderService {
             tracking: trackingEvents.map((e) => ({
                 trackingId: e._id.toString(),
                 status: e.status,
+                changedBy: this.buildTrackingActor(e.changedBy),
                 location: e.location ?? null,
                 note: e.note ?? null,
                 timestamp: e.createdAt,
@@ -249,12 +334,13 @@ class OrderService {
         if (order.status !== 'pending') {
             throw new errorHandler_middleware_1.AppError(`Cannot cancel order with status "${order.status}". Only pending orders can be cancelled.`, 409);
         }
-        const [updatedOrder] = await Promise.all([
-            order_repository_1.orderRepository.cancelByCustomer(orderId),
-            order_repository_1.orderRepository.addTrackingEvent(orderId, 'cancelled', reason ?? 'Cancelled by customer'),
-        ]);
-        if (!updatedOrder)
-            throw new errorHandler_middleware_1.AppError('Failed to cancel order', 500);
+        await this.increaseOrderStock(order, customerId, false);
+        const updatedOrder = await order_repository_1.orderRepository.cancelByCustomer(orderId, customerId);
+        if (!updatedOrder) {
+            await this.reconcileOrderStock(order, customerId);
+            throw new errorHandler_middleware_1.AppError('Order status changed and can no longer be cancelled', 409);
+        }
+        await this.recordTrackingEvent(orderId, 'cancelled', customerId, reason ?? 'Cancelled by customer');
         return this.buildCustomerOrderResponse(updatedOrder);
     }
     generateOrderCode() {
@@ -313,10 +399,12 @@ class OrderService {
             totalAmount,
             status: 'pending',
             deliveryAddress: data.shippingAddress,
+            phoneNumber: data.phoneNumber,
+            paymentMethod: data.paymentMethod,
             note: data.note,
         });
         // 6. Gắn tracking event ban đầu
-        await order_repository_1.orderRepository.addTrackingEvent(order._id.toString(), 'order_placed', 'Đơn hàng được đặt thành công.');
+        await order_repository_1.orderRepository.addTrackingEvent(order._id.toString(), 'order_placed', customerId, 'Đơn hàng được đặt thành công.');
         // 7. Áp dụng voucher (cập nhật trạng thái voucher và promotion usageCount)
         if (appliedVoucherId) {
             await usage_service_1.promotionUsageService.applyVoucher(appliedVoucherId, customerId, order._id.toString());
@@ -324,6 +412,18 @@ class OrderService {
         // 8. Xóa sạch giỏ hàng
         await cart_repository_1.cartRepository.clearCart(customerId);
         return this.buildCustomerOrderResponse(order);
+    }
+    buildTrackingActor(value) {
+        if (value && typeof value === 'object' && '_id' in value) {
+            const actor = value;
+            return {
+                userId: actor._id.toString(),
+                fullName: actor.fullName ?? null,
+                email: actor.email ?? null,
+                role: actor.role ?? null,
+            };
+        }
+        return value ? { userId: String(value) } : null;
     }
 }
 exports.OrderService = OrderService;

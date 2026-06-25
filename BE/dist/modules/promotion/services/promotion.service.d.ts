@@ -9,6 +9,8 @@ export declare class PromotionService {
         discountValue: number;
         maxDiscountAmount?: number;
         minOrderAmount?: number;
+        pointCost?: number;
+        targetMemberLevel?: 'all' | 'new' | 'bronze' | 'silver' | 'gold' | 'diamond';
         scope: 'global' | 'branch';
         branchId?: string;
         startDate: Date;
@@ -23,6 +25,8 @@ export declare class PromotionService {
         discountValue: number;
         maxDiscountAmount: number | undefined;
         minOrderAmount: number | undefined;
+        pointCost: number;
+        targetMemberLevel: "new" | "bronze" | "silver" | "gold" | "diamond" | "all";
         scope: import("../../../models/promotion.model").PromotionScope;
         branchId: string | undefined;
         startDate: Date;
@@ -49,6 +53,8 @@ export declare class PromotionService {
             discountValue: number;
             maxDiscountAmount: number | undefined;
             minOrderAmount: number | undefined;
+            pointCost: number;
+            targetMemberLevel: "new" | "bronze" | "silver" | "gold" | "diamond" | "all";
             scope: import("../../../models/promotion.model").PromotionScope;
             branchId: string | undefined;
             startDate: Date;
@@ -71,8 +77,18 @@ export declare class PromotionService {
         branchId?: string;
         page?: number;
         limit?: number;
-    }): Promise<{
+        onlyClaimed?: boolean;
+    }, caller: CallerContext): Promise<{
         data: {
+            vouchers: string[];
+            vouchersDetail: {
+                code: string;
+                isClaimed: boolean;
+                claimStatus: "active" | "used" | null;
+                pointCost: number;
+            }[];
+            isEligible: boolean;
+            ineligibleReason: string;
             id: string;
             name: string;
             description: string | undefined;
@@ -80,6 +96,8 @@ export declare class PromotionService {
             discountValue: number;
             maxDiscountAmount: number | undefined;
             minOrderAmount: number | undefined;
+            pointCost: number;
+            targetMemberLevel: "new" | "bronze" | "silver" | "gold" | "diamond" | "all";
             scope: import("../../../models/promotion.model").PromotionScope;
             branchId: string | undefined;
             startDate: Date;
@@ -106,6 +124,8 @@ export declare class PromotionService {
         discountValue: number;
         maxDiscountAmount: number | undefined;
         minOrderAmount: number | undefined;
+        pointCost: number;
+        targetMemberLevel: "new" | "bronze" | "silver" | "gold" | "diamond" | "all";
         scope: import("../../../models/promotion.model").PromotionScope;
         branchId: string | undefined;
         startDate: Date;
@@ -124,6 +144,8 @@ export declare class PromotionService {
         discountValue?: number;
         maxDiscountAmount?: number;
         minOrderAmount?: number;
+        pointCost?: number;
+        targetMemberLevel?: 'all' | 'new' | 'bronze' | 'silver' | 'gold' | 'diamond';
         startDate?: Date;
         endDate?: Date;
         usageLimit?: number;
@@ -136,6 +158,8 @@ export declare class PromotionService {
         discountValue: number;
         maxDiscountAmount: number | undefined;
         minOrderAmount: number | undefined;
+        pointCost: number;
+        targetMemberLevel: "new" | "bronze" | "silver" | "gold" | "diamond" | "all";
         scope: import("../../../models/promotion.model").PromotionScope;
         branchId: string | undefined;
         startDate: Date;
@@ -158,6 +182,8 @@ export declare class PromotionService {
         discountValue: number;
         maxDiscountAmount: number | undefined;
         minOrderAmount: number | undefined;
+        pointCost: number;
+        targetMemberLevel: "new" | "bronze" | "silver" | "gold" | "diamond" | "all";
         scope: import("../../../models/promotion.model").PromotionScope;
         branchId: string | undefined;
         startDate: Date;
@@ -177,6 +203,8 @@ export declare class PromotionService {
         discountValue: number;
         maxDiscountAmount: number | undefined;
         minOrderAmount: number | undefined;
+        pointCost: number;
+        targetMemberLevel: "new" | "bronze" | "silver" | "gold" | "diamond" | "all";
         scope: import("../../../models/promotion.model").PromotionScope;
         branchId: string | undefined;
         startDate: Date;
