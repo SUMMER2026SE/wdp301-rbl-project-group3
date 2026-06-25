@@ -19,6 +19,35 @@ export class CategoryRepository {
     return Category.find(query).sort({ createdAt: -1 }).exec();
   }
 
+  async findPaginated(
+    filters: { status?: string; keyword?: string },
+    page: number,
+    limit: number
+  ): Promise<{ categories: ICategory[]; total: number }> {
+    const query: Record<string, unknown> = {};
+
+    if (filters.status) query.status = filters.status;
+    if (filters.keyword) {
+      query.$or = [
+        { name: { $regex: filters.keyword, $options: 'i' } },
+        { code: { $regex: filters.keyword, $options: 'i' } },
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [categories, total] = await Promise.all([
+      Category.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      Category.countDocuments(query).exec(),
+    ]);
+
+    return { categories, total };
+  }
+
   async findById(id: string): Promise<ICategory | null> {
     return Category.findById(id).exec();
   }

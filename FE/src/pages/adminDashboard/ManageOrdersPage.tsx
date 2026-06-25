@@ -119,6 +119,11 @@ export const ManageOrdersPage = () => {
   // Auto-refresh state
   const [autoRefresh, setAutoRefresh] = useState(false)
 
+  // Pagination states
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+
   // Sync selected branch when user info loads and user is manager/staff
   useEffect(() => {
     if (!authLoading && isManagerOrStaff && userBranchId) {
@@ -144,17 +149,25 @@ export const ManageOrdersPage = () => {
     fetchData()
   }, [])
 
-  // Refetch orders specifically when branch or status changes
+  // Refetch orders specifically when branch, status, search, dates, or page changes
   const fetchFilteredOrders = async () => {
     try {
       setLoading(true)
-      const params: { branchId?: string; status?: string } = {}
+      const params: { branchId?: string; status?: string; keyword?: string; startDate?: string; endDate?: string; page?: number; limit?: number } = {
+        page,
+        limit: 10,
+      }
       if (selectedBranch) params.branchId = selectedBranch
       if (selectedStatus) params.status = selectedStatus
+      if (searchQuery.trim()) params.keyword = searchQuery.trim()
+      if (startDate) params.startDate = startDate
+      if (endDate) params.endDate = endDate
 
       const response = await orderService.getAdminOrders(params)
-      if (response.success) {
-        setOrders(response.data)
+      if (response.success && response.data) {
+        setOrders(response.data.orders || [])
+        setTotalPages(response.data.pagination?.totalPages || 1)
+        setTotalItems(response.data.pagination?.total || 0)
       } else {
         setError(response.message || 'Không thể tải danh sách đơn hàng.')
       }
@@ -165,11 +178,21 @@ export const ManageOrdersPage = () => {
     }
   }
 
-  // Effect to fetch filtered list whenever active dropdowns change
+  // Effect to fetch filtered list whenever active dropdowns or page changes (with debounce for search)
   useEffect(() => {
     if (authLoading) return
-    fetchFilteredOrders()
-  }, [selectedBranch, selectedStatus, authLoading])
+    
+    const delayDebounce = setTimeout(() => {
+      fetchFilteredOrders()
+    }, 400)
+
+    return () => clearTimeout(delayDebounce)
+  }, [selectedBranch, selectedStatus, searchQuery, startDate, endDate, page, authLoading])
+
+  // Reset page to 1 when filters change
+  useEffect(() => {
+    setPage(1)
+  }, [selectedBranch, selectedStatus, searchQuery, startDate, endDate])
   
   // Auto-refresh effect
   useEffect(() => {
@@ -180,7 +203,7 @@ export const ManageOrdersPage = () => {
     }, 30000) // Refresh every 30 seconds
     
     return () => clearInterval(intervalId)
-  }, [autoRefresh, selectedBranch, selectedStatus])
+  }, [autoRefresh, selectedBranch, selectedStatus, page])
   
   // Handle confirming order (pending -> confirmed)
   const handleConfirmOrder = async (orderId: string) => {
@@ -251,43 +274,7 @@ export const ManageOrdersPage = () => {
     }
   }
 
-  // Apply search query filter (local filter based on code or customer phone/name)
-  const filteredOrders = orders.filter((order) => {
-    const q = searchQuery.toLowerCase().trim()
-    if (q) {
-      const codeMatch = order.code?.toLowerCase().includes(q) ?? false
-
-      // Customer properties
-      let customerMatch = false
-      if (order.customerId && typeof order.customerId === 'object') {
-        const c = order.customerId
-        customerMatch =
-          (c.fullName?.toLowerCase().includes(q) ?? false) ||
-          (c.email?.toLowerCase().includes(q) ?? false) ||
-          (c.phone?.includes(q) ?? false)
-      } else if (typeof order.customerId === 'string') {
-        customerMatch = order.customerId.toLowerCase().includes(q)
-      }
-
-      // Delivery address / note
-      const addressMatch = order.deliveryAddress?.toLowerCase().includes(q) ?? false
-
-      if (!(codeMatch || customerMatch || addressMatch)) return false
-    }
-    
-    // Date range filter
-    if (startDate || endDate) {
-      const orderDate = new Date(order.createdAt)
-      if (startDate && orderDate < new Date(startDate)) return false
-      if (endDate) {
-        const endDateTime = new Date(endDate)
-        endDateTime.setHours(23, 59, 59, 999)
-        if (orderDate > endDateTime) return false
-      }
-    }
-    
-    return true
-  })
+  const filteredOrders = orders
   
   // Export to CSV function
   const exportToCSV = () => {
@@ -413,7 +400,7 @@ export const ManageOrdersPage = () => {
               <p className="text-xs font-bold uppercase tracking-wider text-blue-700">
                 Tổng đơn hàng
               </p>
-              <p className="mt-1 text-2xl font-black text-blue-900">{statistics.total}</p>
+              <p className="mt-1 text-2xl font-black text-blue-900">{totalItems}</p>
             </div>
             <div className="rounded-full bg-blue-200 p-3">
               <ShoppingCart size={24} className="text-blue-700" />
@@ -781,6 +768,33 @@ export const ManageOrdersPage = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-outline-variant bg-surface-container-low/30 px-6 py-4">
+              <div className="text-xs font-semibold text-on-surface-variant">
+                Hiển thị <span className="font-bold text-on-surface">{filteredOrders.length}</span> trên <span className="font-bold text-on-surface">{totalItems}</span> đơn hàng (Trang {page} / {totalPages})
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={page <= 1 || loading}
+                  onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                  className="inline-flex items-center justify-center rounded-xl border border-outline px-4 py-2 text-xs font-bold text-on-surface bg-surface hover:bg-surface-container-high active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  Trang trước
+                </button>
+                <button
+                  type="button"
+                  disabled={page >= totalPages || loading}
+                  onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+                  className="inline-flex items-center justify-center rounded-xl border border-outline px-4 py-2 text-xs font-bold text-on-surface bg-surface hover:bg-surface-container-high active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  Trang sau
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

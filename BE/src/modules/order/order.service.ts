@@ -29,11 +29,27 @@ const allowedTransitions: Record<OrderStatus, OrderStatus[]> = {
 
 export class OrderService {
   async getOrders(
-    filters: { branchId?: string; status?: string },
+    filters: { branchId?: string; status?: string; keyword?: string; startDate?: string; endDate?: string; page?: number; limit?: number },
     actor: BackOfficeActor
-  ): Promise<IOrder[]> {
+  ): Promise<{ orders: IOrder[]; pagination: { page: number; limit: number; total: number; totalPages: number } }> {
     const branchId = await resolveBackOfficeBranch(actor, filters.branchId);
-    return orderRepository.findAll({ ...filters, branchId });
+    const page = filters.page || 1;
+    const limit = filters.limit || 10;
+    const { orders, total } = await orderRepository.findPaginated(
+      { ...filters, branchId },
+      page,
+      limit
+    );
+    const totalPages = Math.ceil(total / limit) || 1;
+    return {
+      orders,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    };
   }
 
   async getOrderById(id: string, actor?: BackOfficeActor): Promise<IOrder> {

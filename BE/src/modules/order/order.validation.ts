@@ -14,6 +14,11 @@ export const listOrdersSchema = z.object({
   query: z.object({
     branchId: objectId.optional(),
     status: orderStatus.optional(),
+    page: z.string().regex(/^\d+$/).optional(),
+    limit: z.string().regex(/^\d+$/).optional(),
+    keyword: z.string().max(100).optional(),
+    startDate: z.string().optional(),
+    endDate: z.string().optional(),
   }),
 });
 

@@ -2,8 +2,13 @@ import apiClient from '@services/api'
 import type { ApiResponse, Category } from '@/types'
 
 export const categoryService = {
-  // Get all categories (filterable by status/keyword)
-  getCategories: async (params?: { status?: 'active' | 'inactive'; keyword?: string }): Promise<ApiResponse<Category[]>> => {
+  // Get all categories (filterable by status/keyword/page/limit)
+  getCategories: async (params?: {
+    status?: 'active' | 'inactive';
+    keyword?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<Category[] & { pagination?: { page: number; limit: number; total: number; totalPages: number } }>> => {
     const response = await apiClient.get('/api/categories', { params })
     const raw = response.data
     // Backend wraps response in: { success, data: { categories: [...] } } or { success, data: [...] }
@@ -14,10 +19,14 @@ export const categoryService = {
       status: (c.status === 'active' || c.status === 'true' || c.status === true) ? 'active' : 'inactive',
     }))
 
+    const data = raw.data?.pagination 
+      ? Object.assign(normalized, { pagination: raw.data.pagination }) 
+      : normalized;
+
     return {
       success: raw.success,
       message: raw.message,
-      data: normalized,
+      data: data as any,
     }
   },
 
