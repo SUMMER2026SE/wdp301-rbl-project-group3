@@ -18,10 +18,10 @@ interface CartResponse {
     totalAmount: number;
 }
 export declare class CartService {
-    addToCart(userId: string, productId: string, quantity: number): Promise<CartResponse>;
-    getCart(userId: string): Promise<CartResponse>;
-    updateItemQuantity(userId: string, itemId: string, quantity: number): Promise<CartResponse>;
-    removeItem(userId: string, itemId: string): Promise<CartResponse>;
+    addToCart(userId: string, productId: string, quantity: number, branchId?: string): Promise<CartResponse>;
+    getCart(userId: string, branchId?: string): Promise<CartResponse>;
+    updateItemQuantity(userId: string, itemId: string, quantity: number, branchId?: string): Promise<CartResponse>;
+    removeItem(userId: string, itemId: string, branchId?: string): Promise<CartResponse>;
     clearCart(userId: string): Promise<void>;
 }
 export declare const cartService: CartService;

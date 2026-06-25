@@ -1,7 +1,7 @@
 import { CallerContext } from '../types';
 import { IVoucher } from '../../../models/voucher.model';
 export declare class CouponService {
-    generateVouchers(promotionId: string, quantity: number, caller: CallerContext): Promise<{
+    generateVouchers(promotionId: string, code: string, caller: CallerContext): Promise<{
         message: string;
         data: {
             id: string;
@@ -11,13 +11,15 @@ export declare class CouponService {
             discountValue: number;
             maxDiscountAmount: number | undefined;
             minOrderAmount: number | undefined;
+            pointCost: number;
+            targetMemberLevel: "new" | "bronze" | "silver" | "gold" | "diamond" | "all";
             branchId: string | undefined;
             expiresAt: Date;
             status: import("../../../models/voucher.model").VoucherStatus;
             usedBy: string | undefined;
             usedAt: Date | undefined;
             createdAt: Date;
-        }[];
+        };
     }>;
     listVouchers(promotionId: string, filter: {
         status?: 'active' | 'used' | 'expired' | 'disabled';
@@ -32,6 +34,8 @@ export declare class CouponService {
             discountValue: number;
             maxDiscountAmount: number | undefined;
             minOrderAmount: number | undefined;
+            pointCost: number;
+            targetMemberLevel: "new" | "bronze" | "silver" | "gold" | "diamond" | "all";
             branchId: string | undefined;
             expiresAt: Date;
             status: import("../../../models/voucher.model").VoucherStatus;
@@ -54,12 +58,18 @@ export declare class CouponService {
         discountValue: number;
         maxDiscountAmount: number | undefined;
         minOrderAmount: number | undefined;
+        pointCost: number;
+        targetMemberLevel: "new" | "bronze" | "silver" | "gold" | "diamond" | "all";
         branchId: string | undefined;
         expiresAt: Date;
         status: import("../../../models/voucher.model").VoucherStatus;
         usedBy: string | undefined;
         usedAt: Date | undefined;
         createdAt: Date;
+    }>;
+    claimVoucher(code: string, caller: CallerContext): Promise<{
+        message: string;
+        code: string;
     }>;
     getVoucherResponse(voucher: IVoucher): Promise<{
         id: string;
@@ -69,6 +79,8 @@ export declare class CouponService {
         discountValue: number;
         maxDiscountAmount: number | undefined;
         minOrderAmount: number | undefined;
+        pointCost: number;
+        targetMemberLevel: "new" | "bronze" | "silver" | "gold" | "diamond" | "all";
         branchId: string | undefined;
         expiresAt: Date;
         status: import("../../../models/voucher.model").VoucherStatus;

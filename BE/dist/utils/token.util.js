@@ -36,6 +36,7 @@ const generateTokenPair = (user, tokenId) => {
     const refreshToken = (0, exports.generateRefreshToken)({
         userId: user._id.toString(),
         tokenId,
+        tokenVersion: user.refreshTokenVersion,
     });
     return { accessToken, refreshToken };
 };

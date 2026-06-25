@@ -181,7 +181,9 @@ export class AuthService {
         role: user.role,
         avatarUrl: user.avatarUrl,
         isEmailVerified: user.isEmailVerified,
-        branchId: user.branchId?.toString(),
+        points: user.points || 0,
+        lifetimePoints: user.lifetimePoints || 0,
+        memberLevel: user.memberLevel || 'new',
       },
     };
   }
@@ -250,7 +252,9 @@ export class AuthService {
         role: user.role,
         avatarUrl: user.avatarUrl,
         isEmailVerified: user.isEmailVerified,
-        branchId: user.branchId?.toString(),
+        points: user.points || 0,
+        lifetimePoints: user.lifetimePoints || 0,
+        memberLevel: user.memberLevel || 'new',
       },
     };
   }

@@ -19,6 +19,8 @@ export interface IVoucher extends Document {
   discountValue: number;
   maxDiscountAmount?: number;
   minOrderAmount?: number;
+  pointCost: number;
+  targetMemberLevel: 'all' | 'new' | 'bronze' | 'silver' | 'gold' | 'diamond';
   branchId?: Types.ObjectId;
   expiresAt: Date;
   status: VoucherStatus;
@@ -50,6 +52,12 @@ const VoucherSchema = new Schema<IVoucher>(
     discountValue: { type: Number, required: true, min: 0 },
     maxDiscountAmount: { type: Number, min: 0 },
     minOrderAmount: { type: Number, min: 0, default: 0 },
+    pointCost: { type: Number, default: 0, min: 0 },
+    targetMemberLevel: {
+      type: String,
+      enum: ['all', 'new', 'bronze', 'silver', 'gold', 'diamond'],
+      default: 'all',
+    },
     branchId: { type: Schema.Types.ObjectId, ref: 'Branch' },
     expiresAt: { type: Date, required: true },
     status: {

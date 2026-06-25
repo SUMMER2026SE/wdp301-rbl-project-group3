@@ -53,6 +53,12 @@ const VoucherSchema = new mongoose_1.Schema({
     discountValue: { type: Number, required: true, min: 0 },
     maxDiscountAmount: { type: Number, min: 0 },
     minOrderAmount: { type: Number, min: 0, default: 0 },
+    pointCost: { type: Number, default: 0, min: 0 },
+    targetMemberLevel: {
+        type: String,
+        enum: ['all', 'new', 'bronze', 'silver', 'gold', 'diamond'],
+        default: 'all',
+    },
     branchId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Branch' },
     expiresAt: { type: Date, required: true },
     status: {

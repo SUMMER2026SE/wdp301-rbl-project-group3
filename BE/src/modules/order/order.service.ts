@@ -9,6 +9,7 @@ import { promotionValidationService } from '../promotion/services/validation.ser
 import { promotionCalculationService } from '../promotion/services/calculation.service';
 import { promotionUsageService } from '../promotion/services/usage.service';
 import { invoiceRepository } from '../invoice/invoice.repository';
+import { User } from '../../models/user.model';
 import {
   BackOfficeActor,
   assertBackOfficeBranchAccess,
@@ -130,6 +131,39 @@ export class OrderService {
       actor.userId,
       `Order status changed from ${order.status} to ${status}`
     );
+
+    // Tích điểm tích lũy cho khách hàng khi giao hàng thành công
+    if (status === 'delivered' && updated.customerId) {
+      const pointsEarned = Math.floor(updated.totalAmount / 10000);
+      if (pointsEarned > 0) {
+        try {
+          const user = await User.findById(updated.customerId).exec();
+          if (user) {
+            user.points = (user.points || 0) + pointsEarned;
+            user.lifetimePoints = (user.lifetimePoints || 0) + pointsEarned;
+
+            // Tính toán lại hạng thành viên dựa trên điểm trọn đời
+            const lp = user.lifetimePoints;
+            let newLevel: 'new' | 'bronze' | 'silver' | 'gold' | 'diamond' = 'new';
+            if (lp >= 1000) {
+              newLevel = 'diamond';
+            } else if (lp >= 600) {
+              newLevel = 'gold';
+            } else if (lp >= 300) {
+              newLevel = 'silver';
+            } else if (lp >= 100) {
+              newLevel = 'bronze';
+            }
+            
+            user.memberLevel = newLevel;
+            await user.save();
+          }
+        } catch (err) {
+          console.error('[LOYALTY_POINTS_AWARD_FAILED]', err);
+        }
+      }
+    }
+
     return updated;
   }
 

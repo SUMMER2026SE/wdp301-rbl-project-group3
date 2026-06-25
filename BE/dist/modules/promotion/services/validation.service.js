@@ -7,7 +7,7 @@ class PromotionValidationService {
     /**
      * Kiểm tra tính hợp lệ của mã giảm giá
      */
-    async validateVoucher(code, orderValue, branchId) {
+    async validateVoucher(code, orderValue, branchId, userId) {
         const voucher = await promotion_repository_1.promotionRepository.findVoucherByCode(code);
         if (!voucher) {
             throw new errorHandler_middleware_1.AppError('Voucher does not exist or invalid code', 404);
@@ -15,14 +15,20 @@ class PromotionValidationService {
         if (voucher.status === 'disabled') {
             throw new errorHandler_middleware_1.AppError('This voucher has been disabled', 400);
         }
-        if (voucher.status === 'used') {
-            throw new errorHandler_middleware_1.AppError('This voucher has already been used', 400);
-        }
         if (voucher.status === 'expired' || voucher.expiresAt < new Date()) {
             if (voucher.status !== 'expired') {
                 await promotion_repository_1.promotionRepository.updateVoucherStatus(voucher._id.toString(), 'expired');
             }
             throw new errorHandler_middleware_1.AppError('This voucher has expired', 400);
+        }
+        if (userId) {
+            const userClaim = voucher.claims?.find((c) => c.userId.toString() === userId);
+            if (!userClaim) {
+                throw new errorHandler_middleware_1.AppError('Bạn chưa nhận mã giảm giá này. Hãy vào mục Khuyến Mãi để nhận mã!', 400);
+            }
+            if (userClaim.status === 'used') {
+                throw new errorHandler_middleware_1.AppError('Bạn đã sử dụng mã giảm giá này rồi', 400);
+            }
         }
         const promotion = await promotion_repository_1.promotionRepository.findPromotionById(voucher.promotionId.toString());
         if (!promotion) {

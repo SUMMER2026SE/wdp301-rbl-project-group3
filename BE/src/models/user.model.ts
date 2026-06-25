@@ -18,6 +18,9 @@ export interface IUser extends Document {
   emailVerifyTokenExpires?: Date;
   refreshTokenVersion: number;
   status: UserStatus;
+  points: number;
+  lifetimePoints: number;
+  memberLevel: 'new' | 'bronze' | 'silver' | 'gold' | 'diamond';
   lastLoginAt?: Date;
   passwordChangedAt?: Date;
   createdAt: Date;
@@ -52,6 +55,13 @@ const UserSchema = new Schema<IUser>(
       type: String,
       enum: ['active', 'inactive', 'banned'],
       default: 'inactive',
+    },
+    points: { type: Number, default: 0, min: 0 },
+    lifetimePoints: { type: Number, default: 0, min: 0 },
+    memberLevel: {
+      type: String,
+      enum: ['new', 'bronze', 'silver', 'gold', 'diamond'],
+      default: 'new',
     },
     lastLoginAt: { type: Date },
     passwordChangedAt: { type: Date },

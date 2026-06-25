@@ -10,19 +10,31 @@ class OrderController {
             const orders = await order_service_1.orderService.getOrders({
                 branchId: req.query.branchId,
                 status: req.query.status,
+            }, {
+                userId: req.user.userId,
+                role: req.user.role,
             });
             (0, response_util_1.sendSuccess)(res, { orders }, 'Orders retrieved');
         });
         this.getById = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
-            const order = await order_service_1.orderService.getOrderById(String(req.params.id));
+            const order = await order_service_1.orderService.getOrderById(String(req.params.id), {
+                userId: req.user.userId,
+                role: req.user.role,
+            });
             (0, response_util_1.sendSuccess)(res, { order }, 'Order retrieved');
         });
         this.confirm = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
-            const order = await order_service_1.orderService.confirmOrder(String(req.params.id), req.user.userId);
+            const order = await order_service_1.orderService.confirmOrder(String(req.params.id), {
+                userId: req.user.userId,
+                role: req.user.role,
+            });
             (0, response_util_1.sendSuccess)(res, { order }, 'Order confirmed');
         });
         this.updateStatus = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
-            const order = await order_service_1.orderService.updateStatus(String(req.params.id), req.body.status, req.user.userId);
+            const order = await order_service_1.orderService.updateStatus(String(req.params.id), req.body.status, {
+                userId: req.user.userId,
+                role: req.user.role,
+            });
             (0, response_util_1.sendSuccess)(res, { order }, 'Order status updated');
         });
         this.getMyOrders = (0, asyncHandler_1.asyncHandler)(async (req, res) => {

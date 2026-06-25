@@ -5,6 +5,7 @@ const mongoose_1 = require("mongoose");
 const branch_service_1 = require("../branch/branch.service");
 const product_service_1 = require("../product/product.service");
 const inventory_repository_1 = require("./inventory.repository");
+const inventory_model_1 = require("../../models/inventory.model");
 const errorHandler_middleware_1 = require("../../middlewares/errorHandler.middleware");
 const user_model_1 = require("../../models/user.model");
 class InventoryService {
@@ -322,6 +323,52 @@ class InventoryService {
                 throw new errorHandler_middleware_1.AppError(`Import receipt cannot be modified because inventory for product ${item.productId.toString()} has changed`, 409);
             }
         }
+    }
+    async createInventory(data) {
+        await this.resolveAccessibleBranch(data.actor, data.branchId);
+        await this.ensureActiveBranch(data.branchId);
+        // Verify if product exists and is active
+        const product = await product_service_1.productService.ensureProductExists(data.productId);
+        if (product.status !== 'active') {
+            throw new errorHandler_middleware_1.AppError('Cannot add an inactive product to inventory', 409);
+        }
+        // Verify that inventory record does not exist yet
+        const existing = await inventory_model_1.Inventory.findOne({ branchId: data.branchId, productId: data.productId }).exec();
+        if (existing) {
+            throw new errorHandler_middleware_1.AppError('Product already exists in this branch\'s inventory', 409);
+        }
+        return new inventory_model_1.Inventory({
+            branchId: data.branchId,
+            productId: data.productId,
+            quantity: data.quantity,
+            averageCost: data.averageCost,
+            lastImportCost: data.averageCost > 0 ? data.averageCost : undefined,
+            lowStockThreshold: data.lowStockThreshold,
+            updatedBy: new mongoose_1.Types.ObjectId(data.createdBy),
+        }).save();
+    }
+    async updateInventory(id, data) {
+        const existing = await inventory_model_1.Inventory.findById(id).exec();
+        if (!existing) {
+            throw new errorHandler_middleware_1.AppError('Inventory record not found', 404);
+        }
+        await this.resolveAccessibleBranch(data.actor, existing.branchId.toString());
+        if (data.quantity !== undefined)
+            existing.quantity = data.quantity;
+        if (data.averageCost !== undefined)
+            existing.averageCost = data.averageCost;
+        if (data.lowStockThreshold !== undefined)
+            existing.lowStockThreshold = data.lowStockThreshold;
+        existing.updatedBy = new mongoose_1.Types.ObjectId(data.updatedBy);
+        return existing.save();
+    }
+    async deleteInventory(id, actor) {
+        const existing = await inventory_model_1.Inventory.findById(id).exec();
+        if (!existing) {
+            throw new errorHandler_middleware_1.AppError('Inventory record not found', 404);
+        }
+        await this.resolveAccessibleBranch(actor, existing.branchId.toString());
+        await inventory_model_1.Inventory.deleteOne({ _id: id }).exec();
     }
 }
 exports.InventoryService = InventoryService;

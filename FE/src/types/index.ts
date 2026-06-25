@@ -8,6 +8,9 @@ export interface User {
   isEmailVerified: boolean
   status: 'active' | 'inactive' | 'banned'
   authProvider: 'local' | 'google'
+  points?: number
+  lifetimePoints?: number
+  memberLevel?: 'new' | 'bronze' | 'silver' | 'gold' | 'diamond'
   createdAt?: Date
   updatedAt?: Date
   branchId?: string
@@ -316,6 +319,8 @@ export interface PromotionVoucherDetail {
   code: string
   isClaimed: boolean
   claimStatus: 'active' | 'used' | null
+  pointCost?: number
+  targetMemberLevel?: 'all' | 'new' | 'bronze' | 'silver' | 'gold' | 'diamond'
 }
 
 export interface Promotion {
@@ -326,6 +331,8 @@ export interface Promotion {
   discountValue: number
   maxDiscountAmount?: number
   minOrderAmount?: number
+  pointCost?: number
+  targetMemberLevel?: 'all' | 'new' | 'bronze' | 'silver' | 'gold' | 'diamond'
   scope: 'global' | 'branch'
   branchId?: string
   startDate: string
@@ -334,6 +341,8 @@ export interface Promotion {
   usageLimit?: number
   vouchers?: string[]
   vouchersDetail?: PromotionVoucherDetail[]
+  isEligible?: boolean
+  ineligibleReason?: string
   createdAt: string
   updatedAt: string
 }
@@ -349,6 +358,8 @@ export interface Voucher {
   branchId?: string
   expiresAt: string
   status: 'active' | 'used' | 'expired' | 'disabled'
+  pointCost?: number
+  targetMemberLevel?: 'all' | 'new' | 'bronze' | 'silver' | 'gold' | 'diamond'
   createdAt: string
 }
 
