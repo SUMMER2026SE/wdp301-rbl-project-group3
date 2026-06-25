@@ -11,8 +11,8 @@ export declare const listSettingsSchema: z.ZodObject<{
         limit: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
         group: z.ZodOptional<z.ZodEnum<{
             inventory: "inventory";
-            order: "order";
             general: "general";
+            order: "order";
             delivery: "delivery";
             payment: "payment";
             notification: "notification";
@@ -30,8 +30,8 @@ export declare const createSettingSchema: z.ZodObject<{
         label: z.ZodString;
         group: z.ZodEnum<{
             inventory: "inventory";
-            order: "order";
             general: "general";
+            order: "order";
             delivery: "delivery";
             payment: "payment";
             notification: "notification";
@@ -54,8 +54,8 @@ export declare const updateSettingSchema: z.ZodObject<{
         label: z.ZodOptional<z.ZodString>;
         group: z.ZodOptional<z.ZodEnum<{
             inventory: "inventory";
-            order: "order";
             general: "general";
+            order: "order";
             delivery: "delivery";
             payment: "payment";
             notification: "notification";

@@ -3,6 +3,7 @@ export interface User {
   fullName: string
   email: string
   role: 'customer' | 'admin' | 'branch_manager' | 'staff'
+  branchId?: string
   avatarUrl?: string
   phone?: string
   isEmailVerified: boolean
@@ -339,6 +340,29 @@ export interface Voucher {
   createdAt: string
 }
 
+export interface FlashSaleProduct {
+  productId: Product | string
+  flashSalePrice: number
+  limitQuantity: number
+  soldQuantity: number
+}
+
+export interface FlashSale {
+  id: string
+  _id?: string
+  name: string
+  description?: string
+  startDate: string
+  endDate: string
+  scope: 'global' | 'branch'
+  branchId?: Branch | string
+  products: FlashSaleProduct[]
+  status: 'draft' | 'active' | 'inactive' | 'expired'
+  createdBy?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
 export interface VoucherLookupResponse {
   voucher: Voucher
   discountAmount: number;
@@ -354,6 +378,27 @@ export interface ActivePromotionsResponse {
   }
 }
 
+export type SettingValueType = 'string' | 'number' | 'boolean'
+export type SettingGroup = 'general' | 'order' | 'delivery' | 'inventory' | 'payment' | 'loyalty'
+
+export interface SystemSetting {
+  id: string
+  key: string
+  label: string
+  group: SettingGroup
+  value: string | number | boolean
+  valueType: SettingValueType
+  description?: string
+  isPublic: boolean
+  updatedBy?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface SystemSettingGroups {
+  groups: Record<SettingGroup, SystemSetting[]>
+}
+
 export interface UserAddress {
   _id: string
   userId: string
@@ -361,6 +406,22 @@ export interface UserAddress {
   phoneNumber: string
   addressDetail: string
   isDefault: boolean
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface Banner {
+  id: string
+  _id?: string
+  title: string
+  subtitle: string
+  description?: string
+  promoCode?: string
+  imageUrl: string
+  linkUrl?: string
+  status: 'active' | 'inactive'
+  order: number
+  createdBy?: string
   createdAt?: string
   updatedAt?: string
 }

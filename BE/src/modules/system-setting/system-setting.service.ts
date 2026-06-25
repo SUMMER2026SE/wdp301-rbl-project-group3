@@ -3,6 +3,7 @@ import { ISystemSetting, SettingValueType } from '../../models/system-setting.mo
 import { AppError } from '../../middlewares/errorHandler.middleware';
 import { systemSettingRepository } from './system-setting.repository';
 import { DEFAULT_SYSTEM_SETTINGS } from './system-setting.defaults';
+import { invalidateMaintenanceCache } from '../../middlewares/maintenanceMode.middleware';
 
 export interface ListSettingsQuery {
   page: number;
@@ -52,10 +53,16 @@ function assertValueMatchesType(value: unknown, valueType: SettingValueType): vo
 
 export class SystemSettingService {
   private async ensureDefaultSettings(): Promise<void> {
-    const count = await systemSettingRepository.countAll();
-    if (count > 0) return;
-
-    await systemSettingRepository.insertMany(DEFAULT_SYSTEM_SETTINGS);
+    // Upsert each default setting — only inserts if the key doesn't exist yet.
+    // This allows adding new defaults without wiping existing data.
+    const ops = DEFAULT_SYSTEM_SETTINGS.map((s) => ({
+      updateOne: {
+        filter: { key: s.key },
+        update: { $setOnInsert: s },
+        upsert: true,
+      },
+    }));
+    await systemSettingRepository.bulkWrite(ops);
   }
 
   async listSettings(query: ListSettingsQuery): Promise<ListSettingsResult> {
@@ -168,6 +175,9 @@ export class SystemSettingService {
     });
     if (!updated) throw new AppError('Setting not found', 404);
 
+    // Immediately invalidate maintenance cache when that key changes
+    if (key === 'maintenance_mode') invalidateMaintenanceCache();
+
     return toSettingResponse(updated);
   }
 
@@ -197,6 +207,10 @@ export class SystemSettingService {
     if (notFound.length > 0) {
       throw new AppError(`Settings not found: ${notFound.join(', ')}`, 404);
     }
+
+    // Invalidate maintenance cache if that key was part of the bulk update
+    const hasMaintenance = items.some((i) => i.key === 'maintenance_mode');
+    if (hasMaintenance) invalidateMaintenanceCache();
 
     return { settings: updated };
   }

@@ -23,6 +23,10 @@ export class SystemSettingRepository {
     await SystemSetting.insertMany(data);
   }
 
+  async bulkWrite(ops: Parameters<typeof SystemSetting.bulkWrite>[0]): Promise<void> {
+    await SystemSetting.bulkWrite(ops as any);
+  }
+
   async create(data: Partial<ISystemSetting>): Promise<ISystemSetting> {
     return new SystemSetting(data).save();
   }

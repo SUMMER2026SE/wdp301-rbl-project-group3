@@ -1,5 +1,5 @@
 import mongoose, { Document, Types } from 'mongoose';
-export type SettingGroup = 'general' | 'order' | 'delivery' | 'inventory' | 'payment' | 'notification';
+export type SettingGroup = 'general' | 'order' | 'delivery' | 'inventory' | 'payment' | 'notification' | 'loyalty';
 export type SettingValueType = 'string' | 'number' | 'boolean';
 export interface ISystemSetting extends Document {
     _id: Types.ObjectId;

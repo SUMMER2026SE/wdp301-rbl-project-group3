@@ -9,6 +9,9 @@ class SystemSettingRepository {
     async insertMany(data) {
         await system_setting_model_1.SystemSetting.insertMany(data);
     }
+    async bulkWrite(ops) {
+        await system_setting_model_1.SystemSetting.bulkWrite(ops);
+    }
     async create(data) {
         return new system_setting_model_1.SystemSetting(data).save();
     }

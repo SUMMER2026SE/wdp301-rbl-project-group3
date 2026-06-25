@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.uploadProductImage = exports.uploadAvatar = void 0;
+exports.uploadBannerImage = exports.uploadProductImage = exports.uploadAvatar = void 0;
 const multer_1 = __importDefault(require("multer"));
 const errorHandler_middleware_1 = require("./errorHandler.middleware");
 const storage = multer_1.default.memoryStorage();
@@ -22,6 +22,11 @@ exports.uploadAvatar = (0, multer_1.default)({
     limits: { fileSize: 5 * 1024 * 1024 },
 }).single('avatar');
 exports.uploadProductImage = (0, multer_1.default)({
+    storage,
+    fileFilter,
+    limits: { fileSize: 5 * 1024 * 1024 },
+}).single('image');
+exports.uploadBannerImage = (0, multer_1.default)({
     storage,
     fileFilter,
     limits: { fileSize: 5 * 1024 * 1024 },

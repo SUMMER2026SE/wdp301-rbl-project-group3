@@ -5,21 +5,44 @@ const cart_repository_1 = require("./cart.repository");
 const errorHandler_middleware_1 = require("../../middlewares/errorHandler.middleware");
 const product_model_1 = require("../../models/product.model");
 const inventory_model_1 = require("../../models/inventory.model");
+const mongoose_1 = require("mongoose");
+const flash_sale_repository_1 = require("../flash-sale/flash-sale.repository");
+function getObjectIdString(value) {
+    if (!value)
+        return '';
+    if (value instanceof mongoose_1.Types.ObjectId)
+        return value.toString();
+    if (typeof value === 'object' && '_id' in value) {
+        return value._id ? value._id.toString() : '';
+    }
+    return value.toString();
+}
 async function buildCartResponse(cart, branchId) {
     const items = [];
+    // Fetch the active flash sale for this branch (or fallback to global)
+    const cleanBranchId = (branchId && mongoose_1.Types.ObjectId.isValid(branchId)) ? branchId : undefined;
+    const activeFlashSale = await flash_sale_repository_1.flashSaleRepository.findActiveFlashSale(cleanBranchId);
     for (const item of cart.items) {
         if (!item.productId || item.productId.status !== 'active')
             continue;
         const product = item.productId;
         let price = product?.salePrice ?? 0;
         // If branchId is provided, get price from Inventory.lastImportCost
-        if (branchId) {
+        if (branchId && mongoose_1.Types.ObjectId.isValid(branchId)) {
             const inventory = await inventory_model_1.Inventory.findOne({
                 productId: product._id,
                 branchId: branchId,
             }).exec();
             if (inventory && inventory.lastImportCost) {
                 price = inventory.lastImportCost;
+            }
+        }
+        // Apply flash sale price override if applicable
+        if (activeFlashSale) {
+            const flashProduct = activeFlashSale.products.find((p) => getObjectIdString(p.productId) === getObjectIdString(product._id));
+            if (flashProduct &&
+                flashProduct.soldQuantity + item.quantity <= flashProduct.limitQuantity) {
+                price = flashProduct.flashSalePrice;
             }
         }
         items.push({
