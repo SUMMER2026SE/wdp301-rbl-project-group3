@@ -15,7 +15,27 @@ export class CategoryService {
     });
   }
 
-  async getCategories(filters: { status?: string; keyword?: string }): Promise<ICategory[]> {
+  async getCategories(filters: {
+    status?: string;
+    keyword?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<any> {
+    if (filters.page !== undefined && filters.limit !== undefined) {
+      const page = filters.page;
+      const limit = filters.limit;
+      const { categories, total } = await categoryRepository.findPaginated(filters, page, limit);
+      const totalPages = Math.ceil(total / limit) || 1;
+      return {
+        categories,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+        },
+      };
+    }
     return categoryRepository.findAll(filters);
   }
 

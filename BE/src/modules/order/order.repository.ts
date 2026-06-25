@@ -2,6 +2,7 @@ import { Types } from 'mongoose';
 import crypto from 'crypto';
 import { IOrder, Order, OrderStatus } from '../../models/order.model';
 import { DeliveryTracking, IDeliveryTracking, TrackingStatus } from '../../models/deliveryTracking.model';
+import { User } from '../../models/user.model';
 
 export class OrderRepository {
   async findAll(filters: { branchId?: string; status?: string }): Promise<IOrder[]> {
@@ -16,6 +17,62 @@ export class OrderRepository {
       .populate('items.productId', 'name sku unit')
       .sort({ createdAt: -1 })
       .exec();
+  }
+
+  async findPaginated(
+    filters: { branchId?: string; status?: string; keyword?: string; startDate?: string; endDate?: string },
+    page: number,
+    limit: number
+  ): Promise<{ orders: IOrder[]; total: number }> {
+    const query: Record<string, any> = {};
+
+    if (filters.branchId) query.branchId = filters.branchId;
+    if (filters.status) query.status = filters.status;
+
+    if (filters.keyword) {
+      const q = filters.keyword.trim();
+      
+      const matchingUsers = await User.find({
+        $or: [
+          { fullName: { $regex: q, $options: 'i' } },
+          { email: { $regex: q, $options: 'i' } },
+          { phone: { $regex: q, $options: 'i' } },
+        ]
+      }).select('_id').exec();
+      const userIds = matchingUsers.map(u => u._id);
+
+      query.$or = [
+        { code: { $regex: q, $options: 'i' } },
+        { customerId: { $in: userIds } },
+        { deliveryAddress: { $regex: q, $options: 'i' } },
+      ];
+    }
+
+    if (filters.startDate || filters.endDate) {
+      query.createdAt = {};
+      if (filters.startDate) {
+        query.createdAt.$gte = new Date(filters.startDate);
+      }
+      if (filters.endDate) {
+        const endDateTime = new Date(filters.endDate);
+        endDateTime.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = endDateTime;
+      }
+    }
+
+    const [orders, total] = await Promise.all([
+      Order.find(query)
+        .populate('customerId', 'fullName email phone')
+        .populate('branchId', 'name code address')
+        .populate('items.productId', 'name sku unit')
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .exec(),
+      Order.countDocuments(query),
+    ]);
+
+    return { orders, total };
   }
 
   async findById(id: string): Promise<IOrder | null> {

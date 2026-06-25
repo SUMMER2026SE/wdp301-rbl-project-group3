@@ -44,7 +44,7 @@ export const orderService = {
   // ── BACK-OFFICE ADMIN PORTAL API CALLS ──
 
   // Get all orders for admin, filterable by branchId and status
-  getAdminOrders: async (params?: { branchId?: string; status?: string }): Promise<ApiResponse<AdminOrder[]>> => {
+  getAdminOrders: async (params?: { branchId?: string; status?: string; page?: number; limit?: number }): Promise<ApiResponse<{ orders: AdminOrder[]; pagination?: any }>> => {
     const response = await apiClient.get('/api/orders', { params })
     const raw = response.data
     // Backend wraps response in: { success, data: { orders: [...] } } or { success, data: [...] }
@@ -73,7 +73,10 @@ export const orderService = {
     return {
       success: raw.success,
       message: raw.message,
-      data: normalized,
+      data: {
+        orders: normalized,
+        pagination: raw.data?.pagination,
+      },
     }
   },
 

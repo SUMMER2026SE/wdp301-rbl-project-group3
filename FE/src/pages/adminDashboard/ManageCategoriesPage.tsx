@@ -30,6 +30,17 @@ export const ManageCategoriesPage = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedStatus, setSelectedStatus] = useState<string>('')
 
+  // Pagination states
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
+  const limit = 10
+
+  // Reset page to 1 when filters change
+  useEffect(() => {
+    setPage(1)
+  }, [searchQuery, selectedStatus])
+
   // Modal states
   const [modalOpen, setModalOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
@@ -48,7 +59,10 @@ export const ManageCategoriesPage = () => {
       setLoading(true)
       setError(null)
       
-      const params: any = {}
+      const params: any = {
+        page,
+        limit
+      }
       if (searchQuery.trim()) {
         params.keyword = searchQuery.trim()
       }
@@ -59,6 +73,13 @@ export const ManageCategoriesPage = () => {
       const response = await categoryService.getCategories(params)
       if (response.success) {
         setCategoriesList(response.data)
+        if (response.data.pagination) {
+          setTotalPages(response.data.pagination.totalPages || 1)
+          setTotalCount(response.data.pagination.total || 0)
+        } else {
+          setTotalPages(1)
+          setTotalCount(response.data.length || 0)
+        }
       } else {
         setError(response.message || 'Không thể tải danh sách danh mục.')
       }
@@ -69,14 +90,14 @@ export const ManageCategoriesPage = () => {
     }
   }
 
-  // Reload list when search query or filter changes (with debounce)
+  // Reload list when search query, filter, or page changes (with debounce)
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       fetchCategories()
     }, 450)
     
     return () => clearTimeout(delayDebounce)
-  }, [searchQuery, selectedStatus])
+  }, [searchQuery, selectedStatus, page])
 
   // Open modal for creating category
   const handleOpenCreateModal = () => {
@@ -291,7 +312,7 @@ export const ManageCategoriesPage = () => {
                     <tr key={cat._id} className="hover:bg-surface-container-low/20 transition-colors">
                       {/* STT */}
                       <td className="p-4 text-center font-semibold text-on-surface-variant">
-                        {idx + 1}
+                        {(page - 1) * limit + idx + 1}
                       </td>
                       
                       {/* Category Code */}
@@ -354,6 +375,33 @@ export const ManageCategoriesPage = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-outline-variant bg-surface-container-low/30 px-6 py-4 rounded-b-2xl">
+              <div className="text-xs font-semibold text-on-surface-variant">
+                Hiển thị <span className="font-bold text-on-surface">{categoriesList.length}</span> trên <span className="font-bold text-on-surface">{totalCount}</span> danh mục (Trang {page} / {totalPages})
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={page <= 1 || loading}
+                  onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                  className="inline-flex items-center justify-center rounded-xl border border-outline px-4 py-2 text-xs font-bold text-on-surface bg-surface hover:bg-surface-container-high active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+                >
+                  Trang trước
+                </button>
+                <button
+                  type="button"
+                  disabled={page >= totalPages || loading}
+                  onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+                  className="inline-flex items-center justify-center rounded-xl border border-outline px-4 py-2 text-xs font-bold text-on-surface bg-surface hover:bg-surface-container-high active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+                >
+                  Trang sau
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
