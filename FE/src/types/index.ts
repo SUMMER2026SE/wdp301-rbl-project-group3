@@ -14,7 +14,6 @@ export interface User {
   memberLevel?: 'new' | 'bronze' | 'silver' | 'gold' | 'diamond'
   createdAt?: Date
   updatedAt?: Date
-  branchId?: string
 }
 
 export interface Employee {
