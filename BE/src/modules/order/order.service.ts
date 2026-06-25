@@ -10,6 +10,8 @@ import { promotionCalculationService } from '../promotion/services/calculation.s
 import { promotionUsageService } from '../promotion/services/usage.service';
 import { invoiceRepository } from '../invoice/invoice.repository';
 import { User } from '../../models/user.model';
+import { systemSettingRepository } from '../system-setting/system-setting.repository';
+import { flashSaleRepository } from '../flash-sale/flash-sale.repository';
 import {
   BackOfficeActor,
   assertBackOfficeBranchAccess,
@@ -125,6 +127,10 @@ export class OrderService {
       await this.reconcileOrderStock(order, actor.userId);
       throw new AppError('Order status changed by another request. Please reload and try again.', 409);
     }
+
+    if (status === 'cancelled') {
+      await this.restoreFlashSaleQuantities(order);
+    }
     await this.recordTrackingEvent(
       id,
       status as TrackingStatus,
@@ -142,19 +148,32 @@ export class OrderService {
             user.points = (user.points || 0) + pointsEarned;
             user.lifetimePoints = (user.lifetimePoints || 0) + pointsEarned;
 
+            // Đọc ngưỡng thành viên từ system settings (fallback về hardcode nếu chưa có)
+            const [bronze, silver, gold, diamond] = await Promise.all([
+              systemSettingRepository.findByKey('loyalty_bronze_threshold'),
+              systemSettingRepository.findByKey('loyalty_silver_threshold'),
+              systemSettingRepository.findByKey('loyalty_gold_threshold'),
+              systemSettingRepository.findByKey('loyalty_diamond_threshold'),
+            ]);
+
+            const bronzeMin = Number(bronze?.value ?? 100);
+            const silverMin = Number(silver?.value ?? 300);
+            const goldMin   = Number(gold?.value   ?? 600);
+            const diamondMin= Number(diamond?.value ?? 1000);
+
             // Tính toán lại hạng thành viên dựa trên điểm trọn đời
             const lp = user.lifetimePoints;
             let newLevel: 'new' | 'bronze' | 'silver' | 'gold' | 'diamond' = 'new';
-            if (lp >= 1000) {
+            if (lp >= diamondMin) {
               newLevel = 'diamond';
-            } else if (lp >= 600) {
+            } else if (lp >= goldMin) {
               newLevel = 'gold';
-            } else if (lp >= 300) {
+            } else if (lp >= silverMin) {
               newLevel = 'silver';
-            } else if (lp >= 100) {
+            } else if (lp >= bronzeMin) {
               newLevel = 'bronze';
             }
-            
+
             user.memberLevel = newLevel;
             await user.save();
           }
@@ -413,6 +432,7 @@ export class OrderService {
     }
 
     await this.increaseOrderStock(order, customerId, false);
+    await this.restoreFlashSaleQuantities(order);
     const updatedOrder = await orderRepository.cancelByCustomer(orderId, customerId);
     if (!updatedOrder) {
       await this.reconcileOrderStock(order, customerId);
@@ -448,6 +468,10 @@ export class OrderService {
       throw new AppError('Giỏ hàng trống, không thể đặt hàng.', 400);
     }
 
+    // Lấy chiến dịch Flash Sale đang hoạt động của chi nhánh này
+    const activeFlashSale = await flashSaleRepository.findActiveFlashSale(data.branchId);
+    const flashSaleIncrements: { flashSaleId: string; productId: string; quantity: number }[] = [];
+
     // 2. Kiểm tra tồn kho và lấy thông tin sản phẩm
     const orderItems: any[] = [];
     let totalAmountBeforeDiscount = 0;
@@ -470,7 +494,26 @@ export class OrderService {
         );
       }
 
-      const unitPrice = product.salePrice ?? 0;
+      // Check if product is in the active flash sale and limit quantity is not exceeded
+      let unitPrice = product.salePrice ?? 0;
+      if (stock && stock.lastImportCost) {
+        unitPrice = stock.lastImportCost;
+      }
+      let isFlashSaleApplied = false;
+
+      if (activeFlashSale) {
+        const flashProduct = activeFlashSale.products.find(
+          (p) => this.getObjectIdString(p.productId) === this.getObjectIdString(product._id)
+        );
+        if (
+          flashProduct &&
+          flashProduct.soldQuantity + item.quantity <= flashProduct.limitQuantity
+        ) {
+          unitPrice = flashProduct.flashSalePrice;
+          isFlashSaleApplied = true;
+        }
+      }
+
       const subtotal = unitPrice * item.quantity;
       totalAmountBeforeDiscount += subtotal;
 
@@ -480,6 +523,14 @@ export class OrderService {
         unitPrice,
         subtotal,
       });
+
+      if (isFlashSaleApplied && activeFlashSale) {
+        flashSaleIncrements.push({
+          flashSaleId: activeFlashSale._id.toString(),
+          productId: product._id.toString(),
+          quantity: item.quantity,
+        });
+      }
     }
 
     // 3. Xử lý voucher nếu có
@@ -514,6 +565,15 @@ export class OrderService {
       paymentMethod: data.paymentMethod,
       note: data.note,
     });
+
+    // Cập nhật số lượng đã bán trong Flash Sale
+    for (const inc of flashSaleIncrements) {
+      await flashSaleRepository.incrementProductSoldQuantity(
+        inc.flashSaleId,
+        inc.productId,
+        inc.quantity
+      );
+    }
 
     // 6. Gắn tracking event ban đầu
     await orderRepository.addTrackingEvent(
@@ -550,6 +610,32 @@ export class OrderService {
       };
     }
     return value ? { userId: String(value) } : null;
+  }
+
+  private async restoreFlashSaleQuantities(order: IOrder): Promise<void> {
+    try {
+      const orderDate = order.createdAt;
+      const branchId = this.getObjectIdString(order.branchId);
+
+      for (const item of order.items) {
+        const productId = this.getObjectIdString(item.productId);
+        const flashSale = await flashSaleRepository.findFlashSaleByOrderProduct(
+          orderDate,
+          branchId,
+          productId
+        );
+
+        if (flashSale) {
+          await flashSaleRepository.decrementProductSoldQuantity(
+            flashSale._id.toString(),
+            productId,
+            item.quantity
+          );
+        }
+      }
+    } catch (err) {
+      console.error('[RESTORE_FLASH_SALE_QUANTITIES_FAILED]', err);
+    }
   }
 }
 

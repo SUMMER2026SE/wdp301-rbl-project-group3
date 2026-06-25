@@ -198,6 +198,7 @@ export declare class OrderService {
         voucherCode?: string;
     }): Promise<any>;
     private buildTrackingActor;
+    private restoreFlashSaleQuantities;
 }
 export declare const orderService: OrderService;
 //# sourceMappingURL=order.service.d.ts.map

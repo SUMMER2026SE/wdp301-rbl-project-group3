@@ -44,7 +44,7 @@ const productImageMap: Record<string, string> = {
 
 export const CheckoutPage = () => {
   const navigate = useNavigate()
-  const { cart, clearCart } = useCart()
+  const { cart, clearCart, refreshCart } = useCart()
 
   const [fullName, setFullName] = useState('')
   const [phoneNumber, setPhoneNumber] = useState('')
@@ -222,6 +222,7 @@ export const CheckoutPage = () => {
     setSelectedBranch(branch)
     localStorage.setItem('selectedBranch', JSON.stringify(branch))
     setIsBranchModalOpen(false)
+    refreshCart()
     if (appliedVoucher) {
       handleRemoveVoucher()
       setVoucherError('Chi nhánh thay đổi, vui lòng áp dụng lại mã giảm giá.')

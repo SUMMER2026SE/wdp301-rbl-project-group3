@@ -5,7 +5,9 @@ import { useCart } from '@/contexts/CartContext'
 import { productService } from '@services/productService'
 import { branchService } from '@services/branchService'
 import { categoryService } from '@services/categoryService'
-import type { Product, Branch, Category as DbCategory } from '@/types'
+import { flashSaleService } from '@services/flashSaleService'
+import { bannerService } from '@services/bannerService'
+import type { Product, Branch, Category as DbCategory, Banner } from '@/types'
 import {
   ArrowRight,
   Camera,
@@ -130,11 +132,21 @@ const citrusImage = '/assets/winmart/citrus.png'
 const bbqImage = '/assets/winmart/bbq.png'
 
 
-const getCountdownTime = (): CountdownTime => {
-  const now = new Date()
-  const hours = 23 - now.getHours()
-  const minutes = 59 - now.getMinutes()
-  const seconds = 59 - now.getSeconds()
+const getCountdownTime = (endDateStr?: string): CountdownTime => {
+  if (!endDateStr) {
+    return { hours: '00', minutes: '00', seconds: '00' }
+  }
+  const end = new Date(endDateStr).getTime()
+  const now = new Date().getTime()
+  const diff = end - now
+
+  if (diff <= 0) {
+    return { hours: '00', minutes: '00', seconds: '00' }
+  }
+
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000)
 
   return {
     hours: hours.toString().padStart(2, '0'),
@@ -188,20 +200,25 @@ const formatVND = (num: number) => {
   }).format(num)
 }
 
-const FlashSaleCard = ({ product, onAddToCart }: { product: any; onAddToCart?: () => void }) => {
+const FlashSaleCard = ({ 
+  product, 
+  flashSalePrice, 
+  onAddToCart 
+}: { 
+  product: any; 
+  flashSalePrice: number; 
+  onAddToCart?: () => void 
+}) => {
   const title = product.productName || product.name
+  const price = formatVND(flashSalePrice)
+  const originalPrice = formatVND(product.salePrice || product.price || 0)
   
-  // 🔍 DEBUG: Log product data
-  console.log('FlashSaleCard - Product data:', {
-    title,
-    price: product.price,
-    salePrice: product.salePrice,
-    fullProduct: product
-  })
+  const originalVal = product.salePrice || product.price || 0
+  const discountPercent = originalVal > 0 
+    ? Math.round(((originalVal - flashSalePrice) / originalVal) * 100)
+    : 20
+  const discount = `-${discountPercent}%`
   
-  const price = formatVND(product.salePrice || product.price || 0)
-  const originalPrice = formatVND((product.salePrice || product.price || 0) * 1.25)
-  const discount = '-20%'
   const unit = product.unit || 'unit'
   const image = product.imageUrl || productImageMap[title] || '/assets/winmart/tomatoes.png'
 
@@ -295,8 +312,9 @@ const RecommendedCard = ({ product, onAddToCart }: { product: any; onAddToCart?:
 export const HomePage = () => {
   const navigate = useNavigate()
   const { user, isAuthenticated, logout } = useAuth()
-  const { cart, addToCart, updateQuantity, removeItem, clearCart } = useCart()
-  const [countdown, setCountdown] = useState<CountdownTime>(() => getCountdownTime())
+  const { cart, addToCart, updateQuantity, removeItem, clearCart, refreshCart } = useCart()
+  const [activeFlashSale, setActiveFlashSale] = useState<any | null>(null)
+  const [countdown, setCountdown] = useState<CountdownTime>({ hours: '00', minutes: '00', seconds: '00' })
   const heroImageRef = useRef<HTMLImageElement | null>(null)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [isCartOpen, setIsCartOpen] = useState(false)
@@ -305,6 +323,10 @@ export const HomePage = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | DbCategory>('All')
   const [hasLoadedProducts, setHasLoadedProducts] = useState(false)
   const [dbCategories, setDbCategories] = useState<DbCategory[]>([])
+
+  const [activeBanners, setActiveBanners] = useState<Banner[]>([])
+  const [currentBannerIndex, setCurrentBannerIndex] = useState(0)
+  const currentBanner = activeBanners[currentBannerIndex]
 
   // Branch states
   const [branches, setBranches] = useState<Branch[]>([])
@@ -331,6 +353,21 @@ export const HomePage = () => {
     }
   }
 
+  const fetchActiveFlashSale = async (branchId?: string) => {
+    try {
+      const activeBranchId = branchId || selectedBranch?._id
+      const res = await flashSaleService.getActiveFlashSale(activeBranchId)
+      if (res.success && res.data) {
+        setActiveFlashSale(res.data.flashSale)
+      } else {
+        setActiveFlashSale(null)
+      }
+    } catch (err) {
+      console.error('Failed to fetch active flash sale:', err)
+      setActiveFlashSale(null)
+    }
+  }
+
   const fetchBranches = async () => {
     try {
       const res = await branchService.getBranches({ status: 'active' })
@@ -352,6 +389,7 @@ export const HomePage = () => {
         setSelectedBranch(activeBranch)
         localStorage.setItem('selectedBranch', JSON.stringify(activeBranch))
         fetchDbProducts(searchQuery, activeBranch?._id)
+        fetchActiveFlashSale(activeBranch?._id)
       }
     } catch (err) {
       console.error('Failed to fetch branches:', err)
@@ -369,10 +407,30 @@ export const HomePage = () => {
     }
   }
 
+  const fetchActiveBanners = async () => {
+    try {
+      const res = await bannerService.getActiveBanners()
+      if (res.success && res.data?.banners) {
+        setActiveBanners(res.data.banners)
+      }
+    } catch (err) {
+      console.error('Failed to fetch banners:', err)
+    }
+  }
+
   useEffect(() => {
     fetchBranches()
     fetchCategories()
+    fetchActiveBanners()
   }, [])
+
+  useEffect(() => {
+    if (activeBanners.length <= 1) return
+    const interval = setInterval(() => {
+      setCurrentBannerIndex((prev) => (prev + 1) % activeBanners.length)
+    }, 6000)
+    return () => clearInterval(interval)
+  }, [activeBanners])
 
   const filteredBranches = useMemo(() => {
     const kw = branchSearch.trim().toLowerCase()
@@ -390,6 +448,8 @@ export const HomePage = () => {
     localStorage.setItem('selectedBranch', JSON.stringify(branch))
     setIsBranchModalOpen(false)
     fetchDbProducts(searchQuery, branch._id)
+    fetchActiveFlashSale(branch._id)
+    refreshCart()
   }
 
   const filteredRecommendedProducts = useMemo(() => {
@@ -410,11 +470,11 @@ export const HomePage = () => {
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
-      setCountdown(getCountdownTime())
+      setCountdown(getCountdownTime(activeFlashSale?.endDate))
     }, 1000)
 
     return () => window.clearInterval(intervalId)
-  }, [])
+  }, [activeFlashSale])
 
   const handleHeroMouseMove = (event: MouseEvent<HTMLElement>) => {
     if (!heroImageRef.current) {
@@ -650,30 +710,65 @@ export const HomePage = () => {
             <img
               ref={heroImageRef}
               className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-80 transition-transform duration-700 group-hover:scale-105"
-              src={heroImage}
-              alt="Premium organic supermarket aisle with fresh produce"
+              src={currentBanner ? currentBanner.imageUrl : heroImage}
+              alt={currentBanner ? currentBanner.title : "Premium organic supermarket aisle with fresh produce"}
             />
             <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent flex flex-col justify-center px-6 md:px-12 text-white">
               <span className="bg-secondary text-white font-bold px-4 py-1 rounded-full w-fit mb-4 text-label-lg animate-bounce">
-                Exclusive Offer
+                {currentBanner ? "Ưu Đãi Đặc Biệt" : "Exclusive Offer"}
               </span>
               <h2 className="font-headline-lg text-[36px] sm:text-[40px] md:text-[48px] leading-tight mb-4 max-w-[11ch] sm:max-w-none">
-                Fresh Food Festival
+                {currentBanner ? currentBanner.title : "Fresh Food Festival"}
                 <br />
-                <span className="text-primary-fixed">Up to 30% OFF</span>
+                <span className="text-primary-fixed">{currentBanner ? currentBanner.subtitle : "Up to 30% OFF"}</span>
               </h2>
               <p className="text-body-lg mb-8 opacity-90 max-w-[280px] sm:max-w-sm md:max-w-none">
-                Experience the peak of season&apos;s harvest with our premium organic selection.
-                <br />
-                Use code: <span className="font-bold border-b-2 border-primary-fixed">FRESH2026</span>
+                {currentBanner ? currentBanner.description : "Experience the peak of season's harvest with our premium organic selection."}
+                {currentBanner?.promoCode && (
+                  <>
+                    <br />
+                    Mã code: <span className="font-bold border-b-2 border-primary-fixed">{currentBanner.promoCode}</span>
+                  </>
+                )}
+                {!currentBanner && (
+                  <>
+                    <br />
+                    Use code: <span className="font-bold border-b-2 border-primary-fixed">FRESH2026</span>
+                  </>
+                )}
               </p>
               <button
+                onClick={() => {
+                  const targetId = currentBanner?.linkUrl || '#recommended-products';
+                  if (targetId.startsWith('#')) {
+                    document.getElementById(targetId.substring(1))?.scrollIntoView({ behavior: 'smooth' });
+                  } else {
+                    navigate(targetId);
+                  }
+                }}
                 className="beveled-btn bg-primary-container hover:bg-primary text-on-primary-container hover:text-white px-8 py-4 rounded-xl font-bold w-fit transition-all flex items-center gap-2 group-hover:translate-x-2"
                 type="button"
               >
                 Shop Now <Icon>arrow_forward</Icon>
               </button>
             </div>
+
+            {/* Dot Indicators for carousel */}
+            {activeBanners.length > 1 && (
+              <div className="absolute bottom-4 right-4 flex gap-2 z-10">
+                {activeBanners.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentBannerIndex(idx)}
+                    className={`w-2.5 h-2.5 rounded-full transition-all ${
+                      idx === currentBannerIndex ? 'bg-primary w-6' : 'bg-white/50 hover:bg-white'
+                    }`}
+                    type="button"
+                    aria-label={`Go to slide ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            )}
           </section>
         </section>
 
@@ -697,23 +792,28 @@ export const HomePage = () => {
             </a>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-gutter-md">
-            {hasLoadedProducts && dbProducts.length === 0 ? (
+            {!activeFlashSale || !activeFlashSale.products || activeFlashSale.products.length === 0 ? (
               <div className="col-span-full text-center py-12 text-on-surface-variant bg-surface-container-low rounded-xl border border-outline-variant/30">
-                <p className="text-sm font-bold">Không có sản phẩm Flash Sale nào tại chi nhánh này</p>
+                <p className="text-sm font-bold">Không có sản phẩm Flash Sale nào đang hoạt động tại chi nhánh này</p>
               </div>
             ) : (
-              dbProducts.slice(0, 5).map((product) => {
+              activeFlashSale.products.slice(0, 5).map((fp: any) => {
+                const product = fp.productId
+                if (!product) return null
+                const productIdStr = typeof product === 'object' && product !== null ? product._id : product
+
                 return (
                   <FlashSaleCard
-                    key={product._id}
+                    key={productIdStr}
                     product={product}
+                    flashSalePrice={fp.flashSalePrice}
                     onAddToCart={async () => {
                       if (!isAuthenticated) {
                         navigate('/login')
                         return
                       }
                       try {
-                        await addToCart(product._id, 1)
+                        await addToCart(productIdStr, 1)
                       } catch (err: any) {
                         alert(err.message || 'Failed to add to cart')
                       }
@@ -767,7 +867,7 @@ export const HomePage = () => {
           </div>
         </section>
 
-        <section className="mt-stack-lg">
+        <section id="recommended-products" className="mt-stack-lg">
           <div className="mb-8">
             <h2 className="font-headline-md text-headline-md">Recommended for You</h2>
           </div>

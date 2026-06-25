@@ -12,6 +12,8 @@ const calculation_service_1 = require("../promotion/services/calculation.service
 const usage_service_1 = require("../promotion/services/usage.service");
 const invoice_repository_1 = require("../invoice/invoice.repository");
 const user_model_1 = require("../../models/user.model");
+const system_setting_repository_1 = require("../system-setting/system-setting.repository");
+const flash_sale_repository_1 = require("../flash-sale/flash-sale.repository");
 const backOfficeAccess_util_1 = require("../../utils/backOfficeAccess.util");
 const allowedTransitions = {
     pending: ['confirmed', 'cancelled'],
@@ -95,6 +97,9 @@ class OrderService {
             await this.reconcileOrderStock(order, actor.userId);
             throw new errorHandler_middleware_1.AppError('Order status changed by another request. Please reload and try again.', 409);
         }
+        if (status === 'cancelled') {
+            await this.restoreFlashSaleQuantities(order);
+        }
         await this.recordTrackingEvent(id, status, actor.userId, `Order status changed from ${order.status} to ${status}`);
         // Tích điểm tích lũy cho khách hàng khi giao hàng thành công
         if (status === 'delivered' && updated.customerId) {
@@ -105,19 +110,30 @@ class OrderService {
                     if (user) {
                         user.points = (user.points || 0) + pointsEarned;
                         user.lifetimePoints = (user.lifetimePoints || 0) + pointsEarned;
+                        // Đọc ngưỡng thành viên từ system settings (fallback về hardcode nếu chưa có)
+                        const [bronze, silver, gold, diamond] = await Promise.all([
+                            system_setting_repository_1.systemSettingRepository.findByKey('loyalty_bronze_threshold'),
+                            system_setting_repository_1.systemSettingRepository.findByKey('loyalty_silver_threshold'),
+                            system_setting_repository_1.systemSettingRepository.findByKey('loyalty_gold_threshold'),
+                            system_setting_repository_1.systemSettingRepository.findByKey('loyalty_diamond_threshold'),
+                        ]);
+                        const bronzeMin = Number(bronze?.value ?? 100);
+                        const silverMin = Number(silver?.value ?? 300);
+                        const goldMin = Number(gold?.value ?? 600);
+                        const diamondMin = Number(diamond?.value ?? 1000);
                         // Tính toán lại hạng thành viên dựa trên điểm trọn đời
                         const lp = user.lifetimePoints;
                         let newLevel = 'new';
-                        if (lp >= 1000) {
+                        if (lp >= diamondMin) {
                             newLevel = 'diamond';
                         }
-                        else if (lp >= 600) {
+                        else if (lp >= goldMin) {
                             newLevel = 'gold';
                         }
-                        else if (lp >= 300) {
+                        else if (lp >= silverMin) {
                             newLevel = 'silver';
                         }
-                        else if (lp >= 100) {
+                        else if (lp >= bronzeMin) {
                             newLevel = 'bronze';
                         }
                         user.memberLevel = newLevel;
@@ -335,6 +351,7 @@ class OrderService {
             throw new errorHandler_middleware_1.AppError(`Cannot cancel order with status "${order.status}". Only pending orders can be cancelled.`, 409);
         }
         await this.increaseOrderStock(order, customerId, false);
+        await this.restoreFlashSaleQuantities(order);
         const updatedOrder = await order_repository_1.orderRepository.cancelByCustomer(orderId, customerId);
         if (!updatedOrder) {
             await this.reconcileOrderStock(order, customerId);
@@ -355,6 +372,9 @@ class OrderService {
         if (!cart || cart.items.length === 0) {
             throw new errorHandler_middleware_1.AppError('Giỏ hàng trống, không thể đặt hàng.', 400);
         }
+        // Lấy chiến dịch Flash Sale đang hoạt động của chi nhánh này
+        const activeFlashSale = await flash_sale_repository_1.flashSaleRepository.findActiveFlashSale(data.branchId);
+        const flashSaleIncrements = [];
         // 2. Kiểm tra tồn kho và lấy thông tin sản phẩm
         const orderItems = [];
         let totalAmountBeforeDiscount = 0;
@@ -368,7 +388,20 @@ class OrderService {
             if (!stock || stock.quantity < item.quantity) {
                 throw new errorHandler_middleware_1.AppError(`Sản phẩm ${product.name} không đủ tồn kho tại chi nhánh đã chọn (Chỉ còn ${stock?.quantity ?? 0} sản phẩm).`, 400);
             }
-            const unitPrice = product.salePrice ?? 0;
+            // Check if product is in the active flash sale and limit quantity is not exceeded
+            let unitPrice = product.salePrice ?? 0;
+            if (stock && stock.lastImportCost) {
+                unitPrice = stock.lastImportCost;
+            }
+            let isFlashSaleApplied = false;
+            if (activeFlashSale) {
+                const flashProduct = activeFlashSale.products.find((p) => this.getObjectIdString(p.productId) === this.getObjectIdString(product._id));
+                if (flashProduct &&
+                    flashProduct.soldQuantity + item.quantity <= flashProduct.limitQuantity) {
+                    unitPrice = flashProduct.flashSalePrice;
+                    isFlashSaleApplied = true;
+                }
+            }
             const subtotal = unitPrice * item.quantity;
             totalAmountBeforeDiscount += subtotal;
             orderItems.push({
@@ -377,6 +410,13 @@ class OrderService {
                 unitPrice,
                 subtotal,
             });
+            if (isFlashSaleApplied && activeFlashSale) {
+                flashSaleIncrements.push({
+                    flashSaleId: activeFlashSale._id.toString(),
+                    productId: product._id.toString(),
+                    quantity: item.quantity,
+                });
+            }
         }
         // 3. Xử lý voucher nếu có
         let totalAmount = totalAmountBeforeDiscount;
@@ -403,6 +443,10 @@ class OrderService {
             paymentMethod: data.paymentMethod,
             note: data.note,
         });
+        // Cập nhật số lượng đã bán trong Flash Sale
+        for (const inc of flashSaleIncrements) {
+            await flash_sale_repository_1.flashSaleRepository.incrementProductSoldQuantity(inc.flashSaleId, inc.productId, inc.quantity);
+        }
         // 6. Gắn tracking event ban đầu
         await order_repository_1.orderRepository.addTrackingEvent(order._id.toString(), 'order_placed', customerId, 'Đơn hàng được đặt thành công.');
         // 7. Áp dụng voucher (cập nhật trạng thái voucher và promotion usageCount)
@@ -424,6 +468,22 @@ class OrderService {
             };
         }
         return value ? { userId: String(value) } : null;
+    }
+    async restoreFlashSaleQuantities(order) {
+        try {
+            const orderDate = order.createdAt;
+            const branchId = this.getObjectIdString(order.branchId);
+            for (const item of order.items) {
+                const productId = this.getObjectIdString(item.productId);
+                const flashSale = await flash_sale_repository_1.flashSaleRepository.findFlashSaleByOrderProduct(orderDate, branchId, productId);
+                if (flashSale) {
+                    await flash_sale_repository_1.flashSaleRepository.decrementProductSoldQuantity(flashSale._id.toString(), productId, item.quantity);
+                }
+            }
+        }
+        catch (err) {
+            console.error('[RESTORE_FLASH_SALE_QUANTITIES_FAILED]', err);
+        }
     }
 }
 exports.OrderService = OrderService;

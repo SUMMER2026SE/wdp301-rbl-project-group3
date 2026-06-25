@@ -7,6 +7,7 @@ import { env } from './config/env.config';
 import { connectDatabase } from './config/database.config';
 import apiRoutes from './routes/index';
 import { errorHandler } from './middlewares/errorHandler.middleware';
+import { maintenanceModeMiddleware } from './middlewares/maintenanceMode.middleware';
 
 const app = express();
 
@@ -30,6 +31,9 @@ app.use(cookieParser());
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// ─── Maintenance Mode Guard ────────────────────────────────
+app.use(maintenanceModeMiddleware);
 
 // ─── API Routes ────────────────────────────────────────────
 app.use('/api', apiRoutes);

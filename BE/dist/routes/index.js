@@ -19,6 +19,8 @@ const promotion_routes_1 = __importDefault(require("../modules/promotion/promoti
 const employee_routes_1 = __importDefault(require("../modules/employee/employee.routes"));
 const invoice_routes_1 = __importDefault(require("../modules/invoice/invoice.routes"));
 const return_routes_1 = __importDefault(require("../modules/return/return.routes"));
+const flash_sale_routes_1 = __importDefault(require("../modules/flash-sale/flash-sale.routes"));
+const banner_routes_1 = __importDefault(require("../modules/banner/banner.routes"));
 const system_setting_routes_1 = require("../modules/system-setting/system-setting.routes");
 const router = (0, express_1.Router)();
 router.use('/auth', auth_routes_1.default);
@@ -36,6 +38,8 @@ router.use('/promotions', promotion_routes_1.default);
 router.use('/employees', employee_routes_1.default);
 router.use('/invoices', invoice_routes_1.default);
 router.use('/returns', return_routes_1.default);
+router.use('/flash-sales', flash_sale_routes_1.default);
+router.use('/banners', banner_routes_1.default);
 router.use('/settings', system_setting_routes_1.publicSystemSettingRoutes);
 router.use('/admin/settings', system_setting_routes_1.adminSystemSettingRoutes);
 exports.default = router;
