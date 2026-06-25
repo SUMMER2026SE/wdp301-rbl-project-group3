@@ -16,7 +16,7 @@ import {
   VouchersPage,
   SettingsPage,
 } from './pages/userDashboard'
-import { AdminLayout, ManageInventoryPage, ManageOrdersPage, ManageBranchesPage, ManageUsersPage, ManageCategoriesPage, ManagePromotionsPage, ManageEmployeesPage } from './pages/adminDashboard'
+import { AdminLayout, ManageInventoryPage, ManageOrdersPage, ManageBranchesPage, ManageUsersPage, ManageCategoriesPage, ManagePromotionsPage, ManageEmployeesPage, POSPage } from './pages/adminDashboard'
 import './App.css'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
@@ -53,6 +53,8 @@ function App() {
               <Route path="users" element={<ManageUsersPage />} />
               <Route path="promotions" element={<ManagePromotionsPage />} />
               <Route path="employees" element={<ManageEmployeesPage />} />
+              <Route path="pos" element={<POSPage />} />
+              <Route path="profile" element={<DashboardProfilePage />} />
             </Route>
           </Routes>
         </Router>

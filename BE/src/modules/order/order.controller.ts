@@ -84,6 +84,15 @@ export class OrderController {
     const order = await orderService.placeOrder(customerId, req.body);
     sendSuccess(res, order, 'Đơn hàng đã được tạo thành công', 201);
   });
+
+  placeOfflineOrder = asyncHandler(async (req: Request, res: Response) => {
+    const actor = {
+      userId: req.user!.userId,
+      role: req.user!.role,
+    };
+    const order = await orderService.placeOfflineOrder(actor, req.body);
+    sendSuccess(res, order, 'Đơn hàng bán tại quầy đã được tạo thành công', 201);
+  });
 }
 
 export const orderController = new OrderController();

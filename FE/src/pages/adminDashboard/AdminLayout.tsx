@@ -14,6 +14,7 @@ import {
   UserCheck,
   Users,
   Ticket,
+  CreditCard,
 } from 'lucide-react'
 
 type NavItem = {
@@ -55,6 +56,34 @@ export const AdminLayout = () => {
     return <Navigate to="/" replace />
   }
 
+  // Routing protection based on roles
+  const path = location.pathname.toLowerCase()
+  if (user.role === 'staff') {
+    const isAllowed =
+      path === '/admin' ||
+      path === '/admin/' ||
+      path.startsWith('/admin/inventory') ||
+      path.startsWith('/admin/branches') ||
+      path.startsWith('/admin/pos') ||
+      path.startsWith('/admin/profile')
+    if (!isAllowed) {
+      return <Navigate to="/admin" replace />
+    }
+  } else if (user.role === 'branch_manager') {
+    const isAllowed =
+      path === '/admin' ||
+      path === '/admin/' ||
+      path.startsWith('/admin/inventory') ||
+      path.startsWith('/admin/branches') ||
+      path.startsWith('/admin/promotions') ||
+      path.startsWith('/admin/employees') ||
+      path.startsWith('/admin/pos') ||
+      path.startsWith('/admin/profile')
+    if (!isAllowed) {
+      return <Navigate to="/admin" replace />
+    }
+  }
+
   const displayName = user.fullName || 'Staff'
   const roleLabel = user.role
 
@@ -64,6 +93,12 @@ export const AdminLayout = () => {
       label: 'Quản lý Đơn hàng',
       description: 'Duyệt & theo dõi đơn hàng',
       icon: <ShoppingBag size={20} />,
+    },
+    {
+      path: '/admin/pos',
+      label: 'Bán tại quầy (POS)',
+      description: 'Quầy cashier checkout offline',
+      icon: <CreditCard size={20} />,
     },
     {
       path: '/admin/inventory',
@@ -173,8 +208,8 @@ export const AdminLayout = () => {
 
           {/* Right: user info */}
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            <div className="flex items-center gap-2 border-l border-outline-variant pl-3">
-              <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-primary-container text-sm font-bold text-on-primary-container">
+            <Link to="/admin/profile" className="flex items-center gap-2 border-l border-outline-variant pl-3 hover:opacity-85 active:scale-[0.98] transition-all cursor-pointer">
+              <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-primary-container text-sm font-bold text-on-primary-container border border-outline/30 shadow-inner">
                 {user.avatarUrl ? (
                   <img
                     src={user.avatarUrl}
@@ -185,8 +220,8 @@ export const AdminLayout = () => {
                   getInitials(displayName)
                 )}
               </div>
-              <div className="hidden sm:block">
-                <p className="max-w-36 truncate text-sm font-bold text-on-surface">
+              <div className="hidden sm:block text-left">
+                <p className="max-w-36 truncate text-sm font-bold text-on-surface hover:text-primary transition-colors">
                   {displayName}
                 </p>
                 <div className="flex items-center gap-1">
@@ -196,7 +231,7 @@ export const AdminLayout = () => {
                   </p>
                 </div>
               </div>
-            </div>
+            </Link>
           </div>
         </div>
       </header>

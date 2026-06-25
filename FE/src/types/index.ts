@@ -152,6 +152,7 @@ export interface Order {
   orderDate?: string
   items: OrderItem[]
   totalAmount: number
+  orderType?: 'online' | 'offline'
   createdAt: string
   updatedAt?: string
 }
@@ -164,6 +165,18 @@ export interface PlaceOrderInput {
   paymentMethod: 'COD' | 'banking' | 'momo' | 'vnpay'
   selectedItemIds?: string[]
   voucherCode?: string
+}
+
+export interface PlaceOfflineOrderInput {
+  branchId?: string
+  customerPhone?: string
+  customerName?: string
+  items: {
+    productId: string
+    quantity: number
+  }[]
+  paymentMethod: 'COD' | 'banking' | 'momo' | 'vnpay'
+  note?: string
 }
 
 export interface OrdersListResponse {
@@ -290,6 +303,7 @@ export interface AdminOrder {
   items: AdminOrderItem[]
   totalAmount: number
   status: AdminOrderStatus
+  paymentMethod?: 'COD' | 'banking' | 'momo' | 'vnpay'
   deliveryAddress?: string
   note?: string
   confirmedBy?: {

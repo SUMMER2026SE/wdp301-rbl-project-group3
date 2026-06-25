@@ -25,6 +25,7 @@ export interface IOrder extends Document {
   items: IOrderItem[];
   totalAmount: number;
   status: OrderStatus;
+  orderType?: 'online' | 'offline';
   deliveryAddress?: string;
   phoneNumber?: string;
   paymentMethod?: PaymentMethod;
@@ -61,6 +62,11 @@ const OrderSchema = new Schema<IOrder>(
       type: String,
       enum: ['pending', 'confirmed', 'preparing', 'delivering', 'delivered', 'cancelled'],
       default: 'pending',
+    },
+    orderType: {
+      type: String,
+      enum: ['online', 'offline'],
+      default: 'online',
     },
     deliveryAddress: { type: String, trim: true },
     phoneNumber: { type: String, trim: true },

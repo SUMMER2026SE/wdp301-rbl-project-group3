@@ -3,6 +3,7 @@ import type {
   ApiResponse,
   Order,
   PlaceOrderInput,
+  PlaceOfflineOrderInput,
   OrdersListResponse,
   AdminOrder,
   AdminOrderStatus,
@@ -38,6 +39,12 @@ export const orderService = {
   // Place a new order (customer checkout - BE implementation pending)
   placeOrder: async (data: PlaceOrderInput): Promise<ApiResponse<Order>> => {
     const response = await apiClient.post('/api/orders', data)
+    return response.data
+  },
+
+  // Place an offline POS checkout order (back-office cashier counter)
+  placeOfflineOrder: async (data: PlaceOfflineOrderInput): Promise<ApiResponse<AdminOrder>> => {
+    const response = await apiClient.post('/api/orders/pos', data)
     return response.data
   },
 

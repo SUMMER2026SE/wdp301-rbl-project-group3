@@ -76,9 +76,14 @@ export const LoginPage = () => {
       }
 
       await authService.googleLogin(credentialResponse.credential)
-      await authService.getCurrentUser()
-      navigate('/')
-      window.location.reload()
+      const userRes = await authService.getCurrentUser()
+      const role = userRes?.data?.user?.role
+
+      if (role && BACK_OFFICE_ROLES.includes(role)) {
+        window.location.href = '/admin'
+      } else {
+        window.location.href = '/'
+      }
     } catch (err) {
       setError(getErrorMessage(err, 'Google login failed'))
     }

@@ -1,6 +1,8 @@
 import { Types } from 'mongoose';
 import { AppError } from '../../middlewares/errorHandler.middleware';
 import { IOrder, Order, OrderStatus } from '../../models/order.model';
+import { User } from '../../models/user.model';
+import { Product } from '../../models/product.model';
 import { TrackingStatus } from '../../models/deliveryTracking.model';
 import { inventoryRepository } from '../inventory/inventory.repository';
 import { orderRepository } from './order.repository';
@@ -498,6 +500,154 @@ export class OrderService {
     await cartRepository.clearCart(customerId);
 
     return this.buildCustomerOrderResponse(order);
+  }
+
+  async placeOfflineOrder(
+    actor: BackOfficeActor,
+    data: {
+      branchId?: string;
+      customerPhone?: string;
+      customerName?: string;
+      items: { productId: string; quantity: number }[];
+      paymentMethod: 'COD' | 'banking' | 'momo' | 'vnpay';
+      note?: string;
+    }
+  ): Promise<any> {
+    // 1. Resolve branch access
+    const branchId = await resolveBackOfficeBranch(actor, data.branchId, true);
+    if (!branchId) {
+      throw new AppError('Branch ID is required for placing an order.', 400);
+    }
+
+    // 2. Resolve or create customer membership
+    let customerId: Types.ObjectId;
+    if (data.customerPhone) {
+      const existingCustomer = await User.findOne({ phone: data.customerPhone, role: 'customer' });
+      if (existingCustomer) {
+        customerId = existingCustomer._id;
+      } else {
+        const formattedPhone = data.customerPhone.trim();
+        const email = `${formattedPhone}@pos.local`;
+        
+        // Ensure email uniqueness if another guest has same format (safety check)
+        const checkEmail = await User.findOne({ email });
+        const finalEmail = checkEmail ? `${formattedPhone}-${Date.now()}@pos.local` : email;
+
+        const newCustomer = await User.create({
+          fullName: data.customerName || `Khách hàng ${formattedPhone}`,
+          email: finalEmail,
+          phone: formattedPhone,
+          role: 'customer',
+          status: 'active',
+          isEmailVerified: true,
+          authProvider: 'local',
+        });
+        customerId = newCustomer._id;
+      }
+    } else {
+      let guest = await User.findOne({ email: 'guest@pos.local' });
+      if (!guest) {
+        guest = await User.create({
+          fullName: 'Khách vãng lai',
+          email: 'guest@pos.local',
+          role: 'customer',
+          status: 'active',
+          isEmailVerified: true,
+          authProvider: 'local',
+        });
+      }
+      customerId = guest._id;
+    }
+
+    // 3. Verify stock and format items
+    const orderItems: any[] = [];
+    let totalAmount = 0;
+
+    for (const item of data.items) {
+      const product = await Product.findById(item.productId).exec();
+      if (!product || product.status === 'inactive') {
+        throw new AppError(`Sản phẩm với ID ${item.productId} không tồn tại hoặc đã ngừng kinh doanh.`, 404);
+      }
+
+      const stock = await inventoryRepository.findInventoryItem(branchId, product._id.toString());
+      if (!stock || stock.quantity < item.quantity) {
+        throw new AppError(
+          `Sản phẩm ${product.name} không đủ tồn kho (Chỉ còn ${stock?.quantity ?? 0} sản phẩm tại chi nhánh này).`,
+          400
+        );
+      }
+
+      const unitPrice = product.salePrice ?? 0;
+      const subtotal = unitPrice * item.quantity;
+      totalAmount += subtotal;
+
+      orderItems.push({
+        productId: product._id,
+        quantity: item.quantity,
+        unitPrice,
+        subtotal,
+      });
+    }
+
+    // 4. Generate custom code POS-YYYYMMDD-XXXXXX
+    const date = new Date();
+    const stamp = date.toISOString().slice(0, 10).replace(/-/g, '');
+    const random = Math.random().toString(36).slice(2, 8).toUpperCase();
+    const orderCode = `POS-${stamp}-${random}`;
+
+    // 5. Create the Order
+    const order = await Order.create({
+      code: orderCode,
+      customerId,
+      branchId: new Types.ObjectId(branchId),
+      items: orderItems,
+      totalAmount,
+      status: 'delivered', // Paid & delivered instantly
+      orderType: 'offline',
+      paymentMethod: data.paymentMethod,
+      note: data.note,
+      confirmedBy: new Types.ObjectId(actor.userId),
+      confirmedAt: new Date(),
+    });
+
+    // 6. Deduct stock instantly
+    for (const item of orderItems) {
+      const result = await inventoryRepository.applyOrderStockDeduction({
+        orderId: order._id.toString(),
+        branchId,
+        productId: item.productId.toString(),
+        quantity: item.quantity,
+        updatedBy: actor.userId,
+      });
+      if (!result.inventory) {
+        throw new AppError(`Thao tác giảm tồn kho thất bại cho sản phẩm ${item.productId}`, 500);
+      }
+    }
+
+    // 7. Add tracking events
+    await orderRepository.addTrackingEvent(
+      order._id.toString(),
+      'order_placed',
+      actor.userId,
+      'Đơn hàng bán tại quầy (POS) đã được tạo.'
+    );
+    await orderRepository.addTrackingEvent(
+      order._id.toString(),
+      'delivered',
+      actor.userId,
+      'Đơn hàng đã được thanh toán và giao trực tiếp cho khách hàng.'
+    );
+
+    // 8. Return populated order response for print preview
+    const populatedOrder = await Order.findById(order._id)
+      .populate('branchId')
+      .populate('items.productId')
+      .exec();
+    if (!populatedOrder) {
+      throw new AppError('Không thể lấy thông tin chi tiết đơn hàng sau khi tạo.', 500);
+    }
+
+    return this.buildCustomerOrderResponse(populatedOrder);
   }
 
   private buildTrackingActor(value: unknown) {

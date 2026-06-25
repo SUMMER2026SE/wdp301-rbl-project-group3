@@ -6,4 +6,5 @@ export { ManageUsersPage } from './ManageUsersPage'
 export { ManageCategoriesPage } from './ManageCategoriesPage'
 export { ManagePromotionsPage } from './ManagePromotionsPage'
 export { ManageEmployeesPage } from './ManageEmployeesPage'
+export { POSPage } from './POSPage'
 

@@ -56,4 +56,20 @@ export const placeOrderSchema = z.object({
   }),
 });
 
+export const placeOfflineOrderSchema = z.object({
+  body: z.object({
+    branchId: objectId.optional(),
+    customerPhone: z.string().max(15).optional(),
+    customerName: z.string().max(100).optional(),
+    items: z.array(
+      z.object({
+        productId: objectId,
+        quantity: z.number().int().positive(),
+      })
+    ).min(1, 'At least one item is required'),
+    paymentMethod: z.enum(['COD', 'banking', 'momo', 'vnpay']).default('COD'),
+    note: z.string().max(500).optional(),
+  }),
+});
+
 export { validate };
