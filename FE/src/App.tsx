@@ -30,6 +30,7 @@ import {
   ManageFlashSalesPage,
   ManageBannersPage,
   ManageEmployeesPage,
+  ManageStatisticsPage,
 } from './pages/adminDashboard'
 import './App.css'
 
@@ -116,6 +117,7 @@ function AppRoutes() {
         <Route path="flash-sales" element={<ManageFlashSalesPage />} />
         <Route path="banners" element={<ManageBannersPage />} />
         <Route path="employees" element={<ManageEmployeesPage />} />
+        <Route path="statistics" element={<ManageStatisticsPage />} />
       </Route>
     </Routes>
   )

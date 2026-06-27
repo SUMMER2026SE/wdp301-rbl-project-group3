@@ -16,6 +16,7 @@ import {
   Ticket,
   Settings2,
   Zap,
+  TrendingUp,
 } from 'lucide-react'
 
 type NavItem = {
@@ -82,6 +83,12 @@ export const AdminLayout = () => {
   ]
 
   if (user?.role === 'admin' || user?.role === 'branch_manager') {
+    navItems.unshift({
+      path: '/admin/statistics',
+      label: 'Báo cáo & Thống kê',
+      description: 'Phân tích doanh thu & KPIs',
+      icon: <TrendingUp size={20} />,
+    })
     navItems.push({
       path: '/admin/promotions',
       label: 'Khuyến mãi',
