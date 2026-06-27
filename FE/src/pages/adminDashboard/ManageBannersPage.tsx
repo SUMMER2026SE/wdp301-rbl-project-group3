@@ -117,7 +117,7 @@ export const ManageBannersPage = () => {
         fetchBanners()
       }
     } catch (err: any) {
-      setErrorMsg(err.message || 'Không thể cập nhật trạng thái')
+      setErrorMsg(err.response?.data?.message || err.message || 'Không thể cập nhật trạng thái')
     } finally {
       setIsLoading(false)
     }
@@ -136,7 +136,7 @@ export const ManageBannersPage = () => {
         fetchBanners()
       }
     } catch (err: any) {
-      setErrorMsg(err.message || 'Không thể xóa banner')
+      setErrorMsg(err.response?.data?.message || err.message || 'Không thể xóa banner')
     } finally {
       setIsLoading(false)
     }
@@ -184,7 +184,7 @@ export const ManageBannersPage = () => {
         fetchBanners()
       }
     } catch (err: any) {
-      setErrorMsg(err.message || 'Có lỗi xảy ra khi lưu banner')
+      setErrorMsg(err.response?.data?.message || err.message || 'Có lỗi xảy ra khi lưu banner')
     } finally {
       setIsLoading(false)
     }
@@ -373,7 +373,7 @@ export const ManageBannersPage = () => {
                     <label className="flex flex-col items-center justify-center cursor-pointer w-full h-full p-4">
                       <ImageIcon className="w-8 h-8 text-on-surface-variant/40 mb-2" />
                       <span className="text-xs text-on-surface-variant font-bold">Kéo thả hoặc click để chọn tệp</span>
-                      <span className="text-[10px] text-on-surface-variant/70 mt-0.5">JPEG, PNG, WEBP (Tối đa 5MB)</span>
+                      <span className="text-[10px] text-on-surface-variant/70 mt-0.5">JPEG, PNG, WEBP (Tối đa 10MB)</span>
                       <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
                     </label>
                   )}
