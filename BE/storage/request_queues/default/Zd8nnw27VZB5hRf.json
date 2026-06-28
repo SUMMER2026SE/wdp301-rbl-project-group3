@@ -1,0 +1,9 @@
+{
+	"id": "Zd8nnw27VZB5hRf",
+	"json": "{\"id\":\"Zd8nnw27VZB5hRf\",\"url\":\"https://winmart.vn/thit-hai-san-tuoi--c03?cate2=&order=&brands=10030\",\"loadedUrl\":\"https://winmart.vn/thit-hai-san-tuoi--c03?cate2=&order=&brands=10030&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/thit-hai-san-tuoi--c03?brands=10030&cate2=&order=\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-06-26T17:22:03.787Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/thit-hai-san-tuoi--c03?brands=10030&cate2=&order=",
+	"url": "https://winmart.vn/thit-hai-san-tuoi--c03?cate2=&order=&brands=10030"
+}

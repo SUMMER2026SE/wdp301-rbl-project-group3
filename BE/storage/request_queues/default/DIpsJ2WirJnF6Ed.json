@@ -1,0 +1,9 @@
+{
+	"id": "DIpsJ2WirJnF6Ed",
+	"json": "{\"id\":\"DIpsJ2WirJnF6Ed\",\"url\":\"https://winmart.vn/info/danh-sach-cua-hang\",\"uniqueKey\":\"https://winmart.vn/info/danh-sach-cua-hang\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1}}}",
+	"method": "GET",
+	"orderNo": 1782494752605,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/info/danh-sach-cua-hang",
+	"url": "https://winmart.vn/info/danh-sach-cua-hang"
+}

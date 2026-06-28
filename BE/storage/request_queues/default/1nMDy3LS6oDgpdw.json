@@ -1,0 +1,9 @@
+{
+	"id": "1nMDy3LS6oDgpdw",
+	"json": "{\"id\":\"1nMDy3LS6oDgpdw\",\"url\":\"https://winmart.vn/products/glucerna-huong-lua-mach-800gr--s10281000?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/glucerna-huong-lua-mach-800gr--s10281000?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
+	"method": "GET",
+	"orderNo": 1782494304161,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/products/glucerna-huong-lua-mach-800gr--s10281000?storeCode=1535&storeGroupCode=1998",
+	"url": "https://winmart.vn/products/glucerna-huong-lua-mach-800gr--s10281000?storeGroupCode=1998&storeCode=1535"
+}

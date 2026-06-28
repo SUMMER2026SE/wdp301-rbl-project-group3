@@ -1,0 +1,9 @@
+{
+	"id": "ZXdu6N357I73Dme",
+	"json": "{\"id\":\"ZXdu6N357I73Dme\",\"url\":\"https://winmart.vn/products/kelloggs-n.coc-dd-muesli-355g--s10015539?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/kelloggs-n.coc-dd-muesli-355g--s10015539?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
+	"method": "GET",
+	"orderNo": 1782494358075,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/products/kelloggs-n.coc-dd-muesli-355g--s10015539?storeCode=1535&storeGroupCode=1998",
+	"url": "https://winmart.vn/products/kelloggs-n.coc-dd-muesli-355g--s10015539?storeGroupCode=1998&storeCode=1535"
+}

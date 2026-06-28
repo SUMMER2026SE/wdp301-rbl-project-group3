@@ -1,0 +1,9 @@
+{
+	"id": "qSw5y5GZSFrTFmv",
+	"json": "{\"id\":\"qSw5y5GZSFrTFmv\",\"url\":\"https://winmart.vn/ve-sinh-nha-cua--c01170?storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/ve-sinh-nha-cua--c01170?storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/ve-sinh-nha-cua--c01170?storeCode=1535\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-06-26T17:21:59.799Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/ve-sinh-nha-cua--c01170?storeCode=1535",
+	"url": "https://winmart.vn/ve-sinh-nha-cua--c01170?storeCode=1535"
+}

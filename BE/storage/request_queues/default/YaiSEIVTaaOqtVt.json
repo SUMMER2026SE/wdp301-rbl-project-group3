@@ -1,0 +1,9 @@
+{
+	"id": "YaiSEIVTaaOqtVt",
+	"json": "{\"id\":\"YaiSEIVTaaOqtVt\",\"url\":\"https://winmart.vn/info/customer-support\",\"uniqueKey\":\"https://winmart.vn/info/customer-support\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1}}}",
+	"method": "GET",
+	"orderNo": 1782494752605,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/info/customer-support",
+	"url": "https://winmart.vn/info/customer-support"
+}

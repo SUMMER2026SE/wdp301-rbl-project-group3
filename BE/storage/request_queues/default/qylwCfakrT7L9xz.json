@@ -1,0 +1,9 @@
+{
+	"id": "qylwCfakrT7L9xz",
+	"json": "{\"id\":\"qylwCfakrT7L9xz\",\"url\":\"https://winmart.vn/hoa-pham-tay-rua--c10?storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/hoa-pham-tay-rua--c10?storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/hoa-pham-tay-rua--c10?storeCode=1535\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-06-26T17:18:33.114Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/hoa-pham-tay-rua--c10?storeCode=1535",
+	"url": "https://winmart.vn/hoa-pham-tay-rua--c10?storeCode=1535"
+}

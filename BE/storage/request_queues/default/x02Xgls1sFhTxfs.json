@@ -1,0 +1,9 @@
+{
+	"id": "x02Xgls1sFhTxfs",
+	"json": "{\"id\":\"x02Xgls1sFhTxfs\",\"url\":\"https://winmart.vn/nuoc-rua-chen--c01142?storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/nuoc-rua-chen--c01142?storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/nuoc-rua-chen--c01142?storeCode=1535\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-06-26T17:18:36.587Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/nuoc-rua-chen--c01142?storeCode=1535",
+	"url": "https://winmart.vn/nuoc-rua-chen--c01142?storeCode=1535"
+}

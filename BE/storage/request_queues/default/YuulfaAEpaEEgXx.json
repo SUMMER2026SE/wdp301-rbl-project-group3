@@ -1,0 +1,9 @@
+{
+	"id": "YuulfaAEpaEEgXx",
+	"json": "{\"id\":\"YuulfaAEpaEEgXx\",\"url\":\"https://winmart.vn/hai-san-dong-lanh--c0157?storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/hai-san-dong-lanh--c0157?storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/hai-san-dong-lanh--c0157?storeCode=1535\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-06-26T17:20:59.614Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/hai-san-dong-lanh--c0157?storeCode=1535",
+	"url": "https://winmart.vn/hai-san-dong-lanh--c0157?storeCode=1535"
+}

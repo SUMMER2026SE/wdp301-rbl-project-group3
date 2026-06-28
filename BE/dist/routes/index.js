@@ -17,6 +17,7 @@ const cart_routes_1 = __importDefault(require("../modules/cart/cart.routes"));
 const address_routes_1 = __importDefault(require("../modules/address/address.routes"));
 const promotion_routes_1 = __importDefault(require("../modules/promotion/promotion.routes"));
 const system_setting_routes_1 = require("../modules/system-setting/system-setting.routes");
+const crawler_routes_1 = __importDefault(require("../modules/crawler/crawler.routes"));
 const router = (0, express_1.Router)();
 router.use('/auth', auth_routes_1.default);
 router.use('/users', user_routes_1.default);
@@ -32,5 +33,6 @@ router.use('/addresses', address_routes_1.default);
 router.use('/promotions', promotion_routes_1.default);
 router.use('/settings', system_setting_routes_1.publicSystemSettingRoutes);
 router.use('/admin/settings', system_setting_routes_1.adminSystemSettingRoutes);
+router.use('/crawler', crawler_routes_1.default);
 exports.default = router;
 //# sourceMappingURL=index.js.map

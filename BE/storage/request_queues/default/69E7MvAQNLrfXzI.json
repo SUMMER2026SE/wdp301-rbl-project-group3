@@ -1,0 +1,9 @@
+{
+	"id": "69E7MvAQNLrfXzI",
+	"json": "{\"id\":\"69E7MvAQNLrfXzI\",\"url\":\"https://winmart.vn/rong-bien-tao-bien--c0124?storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/rong-bien-tao-bien--c0124?storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/rong-bien-tao-bien--c0124?storeCode=1535\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-06-26T17:19:20.111Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/rong-bien-tao-bien--c0124?storeCode=1535",
+	"url": "https://winmart.vn/rong-bien-tao-bien--c0124?storeCode=1535"
+}

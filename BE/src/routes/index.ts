@@ -15,6 +15,7 @@ import {
   adminSystemSettingRoutes,
   publicSystemSettingRoutes,
 } from '../modules/system-setting/system-setting.routes';
+import crawlerRoutes from '../modules/crawler/crawler.routes';
 
 const router = Router();
 
@@ -32,5 +33,6 @@ router.use('/addresses', addressRoutes);
 router.use('/promotions', promotionRoutes);
 router.use('/settings', publicSystemSettingRoutes);
 router.use('/admin/settings', adminSystemSettingRoutes);
+router.use('/crawler', crawlerRoutes);
 
 export default router;

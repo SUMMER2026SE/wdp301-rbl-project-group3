@@ -1,0 +1,9 @@
+{
+	"id": "BtvAfoPElRytBKp",
+	"json": "{\"id\":\"BtvAfoPElRytBKp\",\"url\":\"https://winmart.vn/products/vissan-heo-ham-vissan-hop-150g--s10007361?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/vissan-heo-ham-vissan-hop-150g--s10007361?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
+	"method": "GET",
+	"orderNo": 1782494359110,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/products/vissan-heo-ham-vissan-hop-150g--s10007361?storeCode=1535&storeGroupCode=1998",
+	"url": "https://winmart.vn/products/vissan-heo-ham-vissan-hop-150g--s10007361?storeGroupCode=1998&storeCode=1535"
+}

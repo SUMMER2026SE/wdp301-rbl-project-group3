@@ -1,0 +1,9 @@
+{
+	"id": "mURMwPA8I0BDNVp",
+	"json": "{\"id\":\"mURMwPA8I0BDNVp\",\"url\":\"https://winmart.vn/products/wineco-hanh-la-l1-100gr--s10281879?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/wineco-hanh-la-l1-100gr--s10281879?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
+	"method": "GET",
+	"orderNo": 1782494299728,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/products/wineco-hanh-la-l1-100gr--s10281879?storeCode=1535&storeGroupCode=1998",
+	"url": "https://winmart.vn/products/wineco-hanh-la-l1-100gr--s10281879?storeGroupCode=1998&storeCode=1535"
+}

@@ -1,0 +1,9 @@
+{
+	"id": "yjFRgMAzPa7zBOd",
+	"json": "{\"id\":\"yjFRgMAzPa7zBOd\",\"url\":\"https://winmart.vn/products/sunlight-nls-td-t.moc-h.lilybachtra-2kg--s10274688?storeGroupCode=1998&storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/products/sunlight-nls-td-t.moc-h.lilybachtra-2kg--s10274688?storeCode=1535&storeGroupCode=1998\",\"uniqueKey\":\"https://winmart.vn/products/sunlight-nls-td-t.moc-h.lilybachtra-2kg--s10274688?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-06-26T17:23:54.281Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/products/sunlight-nls-td-t.moc-h.lilybachtra-2kg--s10274688?storeCode=1535&storeGroupCode=1998",
+	"url": "https://winmart.vn/products/sunlight-nls-td-t.moc-h.lilybachtra-2kg--s10274688?storeGroupCode=1998&storeCode=1535"
+}

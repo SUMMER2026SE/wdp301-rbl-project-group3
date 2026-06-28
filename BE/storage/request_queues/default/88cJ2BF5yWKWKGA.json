@@ -1,0 +1,9 @@
+{
+	"id": "88cJ2BF5yWKWKGA",
+	"json": "{\"id\":\"88cJ2BF5yWKWKGA\",\"url\":\"https://winmart.vn/trung--c01165?storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/trung--c01165?storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/trung--c01165?storeCode=1535\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-06-26T17:21:05.686Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/trung--c01165?storeCode=1535",
+	"url": "https://winmart.vn/trung--c01165?storeCode=1535"
+}

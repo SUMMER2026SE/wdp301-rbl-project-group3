@@ -9,29 +9,31 @@ class CartController {
         // UC07 — POST /api/cart/items
         this.addToCart = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
             const userId = req.user.userId;
-            const { productId, quantity } = req.body;
-            const cart = await cart_service_1.cartService.addToCart(userId, productId, quantity);
+            const { productId, quantity, branchId } = req.body;
+            const cart = await cart_service_1.cartService.addToCart(userId, productId, quantity, branchId);
             (0, response_util_1.sendSuccess)(res, cart, 'Item added to cart', 201);
         });
         // UC08 — GET /api/cart
         this.getCart = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
             const userId = req.user.userId;
-            const cart = await cart_service_1.cartService.getCart(userId);
+            const branchId = req.query.branchId;
+            const cart = await cart_service_1.cartService.getCart(userId, branchId);
             (0, response_util_1.sendSuccess)(res, cart, 'Cart retrieved successfully');
         });
         // UC08 — PATCH /api/cart/items/:itemId
         this.updateItem = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
             const userId = req.user.userId;
             const itemId = req.params['itemId'];
-            const { quantity } = req.body;
-            const cart = await cart_service_1.cartService.updateItemQuantity(userId, itemId, quantity);
+            const { quantity, branchId } = req.body;
+            const cart = await cart_service_1.cartService.updateItemQuantity(userId, itemId, quantity, branchId);
             (0, response_util_1.sendSuccess)(res, cart, 'Cart item updated');
         });
         // UC08 — DELETE /api/cart/items/:itemId
         this.removeItem = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
             const userId = req.user.userId;
             const itemId = req.params['itemId'];
-            const cart = await cart_service_1.cartService.removeItem(userId, itemId);
+            const branchId = req.query.branchId;
+            const cart = await cart_service_1.cartService.removeItem(userId, itemId, branchId);
             (0, response_util_1.sendSuccess)(res, cart, 'Item removed from cart');
         });
         // UC08 — DELETE /api/cart

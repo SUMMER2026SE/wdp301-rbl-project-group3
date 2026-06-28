@@ -1,0 +1,9 @@
+{
+	"id": "K88J4R9PqcCIKmb",
+	"json": "{\"id\":\"K88J4R9PqcCIKmb\",\"url\":\"https://winmart.vn/thuc-pham-dong-lanh--c05?storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/thuc-pham-dong-lanh--c05?storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/thuc-pham-dong-lanh--c05?storeCode=1535\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-06-26T17:20:58.223Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/thuc-pham-dong-lanh--c05?storeCode=1535",
+	"url": "https://winmart.vn/thuc-pham-dong-lanh--c05?storeCode=1535"
+}
