@@ -9,6 +9,9 @@ type ProfileResponse = {
     authProvider: string;
     isEmailVerified: boolean;
     status: string;
+    points?: number;
+    lifetimePoints?: number;
+    memberLevel?: string;
     lastLoginAt?: Date;
     createdAt: Date;
     updatedAt: Date;

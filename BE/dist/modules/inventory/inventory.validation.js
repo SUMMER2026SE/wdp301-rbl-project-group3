@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validate = exports.updateImportReceiptSchema = exports.createImportReceiptSchema = exports.listImportReceiptsSchema = exports.listInventorySchema = exports.importReceiptIdParamSchema = void 0;
+exports.validate = exports.updateInventorySchema = exports.createInventorySchema = exports.inventoryIdParamSchema = exports.updateImportReceiptSchema = exports.createImportReceiptSchema = exports.listImportReceiptsSchema = exports.listInventorySchema = exports.importReceiptIdParamSchema = void 0;
 const zod_1 = require("zod");
 const auth_validation_1 = require("../auth/auth.validation");
 Object.defineProperty(exports, "validate", { enumerable: true, get: function () { return auth_validation_1.validate; } });
@@ -58,6 +58,32 @@ exports.updateImportReceiptSchema = zod_1.z.object({
         items: zod_1.z.array(importItemSchema).min(1).superRefine(uniqueImportItems).optional(),
     })
         .refine((body) => Object.keys(body).length > 0, {
+        message: 'At least one field is required',
+    }),
+});
+exports.inventoryIdParamSchema = zod_1.z.object({
+    params: zod_1.z.object({
+        id: objectId,
+    }),
+});
+exports.createInventorySchema = zod_1.z.object({
+    body: zod_1.z.object({
+        branchId: objectId,
+        productId: objectId,
+        quantity: zod_1.z.number().int().min(0).default(0),
+        averageCost: zod_1.z.number().min(0).default(0),
+        lowStockThreshold: zod_1.z.number().int().min(0).default(10),
+    }),
+});
+exports.updateInventorySchema = zod_1.z.object({
+    params: zod_1.z.object({
+        id: objectId,
+    }),
+    body: zod_1.z.object({
+        quantity: zod_1.z.number().int().min(0).optional(),
+        averageCost: zod_1.z.number().min(0).optional(),
+        lowStockThreshold: zod_1.z.number().int().min(0).optional(),
+    }).refine((body) => Object.keys(body).length > 0, {
         message: 'At least one field is required',
     }),
 });

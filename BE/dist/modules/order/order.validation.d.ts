@@ -25,6 +25,7 @@ export declare const updateOrderStatusSchema: z.ZodObject<{
     body: z.ZodObject<{
         status: z.ZodEnum<{
             cancelled: "cancelled";
+            pending: "pending";
             confirmed: "confirmed";
             preparing: "preparing";
             delivering: "delivering";
@@ -57,6 +58,21 @@ export declare const cancelOrderSchema: z.ZodObject<{
     }, z.core.$strip>;
     body: z.ZodObject<{
         reason: z.ZodOptional<z.ZodString>;
+    }, z.core.$strip>;
+}, z.core.$strip>;
+export declare const placeOrderSchema: z.ZodObject<{
+    body: z.ZodObject<{
+        branchId: z.ZodString;
+        shippingAddress: z.ZodString;
+        phoneNumber: z.ZodString;
+        note: z.ZodOptional<z.ZodString>;
+        paymentMethod: z.ZodEnum<{
+            COD: "COD";
+            banking: "banking";
+            momo: "momo";
+            vnpay: "vnpay";
+        }>;
+        voucherCode: z.ZodOptional<z.ZodString>;
     }, z.core.$strip>;
 }, z.core.$strip>;
 export { validate };

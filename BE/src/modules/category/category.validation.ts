@@ -13,6 +13,8 @@ export const listCategoriesSchema = z.object({
   query: z.object({
     status: z.enum(['active', 'inactive']).optional(),
     keyword: z.string().max(100).optional(),
+    page: z.string().regex(/^\d+$/).optional(),
+    limit: z.string().regex(/^\d+$/).optional(),
   }),
 });
 

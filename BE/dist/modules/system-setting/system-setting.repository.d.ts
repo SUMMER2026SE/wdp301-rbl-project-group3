@@ -1,4 +1,4 @@
-import { ISystemSetting } from '../../models/system-setting.model';
+import { ISystemSetting, SystemSetting } from '../../models/system-setting.model';
 export interface SettingListFilters {
     group?: string;
     keyword?: string;
@@ -14,6 +14,7 @@ export interface PaginatedSettings {
 export declare class SystemSettingRepository {
     countAll(): Promise<number>;
     insertMany(data: Partial<ISystemSetting>[]): Promise<void>;
+    bulkWrite(ops: Parameters<typeof SystemSetting.bulkWrite>[0]): Promise<void>;
     create(data: Partial<ISystemSetting>): Promise<ISystemSetting>;
     findPaginated(filters: SettingListFilters, page: number, limit: number): Promise<PaginatedSettings>;
     findAllPublic(): Promise<ISystemSetting[]>;

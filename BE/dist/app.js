@@ -12,6 +12,7 @@ const database_config_1 = require("./config/database.config");
 const index_1 = __importDefault(require("./routes/index"));
 const errorHandler_middleware_1 = require("./middlewares/errorHandler.middleware");
 const crawler_cron_1 = require("./modules/crawler/crawler.cron");
+const maintenanceMode_middleware_1 = require("./middlewares/maintenanceMode.middleware");
 const app = (0, express_1.default)();
 // ─── Security Middlewares ──────────────────────────────────
 app.use((0, helmet_1.default)());
@@ -29,6 +30,8 @@ app.use((0, cookie_parser_1.default)());
 app.get('/health', (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+// ─── Maintenance Mode Guard ────────────────────────────────
+app.use(maintenanceMode_middleware_1.maintenanceModeMiddleware);
 // ─── API Routes ────────────────────────────────────────────
 app.use('/api', index_1.default);
 // ─── 404 Handler ───────────────────────────────────────────

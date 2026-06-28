@@ -11,6 +11,8 @@ export declare class CouponService {
             discountValue: number;
             maxDiscountAmount: number | undefined;
             minOrderAmount: number | undefined;
+            pointCost: number;
+            targetMemberLevel: "new" | "bronze" | "silver" | "gold" | "diamond" | "all";
             branchId: string | undefined;
             expiresAt: Date;
             status: import("../../../models/voucher.model").VoucherStatus;
@@ -32,6 +34,8 @@ export declare class CouponService {
             discountValue: number;
             maxDiscountAmount: number | undefined;
             minOrderAmount: number | undefined;
+            pointCost: number;
+            targetMemberLevel: "new" | "bronze" | "silver" | "gold" | "diamond" | "all";
             branchId: string | undefined;
             expiresAt: Date;
             status: import("../../../models/voucher.model").VoucherStatus;
@@ -54,6 +58,8 @@ export declare class CouponService {
         discountValue: number;
         maxDiscountAmount: number | undefined;
         minOrderAmount: number | undefined;
+        pointCost: number;
+        targetMemberLevel: "new" | "bronze" | "silver" | "gold" | "diamond" | "all";
         branchId: string | undefined;
         expiresAt: Date;
         status: import("../../../models/voucher.model").VoucherStatus;
@@ -73,6 +79,8 @@ export declare class CouponService {
         discountValue: number;
         maxDiscountAmount: number | undefined;
         minOrderAmount: number | undefined;
+        pointCost: number;
+        targetMemberLevel: "new" | "bronze" | "silver" | "gold" | "diamond" | "all";
         branchId: string | undefined;
         expiresAt: Date;
         status: import("../../../models/voucher.model").VoucherStatus;

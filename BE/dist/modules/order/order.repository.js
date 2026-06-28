@@ -1,7 +1,11 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.orderRepository = exports.OrderRepository = void 0;
 const mongoose_1 = require("mongoose");
+const crypto_1 = __importDefault(require("crypto"));
 const order_model_1 = require("../../models/order.model");
 const deliveryTracking_model_1 = require("../../models/deliveryTracking.model");
 class OrderRepository {
@@ -33,7 +37,12 @@ class OrderRepository {
             .exec();
     }
     async updateStatusIfCurrent(id, currentStatus, data) {
-        return order_model_1.Order.findOneAndUpdate({ _id: id, status: currentStatus }, data, { new: true })
+        const query = { _id: id, status: currentStatus };
+        if (data.status === 'cancelled') {
+            query.invoiceIssuedAt = { $exists: false };
+            query.invoiceReservationAt = { $exists: false };
+        }
+        return order_model_1.Order.findOneAndUpdate(query, data, { new: true })
             .populate('customerId', 'fullName email phone')
             .populate('branchId', 'name code address')
             .populate('items.productId', 'name sku unit')
@@ -66,24 +75,52 @@ class OrderRepository {
             .populate('items.productId', 'name sku unit imageUrl')
             .exec();
     }
-    async cancelByCustomer(orderId) {
-        return order_model_1.Order.findByIdAndUpdate(orderId, { $set: { status: 'cancelled' } }, { returnDocument: 'after' })
+    async cancelByCustomer(orderId, customerId) {
+        return order_model_1.Order.findOneAndUpdate({
+            _id: new mongoose_1.Types.ObjectId(orderId),
+            customerId: new mongoose_1.Types.ObjectId(customerId),
+            status: 'pending',
+        }, { $set: { status: 'cancelled' } }, { new: true })
             .populate('branchId', 'name code address')
             .populate('items.productId', 'name sku unit')
             .exec();
     }
     async findTrackingByOrderId(orderId) {
         return deliveryTracking_model_1.DeliveryTracking.find({ orderId: new mongoose_1.Types.ObjectId(orderId) })
+            .populate('changedBy', 'fullName email role')
             .sort({ createdAt: 1 })
             .exec();
     }
-    async addTrackingEvent(orderId, status, note, location) {
-        return deliveryTracking_model_1.DeliveryTracking.create({
+    async addTrackingEvent(orderId, status, changedBy, note, location) {
+        const existing = await deliveryTracking_model_1.DeliveryTracking.findOne({
             orderId: new mongoose_1.Types.ObjectId(orderId),
             status,
-            note,
-            location,
-        });
+        }).exec();
+        if (existing) {
+            if (!existing.changedBy && changedBy) {
+                existing.changedBy = new mongoose_1.Types.ObjectId(changedBy);
+                return existing.save();
+            }
+            return existing;
+        }
+        const trackingId = crypto_1.default
+            .createHash('sha256')
+            .update(`${orderId}:${status}`)
+            .digest('hex')
+            .slice(0, 24);
+        return deliveryTracking_model_1.DeliveryTracking.findByIdAndUpdate(trackingId, {
+            $setOnInsert: {
+                _id: new mongoose_1.Types.ObjectId(trackingId),
+                orderId: new mongoose_1.Types.ObjectId(orderId),
+                status,
+                changedBy: changedBy ? new mongoose_1.Types.ObjectId(changedBy) : undefined,
+                note,
+                location,
+            },
+        }, { new: true, upsert: true, setDefaultsOnInsert: true }).exec();
+    }
+    async findRawById(id) {
+        return order_model_1.Order.findById(id).exec();
     }
 }
 exports.OrderRepository = OrderRepository;

@@ -1,18 +1,21 @@
 import { IOrder, OrderStatus } from '../../models/order.model';
+import { TrackingStatus } from '../../models/deliveryTracking.model';
+import { BackOfficeActor } from '../../utils/backOfficeAccess.util';
 export declare class OrderService {
     getOrders(filters: {
         branchId?: string;
         status?: string;
-    }): Promise<IOrder[]>;
-    getOrderById(id: string): Promise<IOrder>;
-    confirmOrder(id: string, staffId: string): Promise<IOrder>;
-    updateStatus(id: string, status: OrderStatus, staffId: string): Promise<IOrder>;
-    private ensureStockAvailable;
+    }, actor: BackOfficeActor): Promise<IOrder[]>;
+    getOrderById(id: string, actor?: BackOfficeActor): Promise<IOrder>;
+    confirmOrder(id: string, actor: BackOfficeActor): Promise<IOrder>;
+    updateStatus(id: string, status: OrderStatus, actor: BackOfficeActor): Promise<IOrder>;
     private decreaseOrderStock;
-    private restoreDecreasedStock;
     private increaseOrderStock;
-    private rollbackStockChange;
+    private reconcileOrderStock;
+    private aggregateOrderItems;
     private getObjectIdString;
+    private recordTrackingEvent;
+    private ensureNoIssuedInvoice;
     private buildCustomerOrderResponse;
     getOrderHistory(customerId: string, page: number, limit: number, status?: OrderStatus): Promise<{
         orders: {
@@ -44,6 +47,8 @@ export declare class OrderService {
             }[];
             totalAmount: number;
             deliveryAddress: string | null;
+            phoneNumber: string | null;
+            paymentMethod: import("../../models/order.model").PaymentMethod;
             note: string | null;
             createdAt: Date;
             updatedAt: Date;
@@ -87,13 +92,26 @@ export declare class OrderService {
             }[];
             totalAmount: number;
             deliveryAddress: string | null;
+            phoneNumber: string | null;
+            paymentMethod: import("../../models/order.model").PaymentMethod;
             note: string | null;
             createdAt: Date;
             updatedAt: Date;
         };
         tracking: {
             trackingId: string;
-            status: import("../../models/deliveryTracking.model").TrackingStatus;
+            status: TrackingStatus;
+            changedBy: {
+                userId: string;
+                fullName: string | null;
+                email: string | null;
+                role: string | null;
+            } | {
+                userId: string;
+                fullName?: undefined;
+                email?: undefined;
+                role?: undefined;
+            } | null;
             location: string | null;
             note: string | null;
             timestamp: Date;
@@ -129,6 +147,8 @@ export declare class OrderService {
         }[];
         totalAmount: number;
         deliveryAddress: string | null;
+        phoneNumber: string | null;
+        paymentMethod: import("../../models/order.model").PaymentMethod;
         note: string | null;
         createdAt: Date;
         updatedAt: Date;
@@ -162,10 +182,23 @@ export declare class OrderService {
         }[];
         totalAmount: number;
         deliveryAddress: string | null;
+        phoneNumber: string | null;
+        paymentMethod: import("../../models/order.model").PaymentMethod;
         note: string | null;
         createdAt: Date;
         updatedAt: Date;
     }>;
+    private generateOrderCode;
+    placeOrder(customerId: string, data: {
+        branchId: string;
+        shippingAddress: string;
+        phoneNumber: string;
+        note?: string;
+        paymentMethod: 'COD' | 'banking' | 'momo' | 'vnpay';
+        voucherCode?: string;
+    }): Promise<any>;
+    private buildTrackingActor;
+    private restoreFlashSaleQuantities;
 }
 export declare const orderService: OrderService;
 //# sourceMappingURL=order.service.d.ts.map

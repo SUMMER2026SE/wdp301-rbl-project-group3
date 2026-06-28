@@ -13,6 +13,7 @@ export interface IDeliveryTracking extends Document {
     _id: Types.ObjectId;
     orderId: Types.ObjectId;
     status: TrackingStatus;
+    changedBy?: Types.ObjectId;
     location?: string;
     note?: string;
     createdAt: Date;
@@ -27,6 +28,7 @@ const DeliveryTrackingSchema = new Schema<IDeliveryTracking>(
             enum: ['order_placed', 'confirmed', 'preparing', 'delivering', 'delivered', 'cancelled'],
             required: true,
         },
+        changedBy: { type: Schema.Types.ObjectId, ref: 'User' },
         location: { type: String, trim: true },
         note: { type: String, trim: true },
     },

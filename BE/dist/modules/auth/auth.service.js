@@ -114,12 +114,12 @@ class AuthService {
         const isMatch = await (0, hash_util_1.comparePassword)(data.password, user.passwordHash);
         if (!isMatch)
             throw new errorHandler_middleware_1.AppError('Invalid credentials', 401);
-        if (user.status === 'banned')
-            throw new errorHandler_middleware_1.AppError('Account has been banned', 403);
         // Yêu cầu xác thực email trước khi đăng nhập
         if (!user.isEmailVerified) {
             throw new errorHandler_middleware_1.AppError('Please verify your email before logging in', 403);
         }
+        if (user.status !== 'active')
+            throw new errorHandler_middleware_1.AppError('Account is not active', 403);
         const tokenId = (0, uuid_1.v4)();
         const { accessToken, refreshToken } = (0, token_util_1.generateTokenPair)(user, tokenId);
         const refreshTokenHash = (0, hash_util_1.hashToken)(refreshToken);
@@ -141,6 +141,9 @@ class AuthService {
                 role: user.role,
                 avatarUrl: user.avatarUrl,
                 isEmailVerified: user.isEmailVerified,
+                points: user.points || 0,
+                lifetimePoints: user.lifetimePoints || 0,
+                memberLevel: user.memberLevel || 'new',
             },
         };
     }
@@ -178,8 +181,8 @@ class AuthService {
                 status: 'active',
             });
         }
-        if (user.status === 'banned')
-            throw new errorHandler_middleware_1.AppError('Account has been banned', 403);
+        if (user.status !== 'active')
+            throw new errorHandler_middleware_1.AppError('Account is not active', 403);
         const tokenId = (0, uuid_1.v4)();
         const { accessToken, refreshToken } = (0, token_util_1.generateTokenPair)(user, tokenId);
         const refreshTokenHash = (0, hash_util_1.hashToken)(refreshToken);
@@ -200,6 +203,9 @@ class AuthService {
                 role: user.role,
                 avatarUrl: user.avatarUrl,
                 isEmailVerified: user.isEmailVerified,
+                points: user.points || 0,
+                lifetimePoints: user.lifetimePoints || 0,
+                memberLevel: user.memberLevel || 'new',
             },
         };
     }
@@ -225,6 +231,10 @@ class AuthService {
             throw new errorHandler_middleware_1.AppError('User not found', 404);
         if (user.status !== 'active')
             throw new errorHandler_middleware_1.AppError('Account is not active', 403);
+        if (user.refreshTokenVersion !== payload.tokenVersion) {
+            await auth_repository_1.authRepository.revokeUserToken(payload.tokenId);
+            throw new errorHandler_middleware_1.AppError('Session is no longer valid. Please login again.', 401);
+        }
         const newTokenId = (0, uuid_1.v4)();
         const { accessToken, refreshToken: newRefreshToken } = (0, token_util_1.generateTokenPair)(user, newTokenId);
         const newRefreshTokenHash = (0, hash_util_1.hashToken)(newRefreshToken);

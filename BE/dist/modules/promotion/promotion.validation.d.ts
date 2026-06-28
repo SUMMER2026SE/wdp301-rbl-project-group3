@@ -10,6 +10,15 @@ export declare const createPromotionSchema: z.ZodObject<{
         discountValue: z.ZodNumber;
         maxDiscountAmount: z.ZodOptional<z.ZodNumber>;
         minOrderAmount: z.ZodOptional<z.ZodNumber>;
+        pointCost: z.ZodOptional<z.ZodNumber>;
+        targetMemberLevel: z.ZodOptional<z.ZodEnum<{
+            new: "new";
+            bronze: "bronze";
+            silver: "silver";
+            gold: "gold";
+            diamond: "diamond";
+            all: "all";
+        }>>;
         scope: z.ZodEnum<{
             global: "global";
             branch: "branch";
@@ -38,6 +47,15 @@ export declare const updatePromotionSchema: z.ZodObject<{
         discountValue: z.ZodOptional<z.ZodNumber>;
         maxDiscountAmount: z.ZodOptional<z.ZodNumber>;
         minOrderAmount: z.ZodOptional<z.ZodNumber>;
+        pointCost: z.ZodOptional<z.ZodNumber>;
+        targetMemberLevel: z.ZodOptional<z.ZodEnum<{
+            new: "new";
+            bronze: "bronze";
+            silver: "silver";
+            gold: "gold";
+            diamond: "diamond";
+            all: "all";
+        }>>;
         startDate: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodDate]>>;
         endDate: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodDate]>>;
         usageLimit: z.ZodOptional<z.ZodNumber>;

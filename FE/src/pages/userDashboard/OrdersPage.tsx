@@ -84,6 +84,15 @@ export const OrdersPage = () => {
   const [selectedStatusTab, setSelectedStatusTab] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
+  // Pagination states
+  const [page, setPage] = useState(1)
+  const limit = 5
+
+  // Reset page to 1 when tab filters or search query changes
+  useEffect(() => {
+    setPage(1)
+  }, [selectedStatusTab, searchQuery])
+
   // Detailed Modal states
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [detailModalOpen, setDetailModalOpen] = useState(false)
@@ -167,6 +176,15 @@ export const OrdersPage = () => {
       return statusMatches && queryMatches
     })
   }, [orders, selectedStatusTab, searchQuery])
+
+  const paginatedOrders = useMemo(() => {
+    const start = (page - 1) * limit
+    return filteredOrders.slice(start, start + limit)
+  }, [filteredOrders, page])
+
+  const totalPages = useMemo(() => {
+    return Math.ceil(filteredOrders.length / limit) || 1
+  }, [filteredOrders])
 
   // Open details modal and fetch tracking logs
   const handleViewDetails = async (order: Order) => {
@@ -320,108 +338,137 @@ export const OrdersPage = () => {
           </p>
         </div>
       ) : (
-        <section className="space-y-4">
-          {filteredOrders.map((order) => {
-            const meta = statusMeta[order.status] || statusMeta.pending
-            const StatusIcon = meta.icon
+        <>
+          <section className="space-y-4">
+            {paginatedOrders.map((order) => {
+              const meta = statusMeta[order.status] || statusMeta.pending
+              const StatusIcon = meta.icon
 
-            return (
-              <article
-                key={order.orderId}
-                onClick={() => handleViewDetails(order)}
-                className="overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-lowest hover:border-primary/30 transition-all cursor-pointer shadow-sm group"
-              >
-                {/* Header of Order card */}
-                <div className="grid gap-4 border-b border-outline-variant/60 bg-surface-container-low/40 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-container-high text-on-surface-variant">
-                      <StatusIcon size={20} style={{ color: meta.color }} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-black text-on-surface group-hover:text-primary transition-colors">
-                        Đơn hàng #{order.code || order.orderId.substring(order.orderId.length - 8).toUpperCase()}
-                      </p>
-                      <p className="mt-1 text-[11px] font-medium text-on-surface-variant flex items-center gap-1">
-                        <Calendar size={12} />
-                        Đặt ngày: {new Date(order.createdAt).toLocaleDateString('vi-VN')} {new Date(order.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-3 sm:justify-end">
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold ${meta.className}`}
-                    >
-                      <StatusIcon size={12} />
-                      {meta.label}
-                    </span>
-                    <p className="text-lg font-black text-primary">{formatVND(order.totalAmount)}</p>
-                  </div>
-                </div>
-
-                {/* Items Preview */}
-                <div className="divide-y divide-outline-variant/40">
-                  {order.items.slice(0, 2).map((item, idx) => (
-                    <div key={idx} className="grid grid-cols-[4rem_1fr_auto] gap-4 p-4">
-                      <div className="h-14 w-14 overflow-hidden rounded-lg bg-surface border border-outline-variant/20 flex-shrink-0 flex items-center justify-center">
-                        {item.imageUrl ? (
-                          <img
-                            src={item.imageUrl}
-                            alt={item.productName}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <Package size={20} className="text-on-surface-variant/40" />
-                        )}
+              return (
+                <article
+                  key={order.orderId}
+                  onClick={() => handleViewDetails(order)}
+                  className="overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-lowest hover:border-primary/30 transition-all cursor-pointer shadow-sm group"
+                >
+                  {/* Header of Order card */}
+                  <div className="grid gap-4 border-b border-outline-variant/60 bg-surface-container-low/40 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-container-high text-on-surface-variant">
+                        <StatusIcon size={20} style={{ color: meta.color }} />
                       </div>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-bold text-on-surface">{item.productName}</p>
-                        <p className="mt-1 text-xs text-on-surface-variant font-medium">
-                          Số lượng: {item.quantity} {item.unit ? `x ${item.unit}` : ''} x {formatVND(item.unitPrice ?? item.price ?? 0)}
+                      <div>
+                        <p className="text-sm font-black text-on-surface group-hover:text-primary transition-colors">
+                          Đơn hàng #{order.code || order.orderId.substring(order.orderId.length - 8).toUpperCase()}
+                        </p>
+                        <p className="mt-1 text-[11px] font-medium text-on-surface-variant flex items-center gap-1">
+                          <Calendar size={12} />
+                          Đặt ngày: {new Date(order.createdAt).toLocaleDateString('vi-VN')} {new Date(order.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
-                      <p className="text-sm font-black text-on-surface">
-                        {formatVND(item.subtotal)}
-                      </p>
                     </div>
-                  ))}
 
-                  {order.items.length > 2 && (
-                    <div className="p-3 text-center text-xs font-bold text-primary bg-surface-container-low/20">
-                      Xem thêm {order.items.length - 2} sản phẩm khác
+                    <div className="flex flex-wrap items-center gap-3 sm:justify-end">
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold ${meta.className}`}
+                      >
+                        <StatusIcon size={12} />
+                        {meta.label}
+                      </span>
+                      <p className="text-lg font-black text-primary">{formatVND(order.totalAmount)}</p>
                     </div>
-                  )}
-                </div>
-
-                {/* Footer Buttons */}
-                <div className="flex flex-col gap-3 border-t border-outline-variant/40 bg-surface-container-low/20 p-4 sm:flex-row sm:justify-between sm:items-center">
-                  <div className="text-xs font-medium text-on-surface-variant flex items-center gap-1.5">
-                    <MapPin size={14} className="text-primary" />
-                    <span>Chi nhánh: {order.branch?.name || 'PMAN-Mart'}</span>
                   </div>
 
-                  <div className="flex gap-2 justify-end">
-                    {order.status === 'pending' && (
+                  {/* Items Preview */}
+                  <div className="divide-y divide-outline-variant/40">
+                    {order.items.slice(0, 2).map((item, idx) => (
+                      <div key={idx} className="grid grid-cols-[4rem_1fr_auto] gap-4 p-4">
+                        <div className="h-14 w-14 overflow-hidden rounded-lg bg-surface border border-outline-variant/20 flex-shrink-0 flex items-center justify-center">
+                          {item.imageUrl ? (
+                            <img
+                              src={item.imageUrl}
+                              alt={item.productName}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <Package size={20} className="text-on-surface-variant/40" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-bold text-on-surface">{item.productName}</p>
+                          <p className="mt-1 text-xs text-on-surface-variant font-medium">
+                            Số lượng: {item.quantity} {item.unit ? `x ${item.unit}` : ''} x {formatVND(item.unitPrice ?? item.price ?? 0)}
+                          </p>
+                        </div>
+                        <p className="text-sm font-black text-on-surface">
+                          {formatVND(item.subtotal)}
+                        </p>
+                      </div>
+                    ))}
+
+                    {order.items.length > 2 && (
+                      <div className="p-3 text-center text-xs font-bold text-primary bg-surface-container-low/20">
+                        Xem thêm {order.items.length - 2} sản phẩm khác
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Footer Buttons */}
+                  <div className="flex flex-col gap-3 border-t border-outline-variant/40 bg-surface-container-low/20 p-4 sm:flex-row sm:justify-between sm:items-center">
+                    <div className="text-xs font-medium text-on-surface-variant flex items-center gap-1.5">
+                      <MapPin size={14} className="text-primary" />
+                      <span>Chi nhánh: {order.branch?.name || 'PMAN-Mart'}</span>
+                    </div>
+
+                    <div className="flex gap-2 justify-end">
+                      {order.status === 'pending' && (
+                        <button
+                          type="button"
+                          onClick={(e) => handleOpenCancelModal(order, e)}
+                          className="rounded-xl border border-error/30 bg-error/5 text-error px-4 py-2 text-xs font-bold transition-all hover:bg-error hover:text-white cursor-pointer"
+                        >
+                          Hủy đơn hàng
+                        </button>
+                      )}
                       <button
                         type="button"
-                        onClick={(e) => handleOpenCancelModal(order, e)}
-                        className="rounded-xl border border-error/30 bg-error/5 text-error px-4 py-2 text-xs font-bold transition-all hover:bg-error hover:text-white cursor-pointer"
+                        className="rounded-xl bg-primary text-white px-4 py-2 text-xs font-bold transition-all hover:bg-on-primary-fixed-variant shadow-sm cursor-pointer"
                       >
-                        Hủy đơn hàng
+                        Chi tiết đơn
                       </button>
-                    )}
-                    <button
-                      type="button"
-                      className="rounded-xl bg-primary text-white px-4 py-2 text-xs font-bold transition-all hover:bg-on-primary-fixed-variant shadow-sm cursor-pointer"
-                    >
-                      Chi tiết đơn
-                    </button>
+                    </div>
                   </div>
-                </div>
-              </article>
-            )
-          })}
-        </section>
+                </article>
+              )
+            })}
+          </section>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border border-outline-variant bg-surface-container-lowest px-6 py-4 mt-6 rounded-2xl shadow-sm">
+              <div className="text-xs font-semibold text-on-surface-variant">
+                Hiển thị <span className="font-bold text-on-surface">{paginatedOrders.length}</span> trên <span className="font-bold text-on-surface">{filteredOrders.length}</span> đơn hàng (Trang {page} / {totalPages})
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={page <= 1 || loading}
+                  onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                  className="inline-flex items-center justify-center rounded-xl border border-outline px-4 py-2 text-xs font-bold text-on-surface bg-surface hover:bg-surface-container-high active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+                >
+                  Trang trước
+                </button>
+                <button
+                  type="button"
+                  disabled={page >= totalPages || loading}
+                  onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+                  className="inline-flex items-center justify-center rounded-xl border border-outline px-4 py-2 text-xs font-bold text-on-surface bg-surface hover:bg-surface-container-high active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+                >
+                  Trang sau
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* ── DETAIL & TIMELINE MODAL ── */}

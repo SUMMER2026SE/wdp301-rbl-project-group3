@@ -56,6 +56,124 @@ class InventoryRepository {
             $set: { updatedBy: new mongoose_1.Types.ObjectId(params.updatedBy) },
         }, { new: true }).exec();
     }
+    async applyOrderStockDeduction(params) {
+        const orderObjectId = new mongoose_1.Types.ObjectId(params.orderId);
+        const inventory = await inventory_model_1.Inventory.findOneAndUpdate({
+            branchId: params.branchId,
+            productId: params.productId,
+            quantity: { $gte: params.quantity },
+            deductedOrderIds: { $ne: orderObjectId },
+        }, {
+            $inc: { quantity: -params.quantity },
+            $addToSet: { deductedOrderIds: orderObjectId },
+            $pull: { restoredOrderIds: orderObjectId },
+            $set: { updatedBy: new mongoose_1.Types.ObjectId(params.updatedBy) },
+        }, { new: true })
+            .select('+deductedOrderIds +restoredOrderIds')
+            .exec();
+        if (inventory)
+            return { inventory, applied: true };
+        const existing = await inventory_model_1.Inventory.findOne({
+            branchId: params.branchId,
+            productId: params.productId,
+        })
+            .select('+deductedOrderIds +restoredOrderIds')
+            .exec();
+        if (!existing)
+            return { inventory: null, applied: false };
+        const alreadyDeducted = existing.deductedOrderIds.some((id) => id.toString() === params.orderId);
+        return {
+            inventory: alreadyDeducted ? existing : null,
+            applied: false,
+        };
+    }
+    async restoreOrderStockDeduction(params) {
+        const orderObjectId = new mongoose_1.Types.ObjectId(params.orderId);
+        const restored = await inventory_model_1.Inventory.findOneAndUpdate({
+            branchId: params.branchId,
+            productId: params.productId,
+            deductedOrderIds: orderObjectId,
+        }, {
+            $inc: { quantity: params.quantity },
+            $pull: { deductedOrderIds: orderObjectId },
+            $addToSet: { restoredOrderIds: orderObjectId },
+            $set: { updatedBy: new mongoose_1.Types.ObjectId(params.updatedBy) },
+        }, { new: true })
+            .select('+deductedOrderIds +restoredOrderIds')
+            .exec();
+        if (restored)
+            return { inventory: restored, restored: true };
+        const existing = await inventory_model_1.Inventory.findOne({
+            branchId: params.branchId,
+            productId: params.productId,
+        })
+            .select('+deductedOrderIds +restoredOrderIds')
+            .exec();
+        if (!existing)
+            return { inventory: null, restored: false };
+        const alreadyRestored = existing.restoredOrderIds.some((id) => id.toString() === params.orderId);
+        if (alreadyRestored || !params.allowLegacy) {
+            return { inventory: existing, restored: false };
+        }
+        const legacyRestored = await inventory_model_1.Inventory.findOneAndUpdate({
+            branchId: params.branchId,
+            productId: params.productId,
+            deductedOrderIds: { $ne: orderObjectId },
+            restoredOrderIds: { $ne: orderObjectId },
+        }, {
+            $inc: { quantity: params.quantity },
+            $addToSet: { restoredOrderIds: orderObjectId },
+            $set: { updatedBy: new mongoose_1.Types.ObjectId(params.updatedBy) },
+        }, { new: true })
+            .select('+deductedOrderIds +restoredOrderIds')
+            .exec();
+        return {
+            inventory: legacyRestored || existing,
+            restored: Boolean(legacyRestored),
+        };
+    }
+    async applyReturnStock(params) {
+        const returnObjectId = new mongoose_1.Types.ObjectId(params.returnId);
+        const inventory = await inventory_model_1.Inventory.findOneAndUpdate({
+            branchId: params.branchId,
+            productId: params.productId,
+            appliedReturnIds: { $ne: returnObjectId },
+        }, {
+            $inc: { quantity: params.quantity },
+            $addToSet: { appliedReturnIds: returnObjectId },
+            $set: { updatedBy: new mongoose_1.Types.ObjectId(params.updatedBy) },
+        }, { new: true })
+            .select('+appliedReturnIds')
+            .exec();
+        if (inventory)
+            return { inventory, applied: true };
+        const existing = await inventory_model_1.Inventory.findOne({
+            branchId: params.branchId,
+            productId: params.productId,
+        })
+            .select('+appliedReturnIds')
+            .exec();
+        if (!existing)
+            return { inventory: null, applied: false };
+        const alreadyApplied = existing.appliedReturnIds.some((id) => id.toString() === params.returnId);
+        return {
+            inventory: alreadyApplied ? existing : null,
+            applied: false,
+        };
+    }
+    async rollbackReturnStock(params) {
+        const result = await inventory_model_1.Inventory.updateOne({
+            branchId: params.branchId,
+            productId: params.productId,
+            quantity: { $gte: params.quantity },
+            appliedReturnIds: new mongoose_1.Types.ObjectId(params.returnId),
+        }, {
+            $inc: { quantity: -params.quantity },
+            $pull: { appliedReturnIds: new mongoose_1.Types.ObjectId(params.returnId) },
+            $set: { updatedBy: new mongoose_1.Types.ObjectId(params.updatedBy) },
+        }).exec();
+        return result.modifiedCount === 1;
+    }
     async upsertStock(params) {
         const existing = await inventory_model_1.Inventory.findOne({
             branchId: params.branchId,

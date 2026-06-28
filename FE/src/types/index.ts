@@ -3,13 +3,37 @@ export interface User {
   fullName: string
   email: string
   role: 'customer' | 'admin' | 'branch_manager' | 'staff'
+  branchId?: string
   avatarUrl?: string
   phone?: string
   isEmailVerified: boolean
   status: 'active' | 'inactive' | 'banned'
   authProvider: 'local' | 'google'
+  points?: number
+  lifetimePoints?: number
+  memberLevel?: 'new' | 'bronze' | 'silver' | 'gold' | 'diamond'
   createdAt?: Date
   updatedAt?: Date
+}
+
+export interface Employee {
+  id: string
+  fullName: string
+  email: string
+  phone: string | null
+  address: string | null
+  role: 'branch_manager' | 'staff'
+  status: 'active' | 'inactive' | 'banned'
+  branch: {
+    id: string
+    name?: string
+    code?: string
+    address?: string
+    status?: string
+  } | null
+  lastLoginAt: string | Date | null
+  createdAt: string | Date
+  updatedAt: string | Date
 }
 
 export interface AuthResponse {
@@ -56,6 +80,7 @@ export interface CartProduct {
   name: string
   price: number
   unit?: string
+  imageUrl?: string
 }
 
 export interface CartItem {
@@ -159,6 +184,9 @@ export interface Branch {
   phone?: string
   managerId?: string
   status: 'active' | 'inactive'
+  openingTime?: string
+  closingTime?: string
+  activeDays?: string[]
   createdAt?: string
   updatedAt?: string
 }
@@ -291,6 +319,8 @@ export interface PromotionVoucherDetail {
   code: string
   isClaimed: boolean
   claimStatus: 'active' | 'used' | null
+  pointCost?: number
+  targetMemberLevel?: 'all' | 'new' | 'bronze' | 'silver' | 'gold' | 'diamond'
 }
 
 export interface Promotion {
@@ -301,6 +331,8 @@ export interface Promotion {
   discountValue: number
   maxDiscountAmount?: number
   minOrderAmount?: number
+  pointCost?: number
+  targetMemberLevel?: 'all' | 'new' | 'bronze' | 'silver' | 'gold' | 'diamond'
   scope: 'global' | 'branch'
   branchId?: string
   startDate: string
@@ -309,6 +341,8 @@ export interface Promotion {
   usageLimit?: number
   vouchers?: string[]
   vouchersDetail?: PromotionVoucherDetail[]
+  isEligible?: boolean
+  ineligibleReason?: string
   createdAt: string
   updatedAt: string
 }
@@ -324,7 +358,32 @@ export interface Voucher {
   branchId?: string
   expiresAt: string
   status: 'active' | 'used' | 'expired' | 'disabled'
+  pointCost?: number
+  targetMemberLevel?: 'all' | 'new' | 'bronze' | 'silver' | 'gold' | 'diamond'
   createdAt: string
+}
+
+export interface FlashSaleProduct {
+  productId: Product | string
+  flashSalePrice: number
+  limitQuantity: number
+  soldQuantity: number
+}
+
+export interface FlashSale {
+  id: string
+  _id?: string
+  name: string
+  description?: string
+  startDate: string
+  endDate: string
+  scope: 'global' | 'branch'
+  branchId?: Branch | string
+  products: FlashSaleProduct[]
+  status: 'draft' | 'active' | 'inactive' | 'expired'
+  createdBy?: string
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface VoucherLookupResponse {
@@ -340,6 +399,54 @@ export interface ActivePromotionsResponse {
     limit: number
     totalPages: number
   }
+}
+
+export type SettingValueType = 'string' | 'number' | 'boolean'
+export type SettingGroup = 'general' | 'order' | 'delivery' | 'inventory' | 'payment' | 'loyalty'
+
+export interface SystemSetting {
+  id: string
+  key: string
+  label: string
+  group: SettingGroup
+  value: string | number | boolean
+  valueType: SettingValueType
+  description?: string
+  isPublic: boolean
+  updatedBy?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface SystemSettingGroups {
+  groups: Record<SettingGroup, SystemSetting[]>
+}
+
+export interface UserAddress {
+  _id: string
+  userId: string
+  receiverName: string
+  phoneNumber: string
+  addressDetail: string
+  isDefault: boolean
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface Banner {
+  id: string
+  _id?: string
+  title: string
+  subtitle: string
+  description?: string
+  promoCode?: string
+  imageUrl: string
+  linkUrl?: string
+  status: 'active' | 'inactive'
+  order: number
+  createdBy?: string
+  createdAt?: string
+  updatedAt?: string
 }
 
 

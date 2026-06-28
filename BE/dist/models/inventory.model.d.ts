@@ -8,6 +8,9 @@ export interface IInventory extends Document {
     lastImportCost?: number;
     lowStockThreshold: number;
     updatedBy?: Types.ObjectId;
+    appliedReturnIds: Types.ObjectId[];
+    deductedOrderIds: Types.ObjectId[];
+    restoredOrderIds: Types.ObjectId[];
     createdAt: Date;
     updatedAt: Date;
 }

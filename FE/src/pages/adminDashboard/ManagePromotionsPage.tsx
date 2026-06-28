@@ -20,6 +20,7 @@ import {
 import { promotionService } from '@services/promotionService'
 import { branchService } from '@services/branchService'
 import type { Promotion, Voucher, Branch } from '@/types'
+import { useAuth } from '@hooks/useAuth'
 
 const formatVND = (num: number) => {
   return new Intl.NumberFormat('vi-VN', {
@@ -29,6 +30,7 @@ const formatVND = (num: number) => {
 }
 
 export const ManagePromotionsPage = () => {
+  const { user } = useAuth()
   // State lists
   const [promotions, setPromotions] = useState<Promotion[]>([])
   const [branches, setBranches] = useState<Branch[]>([])
@@ -71,6 +73,8 @@ export const ManagePromotionsPage = () => {
     endDate: '',
     usageLimit: '',
     status: 'draft' as 'draft' | 'active',
+    pointCost: 0,
+    targetMemberLevel: 'all' as 'all' | 'new' | 'bronze' | 'silver' | 'gold' | 'diamond',
   })
   const [formError, setFormError] = useState('')
   const [isSubmittingForm, setIsSubmittingForm] = useState(false)
@@ -130,6 +134,12 @@ export const ManagePromotionsPage = () => {
     loadBranches()
   }, [])
 
+  useEffect(() => {
+    if (user?.role === 'branch_manager') {
+      setFilterScope('branch')
+    }
+  }, [user])
+
   // Auto clear alerts
   useEffect(() => {
     if (successMsg) {
@@ -164,6 +174,8 @@ export const ManagePromotionsPage = () => {
       endDate: '',
       usageLimit: '',
       status: 'draft',
+      pointCost: 0,
+      targetMemberLevel: 'all',
     })
     setFormError('')
   }
@@ -181,6 +193,8 @@ export const ManagePromotionsPage = () => {
       ...prev,
       startDate: today.toISOString().substring(0, 16),
       endDate: nextWeek.toISOString().substring(0, 16),
+      scope: user?.role === 'branch_manager' ? 'branch' : 'global',
+      branchId: user?.role === 'branch_manager' ? (user.branchId || '') : '',
     }))
     setIsFormModalOpen(true)
   }
@@ -201,6 +215,8 @@ export const ManagePromotionsPage = () => {
       endDate: new Date(promo.endDate).toISOString().substring(0, 16),
       usageLimit: promo.usageLimit?.toString() || '',
       status: promo.status === 'expired' ? 'inactive' : (promo.status as any),
+      pointCost: (promo as any).pointCost || 0,
+      targetMemberLevel: (promo as any).targetMemberLevel || 'all',
     })
     setFormError('')
     setIsFormModalOpen(true)
@@ -248,6 +264,8 @@ export const ManagePromotionsPage = () => {
       minOrderAmount: formData.minOrderAmount ? Number(formData.minOrderAmount) : undefined,
       usageLimit: formData.usageLimit ? Number(formData.usageLimit) : undefined,
       branchId: formData.scope === 'branch' ? formData.branchId : undefined,
+      pointCost: Number(formData.pointCost) || 0,
+      targetMemberLevel: formData.targetMemberLevel || 'all',
     }
 
     try {
@@ -486,15 +504,22 @@ export const ManagePromotionsPage = () => {
             <span className="text-xs font-bold text-on-surface-variant uppercase">Phạm vi:</span>
             <select
               value={filterScope}
+              disabled={user?.role === 'branch_manager'}
               onChange={(e) => {
                 setFilterScope(e.target.value)
                 setPage(1)
               }}
-              className="rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2 text-sm font-semibold outline-none focus:border-primary"
+              className="rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2 text-sm font-semibold outline-none focus:border-primary disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <option value="all">Tất cả</option>
-              <option value="global">Toàn hệ thống (Global)</option>
-              <option value="branch">Theo Chi nhánh</option>
+              {user?.role === 'branch_manager' ? (
+                <option value="branch">Theo Chi nhánh</option>
+              ) : (
+                <>
+                  <option value="all">Tất cả</option>
+                  <option value="global">Toàn hệ thống (Global)</option>
+                  <option value="branch">Theo Chi nhánh</option>
+                </>
+              )}
             </select>
           </div>
 
@@ -570,6 +595,26 @@ export const ManagePromotionsPage = () => {
                               {promo.description}
                             </p>
                           )}
+                          <div className="mt-1 flex flex-wrap gap-1.5">
+                            {(promo as any).pointCost && (promo as any).pointCost > 0 ? (
+                              <span className="inline-flex items-center gap-1 rounded bg-amber-100 dark:bg-amber-950 px-2 py-0.5 text-[10px] font-black text-amber-800 dark:text-amber-300">
+                                Yêu cầu: {(promo as any).pointCost} điểm
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 text-[10px] font-black text-emerald-800 dark:text-emerald-300">
+                                Miễn phí
+                              </span>
+                            )}
+                            {promo.targetMemberLevel && promo.targetMemberLevel !== 'all' ? (
+                              <span className="inline-flex items-center gap-1 rounded bg-blue-100 dark:bg-blue-950 px-2 py-0.5 text-[10px] font-black text-blue-800 dark:text-blue-300">
+                                Hạng: {promo.targetMemberLevel === 'new' ? 'Khách mới' : promo.targetMemberLevel === 'bronze' ? 'Đồng+' : promo.targetMemberLevel === 'silver' ? 'Bạc+' : promo.targetMemberLevel === 'gold' ? 'Vàng+' : 'Kim cương+'}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-[10px] font-black text-gray-700 dark:text-gray-300">
+                                Cấp độ: Mọi thành viên
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -873,8 +918,9 @@ export const ManagePromotionsPage = () => {
                   <select
                     id="scope"
                     value={formData.scope}
+                    disabled={user?.role === 'branch_manager'}
                     onChange={(e) => setFormData({ ...formData, scope: e.target.value as any })}
-                    className="w-full rounded-lg border border-outline-variant bg-surface-container-low py-2.5 px-3.5 text-sm font-semibold outline-none focus:border-primary"
+                    className="w-full rounded-lg border border-outline-variant bg-surface-container-low py-2.5 px-3.5 text-sm font-semibold outline-none focus:border-primary disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <option value="global">Toàn hệ thống (Global)</option>
                     <option value="branch">Theo chi nhánh</option>
@@ -891,8 +937,9 @@ export const ManagePromotionsPage = () => {
                       id="branchId"
                       required
                       value={formData.branchId}
+                      disabled={user?.role === 'branch_manager'}
                       onChange={(e) => setFormData({ ...formData, branchId: e.target.value })}
-                      className="w-full rounded-lg border border-outline-variant bg-surface-container-low py-2.5 px-3.5 text-sm font-semibold outline-none focus:border-primary"
+                      className="w-full rounded-lg border border-outline-variant bg-surface-container-low py-2.5 px-3.5 text-sm font-semibold outline-none focus:border-primary disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       <option value="">-- Chọn chi nhánh --</option>
                       {branches.map((b) => (
@@ -948,6 +995,42 @@ export const ManagePromotionsPage = () => {
                     placeholder="Mặc định: 1 lần"
                     className="w-full rounded-lg border border-outline-variant bg-surface-container-low py-2.5 px-3.5 text-sm outline-none transition focus:border-primary"
                   />
+                </div>
+
+                {/* Point Cost */}
+                <div>
+                  <label htmlFor="pointCost" className="block text-xs font-bold uppercase text-on-surface-variant mb-1">
+                    Điểm đổi Voucher (Nhập 0 nếu không cần điểm)
+                  </label>
+                  <input
+                    id="pointCost"
+                    type="number"
+                    min={0}
+                    value={formData.pointCost}
+                    onChange={(e) => setFormData({ ...formData, pointCost: Number(e.target.value) })}
+                    placeholder="Ví dụ: 50"
+                    className="w-full rounded-lg border border-outline-variant bg-surface-container-low py-2.5 px-3.5 text-sm outline-none transition focus:border-primary font-bold"
+                  />
+                </div>
+
+                {/* Target Member Level */}
+                <div>
+                  <label htmlFor="targetMemberLevel" className="block text-xs font-bold uppercase text-on-surface-variant mb-1">
+                    Cấp độ khách hàng yêu cầu
+                  </label>
+                  <select
+                    id="targetMemberLevel"
+                    value={formData.targetMemberLevel}
+                    onChange={(e) => setFormData({ ...formData, targetMemberLevel: e.target.value as any })}
+                    className="w-full rounded-lg border border-outline-variant bg-surface-container-low py-2.5 px-3.5 text-sm font-semibold outline-none focus:border-primary"
+                  >
+                    <option value="all">Tất cả thành viên (All)</option>
+                    <option value="new">Chỉ khách hàng mới (New)</option>
+                    <option value="bronze">Hạng Đồng trở lên (Bronze+)</option>
+                    <option value="silver">Hạng Bạc trở lên (Silver+)</option>
+                    <option value="gold">Hạng Vàng trở lên (Gold+)</option>
+                    <option value="diamond">Hạng Kim cương trở lên (Diamond+)</option>
+                  </select>
                 </div>
 
                 {/* Status (Only on creation) */}
@@ -1125,6 +1208,8 @@ export const ManagePromotionsPage = () => {
                     <th className="px-4 py-3">Mã Voucher</th>
                     <th className="px-4 py-3">Trạng thái</th>
                     <th className="px-4 py-3">Chi tiết giảm</th>
+                    <th className="px-4 py-3">Hạng yêu cầu</th>
+                    <th className="px-4 py-3">Điểm đổi</th>
                     <th className="px-4 py-3">Đơn hàng tối thiểu</th>
                     <th className="px-4 py-3">Hết hạn</th>
                     <th className="px-4 py-3 text-right">Hành động</th>
@@ -1133,7 +1218,7 @@ export const ManagePromotionsPage = () => {
                 <tbody className="divide-y divide-outline-variant">
                   {isLoadingVouchers ? (
                     <tr>
-                      <td colSpan={6} className="px-4 py-12 text-center text-on-surface-variant">
+                      <td colSpan={8} className="px-4 py-12 text-center text-on-surface-variant">
                         <div className="flex flex-col items-center justify-center gap-2">
                           <div className="h-6 w-6 animate-spin rounded-full border-3 border-primary border-t-transparent" />
                           <span className="font-semibold text-xs">Đang tải mã voucher...</span>
@@ -1178,6 +1263,12 @@ export const ManagePromotionsPage = () => {
                             ) : (
                               <>Giảm {formatVND(v.discountValue)}</>
                             )}
+                          </td>
+                          <td className="px-4 py-3 font-bold text-xs text-blue-700 dark:text-blue-400">
+                            {v.targetMemberLevel === 'all' || !v.targetMemberLevel ? 'Mọi thành viên' : v.targetMemberLevel === 'new' ? 'Khách mới' : v.targetMemberLevel === 'bronze' ? 'Đồng+' : v.targetMemberLevel === 'silver' ? 'Bạc+' : v.targetMemberLevel === 'gold' ? 'Vàng+' : 'Kim cương+'}
+                          </td>
+                          <td className="px-4 py-3 font-bold text-xs text-amber-700 dark:text-amber-400">
+                            {v.pointCost && v.pointCost > 0 ? `${v.pointCost} điểm` : 'Miễn phí'}
                           </td>
                           <td className="px-4 py-3 font-medium text-xs">
                             {v.minOrderAmount ? formatVND(v.minOrderAmount) : 'Không có'}

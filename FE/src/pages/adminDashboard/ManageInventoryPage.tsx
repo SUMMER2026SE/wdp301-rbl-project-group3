@@ -24,6 +24,7 @@ import {
   Minus,
   Play,
   Square
+  Minus
 } from 'lucide-react'
 import apiClient from '@/services/api';
 import { inventoryService } from '@services/inventoryService'
@@ -972,6 +973,41 @@ export const ManageInventoryPage = () => {
       return
     }
 
+      return
+    }
+
+    if (productForm.name.trim().length > 200) {
+      setProductError('❌ Tên sản phẩm không được quá 200 ký tự.')
+      return
+    }
+
+    // Validation 5: Price validation
+    if (productForm.salePrice < 0) {
+      setProductError('❌ Giá nhập gốc không được âm.')
+      return
+    }
+
+    if (productForm.salePrice === 0) {
+      const confirmZeroPrice = window.confirm(
+        '⚠️ Giá nhập gốc đang là 0đ. Sản phẩm này sẽ có giá nhập gốc mặc định là 0đ.\n\nBạn có chắc chắn muốn tiếp tục?'
+      )
+      if (!confirmZeroPrice) return
+    }
+
+    // Validation 6: Category selection
+    if (!productForm.categoryId) {
+      const confirmNoCategory = window.confirm(
+        '⚠️ Bạn chưa chọn danh mục cho sản phẩm này.\n\nSản phẩm không có danh mục sẽ khó quản lý và tìm kiếm.\n\nBạn có muốn tiếp tục không?'
+      )
+      if (!confirmNoCategory) return
+    }
+
+    // Validation 7: Description length
+    if (productForm.description.trim().length > 1000) {
+      setProductError('❌ Mô tả sản phẩm không được quá 1000 ký tự.')
+      return
+    }
+
     // Validation 8: Image validation (nếu là file upload)
     if (imageFile) {
       const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
@@ -1538,6 +1574,41 @@ export const ManageInventoryPage = () => {
               </div>
             </div>
 
+      {/* ── TAB 2: IMPORT RECEIPTS HISTORY ── */}
+      {activeTab === 'import' && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          {/* Branch Selector and Search for imports */}
+          <section className="space-y-4">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant shadow-sm">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-bold text-on-surface-variant whitespace-nowrap">Lọc theo chi nhánh:</span>
+                <select
+                  value={selectedBranchId}
+                  onChange={(e) => setSelectedBranchId(e.target.value)}
+                  disabled={isManagerOrStaff}
+                  className="bg-surface-container-low border-none rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-primary text-sm font-semibold transition-all disabled:opacity-75 disabled:cursor-not-allowed"
+                >
+                  {isManagerOrStaff ? null : <option value="">Tất cả chi nhánh</option>}
+                  {branches.map((b) => (
+                    <option key={b._id} value={b._id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  placeholder="Tìm phiếu nhập (mã phiếu, NCC)..."
+                  value={receiptsSearch}
+                  onChange={(e) => setReceiptsSearch(e.target.value)}
+                  className="w-full bg-surface-container-low border-none rounded-xl py-2.5 px-5 pl-11 focus:ring-2 focus:ring-primary transition-all text-sm"
+                />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
+              </div>
+            </div>
+
             {/* Date Range Filter - Collapsible */}
             <div className="rounded-2xl border border-outline-variant bg-surface-container-lowest shadow-sm overflow-hidden">
               <button
@@ -1801,6 +1872,7 @@ export const ManageInventoryPage = () => {
                                 onClick={() => handleToggleProductStatus(product)}
                                 disabled={isCrawling}
                                 className={`rounded-lg p-2 transition-colors ${isCrawling ? 'opacity-50 cursor-not-allowed' : ''} ${isActive
+                                className={`rounded-lg p-2 transition-colors ${isActive
                                   ? 'text-error hover:bg-error-container/20'
                                   : 'text-success hover:bg-success-container/20'
                                   }`}

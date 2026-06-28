@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
 
-export type SettingGroup = 'general' | 'order' | 'delivery' | 'inventory' | 'payment' | 'notification';
+export type SettingGroup = 'general' | 'order' | 'delivery' | 'inventory' | 'payment' | 'notification' | 'loyalty';
 export type SettingValueType = 'string' | 'number' | 'boolean';
 
 export interface ISystemSetting extends Document {
@@ -23,7 +23,7 @@ const SystemSettingSchema = new Schema<ISystemSetting>(
     label: { type: String, required: true, trim: true, maxlength: 100 },
     group: {
       type: String,
-      enum: ['general', 'order', 'delivery', 'inventory', 'payment', 'notification'],
+      enum: ['general', 'order', 'delivery', 'inventory', 'payment', 'notification', 'loyalty'],
       required: true,
     },
     value: { type: Schema.Types.Mixed, required: true },

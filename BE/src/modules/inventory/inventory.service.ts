@@ -6,7 +6,7 @@ import {
   IImportReceipt,
   IImportReceiptItem,
 } from '../../models/importReceipt.model';
-import { IInventory } from '../../models/inventory.model';
+import { Inventory, IInventory } from '../../models/inventory.model';
 import { AppError } from '../../middlewares/errorHandler.middleware';
 import { User } from '../../models/user.model';
 import { UserRole } from '../../types/common.types';
@@ -489,6 +489,80 @@ export class InventoryService {
         );
       }
     }
+  }
+
+  async createInventory(data: {
+    branchId: string;
+    productId: string;
+    quantity: number;
+    averageCost: number;
+    lowStockThreshold: number;
+    createdBy: string;
+    actor: InventoryActor;
+  }): Promise<IInventory> {
+    await this.resolveAccessibleBranch(data.actor, data.branchId);
+    await this.ensureActiveBranch(data.branchId);
+
+    // Verify if product exists and is active
+    const product = await productService.ensureProductExists(data.productId);
+    if (product.status !== 'active') {
+      throw new AppError('Cannot add an inactive product to inventory', 409);
+    }
+
+    // Verify that inventory record does not exist yet
+    const existing = await Inventory.findOne({ branchId: data.branchId, productId: data.productId }).exec();
+    if (existing) {
+      throw new AppError('Product already exists in this branch\'s inventory', 409);
+    }
+
+    return new Inventory({
+      branchId: data.branchId,
+      productId: data.productId,
+      quantity: data.quantity,
+      averageCost: data.averageCost,
+      lastImportCost: data.averageCost > 0 ? data.averageCost : undefined,
+      lowStockThreshold: data.lowStockThreshold,
+      updatedBy: new Types.ObjectId(data.createdBy),
+    }).save();
+  }
+
+  async updateInventory(
+    id: string,
+    data: {
+      quantity?: number;
+      averageCost?: number;
+      lowStockThreshold?: number;
+      updatedBy: string;
+      actor: InventoryActor;
+    }
+  ): Promise<IInventory> {
+    const existing = await Inventory.findById(id).exec();
+    if (!existing) {
+      throw new AppError('Inventory record not found', 404);
+    }
+
+    await this.resolveAccessibleBranch(data.actor, existing.branchId.toString());
+
+    if (data.quantity !== undefined) existing.quantity = data.quantity;
+    if (data.averageCost !== undefined) existing.averageCost = data.averageCost;
+    if (data.lowStockThreshold !== undefined) existing.lowStockThreshold = data.lowStockThreshold;
+    existing.updatedBy = new Types.ObjectId(data.updatedBy);
+
+    return existing.save();
+  }
+
+  async deleteInventory(
+    id: string,
+    actor: InventoryActor
+  ): Promise<void> {
+    const existing = await Inventory.findById(id).exec();
+    if (!existing) {
+      throw new AppError('Inventory record not found', 404);
+    }
+
+    await this.resolveAccessibleBranch(actor, existing.branchId.toString());
+
+    await Inventory.deleteOne({ _id: id }).exec();
   }
 }
 
