@@ -105,6 +105,7 @@ export interface Product {
   categoryId: string
   price: number
   salePrice?: number
+  suggestedPrice?: number
   sku?: string
   description?: string
   unit?: string

@@ -1,9 +1,0 @@
-{
-	"id": "nhjRGF5zOnpum3U",
-	"json": "{\"id\":\"nhjRGF5zOnpum3U\",\"url\":\"https://winmart.vn/thit--c0111?storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/thit--c0111?storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/thit--c0111?storeCode=1535\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-06-26T17:18:52.366Z\"}",
-	"method": "GET",
-	"orderNo": null,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/thit--c0111?storeCode=1535",
-	"url": "https://winmart.vn/thit--c0111?storeCode=1535"
-}

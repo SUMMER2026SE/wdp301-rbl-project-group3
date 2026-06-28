@@ -1,9 +1,0 @@
-{
-	"id": "9rowxQRC5ZRHW2g",
-	"json": "{\"id\":\"9rowxQRC5ZRHW2g\",\"url\":\"https://winmart.vn/search/maggi\",\"uniqueKey\":\"https://winmart.vn/search/maggi\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
-	"method": "GET",
-	"orderNo": 1782494376851,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/search/maggi",
-	"url": "https://winmart.vn/search/maggi"
-}

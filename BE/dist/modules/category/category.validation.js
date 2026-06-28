@@ -14,6 +14,8 @@ exports.listCategoriesSchema = zod_1.z.object({
     query: zod_1.z.object({
         status: zod_1.z.enum(['active', 'inactive']).optional(),
         keyword: zod_1.z.string().max(100).optional(),
+        page: zod_1.z.string().regex(/^\d+$/).optional(),
+        limit: zod_1.z.string().regex(/^\d+$/).optional(),
     }),
 });
 exports.createCategorySchema = zod_1.z.object({

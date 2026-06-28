@@ -16,6 +16,21 @@ class CategoryService {
         });
     }
     async getCategories(filters) {
+        if (filters.page !== undefined && filters.limit !== undefined) {
+            const page = filters.page;
+            const limit = filters.limit;
+            const { categories, total } = await category_repository_1.categoryRepository.findPaginated(filters, page, limit);
+            const totalPages = Math.ceil(total / limit) || 1;
+            return {
+                categories,
+                pagination: {
+                    page,
+                    limit,
+                    total,
+                    totalPages,
+                },
+            };
+        }
         return category_repository_1.categoryRepository.findAll(filters);
     }
     async getCategoryById(id) {

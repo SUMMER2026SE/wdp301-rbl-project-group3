@@ -1,9 +1,0 @@
-{
-	"id": "nxyIy3jvr4wrybL",
-	"json": "{\"id\":\"nxyIy3jvr4wrybL\",\"url\":\"https://winmart.vn/products/bao-ngoc-sandwich-275g--s10055997?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/bao-ngoc-sandwich-275g--s10055997?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
-	"method": "GET",
-	"orderNo": 1782494364074,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/products/bao-ngoc-sandwich-275g--s10055997?storeCode=1535&storeGroupCode=1998",
-	"url": "https://winmart.vn/products/bao-ngoc-sandwich-275g--s10055997?storeGroupCode=1998&storeCode=1535"
-}

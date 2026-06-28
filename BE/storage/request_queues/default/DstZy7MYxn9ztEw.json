@@ -1,9 +1,0 @@
-{
-	"id": "DstZy7MYxn9ztEw",
-	"json": "{\"id\":\"DstZy7MYxn9ztEw\",\"url\":\"https://winmart.vn/search/coca+cola\",\"uniqueKey\":\"https://winmart.vn/search/coca+cola\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
-	"method": "GET",
-	"orderNo": 1782494342567,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/search/coca+cola",
-	"url": "https://winmart.vn/search/coca+cola"
-}

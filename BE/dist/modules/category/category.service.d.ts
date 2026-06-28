@@ -4,7 +4,9 @@ export declare class CategoryService {
     getCategories(filters: {
         status?: string;
         keyword?: string;
-    }): Promise<ICategory[]>;
+        page?: number;
+        limit?: number;
+    }): Promise<any>;
     getCategoryById(id: string): Promise<ICategory>;
     updateCategory(id: string, data: Partial<ICategory>): Promise<ICategory>;
     deleteCategory(id: string): Promise<ICategory>;

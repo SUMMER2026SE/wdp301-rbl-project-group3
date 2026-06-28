@@ -8,6 +8,7 @@ const mongoose_1 = require("mongoose");
 const crypto_1 = __importDefault(require("crypto"));
 const order_model_1 = require("../../models/order.model");
 const deliveryTracking_model_1 = require("../../models/deliveryTracking.model");
+const user_model_1 = require("../../models/user.model");
 class OrderRepository {
     async findAll(filters) {
         const query = {};
@@ -21,6 +22,52 @@ class OrderRepository {
             .populate('items.productId', 'name sku unit')
             .sort({ createdAt: -1 })
             .exec();
+    }
+    async findPaginated(filters, page, limit) {
+        const query = {};
+        if (filters.branchId)
+            query.branchId = filters.branchId;
+        if (filters.status)
+            query.status = filters.status;
+        if (filters.keyword) {
+            const q = filters.keyword.trim();
+            const matchingUsers = await user_model_1.User.find({
+                $or: [
+                    { fullName: { $regex: q, $options: 'i' } },
+                    { email: { $regex: q, $options: 'i' } },
+                    { phone: { $regex: q, $options: 'i' } },
+                ]
+            }).select('_id').exec();
+            const userIds = matchingUsers.map(u => u._id);
+            query.$or = [
+                { code: { $regex: q, $options: 'i' } },
+                { customerId: { $in: userIds } },
+                { deliveryAddress: { $regex: q, $options: 'i' } },
+            ];
+        }
+        if (filters.startDate || filters.endDate) {
+            query.createdAt = {};
+            if (filters.startDate) {
+                query.createdAt.$gte = new Date(filters.startDate);
+            }
+            if (filters.endDate) {
+                const endDateTime = new Date(filters.endDate);
+                endDateTime.setHours(23, 59, 59, 999);
+                query.createdAt.$lte = endDateTime;
+            }
+        }
+        const [orders, total] = await Promise.all([
+            order_model_1.Order.find(query)
+                .populate('customerId', 'fullName email phone')
+                .populate('branchId', 'name code address')
+                .populate('items.productId', 'name sku unit')
+                .sort({ createdAt: -1 })
+                .skip((page - 1) * limit)
+                .limit(limit)
+                .exec(),
+            order_model_1.Order.countDocuments(query),
+        ]);
+        return { orders, total };
     }
     async findById(id) {
         return order_model_1.Order.findById(id)

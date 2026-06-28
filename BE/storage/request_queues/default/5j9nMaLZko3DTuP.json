@@ -1,9 +1,0 @@
-{
-	"id": "5j9nMaLZko3DTuP",
-	"json": "{\"id\":\"5j9nMaLZko3DTuP\",\"url\":\"https://winmart.vn/binh-xit-con-trung--c01139?storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/binh-xit-con-trung--c01139?storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/binh-xit-con-trung--c01139?storeCode=1535\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-06-26T17:18:37.544Z\"}",
-	"method": "GET",
-	"orderNo": null,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/binh-xit-con-trung--c01139?storeCode=1535",
-	"url": "https://winmart.vn/binh-xit-con-trung--c01139?storeCode=1535"
-}

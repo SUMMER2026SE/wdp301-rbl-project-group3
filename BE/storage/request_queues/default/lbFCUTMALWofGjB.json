@@ -1,9 +1,0 @@
-{
-	"id": "lbFCUTMALWofGjB",
-	"json": "{\"id\":\"lbFCUTMALWofGjB\",\"url\":\"https://winmart.vn/search/yomost\",\"uniqueKey\":\"https://winmart.vn/search/yomost\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
-	"method": "GET",
-	"orderNo": 1782494300914,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/search/yomost",
-	"url": "https://winmart.vn/search/yomost"
-}

@@ -1,9 +1,0 @@
-{
-	"id": "z8oX82bnnpCWU64",
-	"json": "{\"id\":\"z8oX82bnnpCWU64\",\"url\":\"https://winmart.vn/search/Barilla\",\"uniqueKey\":\"https://winmart.vn/search/Barilla\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
-	"method": "GET",
-	"orderNo": 1782494354200,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/search/Barilla",
-	"url": "https://winmart.vn/search/Barilla"
-}

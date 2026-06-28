@@ -86,7 +86,7 @@ class EmployeeService {
             throw new errorHandler_middleware_1.AppError('You cannot modify your own employee account here', 400);
         }
         const employee = await this.getAccessibleEmployee(id, actor, true);
-        const currentBranchId = employee.branchId.toString();
+        const currentBranchId = employee.branchId ? employee.branchId.toString() : '';
         const nextRole = data.role || employee.role;
         const nextStatus = data.status || employee.status;
         const nextBranchId = (await (0, backOfficeAccess_util_1.resolveBackOfficeBranch)(actor, data.branchId || currentBranchId, true));
@@ -168,10 +168,12 @@ class EmployeeService {
             throw new errorHandler_middleware_1.AppError('Employee not found', 404);
         }
         this.assertRoleCanBeManaged(actor, employee.role);
-        if (!employee.branchId) {
+        if (actor.role !== 'admin' && !employee.branchId) {
             throw new errorHandler_middleware_1.AppError('Employee is not assigned to a branch', 409);
         }
-        await (0, backOfficeAccess_util_1.resolveBackOfficeBranch)(actor, employee.branchId.toString(), true);
+        if (employee.branchId) {
+            await (0, backOfficeAccess_util_1.resolveBackOfficeBranch)(actor, employee.branchId.toString(), true);
+        }
         return employee;
     }
     assertRoleCanBeManaged(actor, role) {
@@ -186,7 +188,8 @@ class EmployeeService {
         }
     }
     async syncBranchManagerAssignment(employeeId, oldBranchId, newBranchId, oldRole, newRole, status) {
-        if (oldRole === 'branch_manager' &&
+        if (oldBranchId &&
+            oldRole === 'branch_manager' &&
             (newRole !== 'branch_manager' || oldBranchId !== newBranchId || status !== 'active')) {
             await (0, branchManager_util_1.releaseBranchManagerWithRetry)(oldBranchId, employeeId);
         }

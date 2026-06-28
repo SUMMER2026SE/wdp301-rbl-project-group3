@@ -1,9 +1,0 @@
-{
-	"id": "ijhfXd9q7H17TSU",
-	"json": "{\"id\":\"ijhfXd9q7H17TSU\",\"url\":\"https://winmart.vn/info/quan-ly-chat-luong\",\"uniqueKey\":\"https://winmart.vn/info/quan-ly-chat-luong\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1}}}",
-	"method": "GET",
-	"orderNo": 1782494752605,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/info/quan-ly-chat-luong",
-	"url": "https://winmart.vn/info/quan-ly-chat-luong"
-}
