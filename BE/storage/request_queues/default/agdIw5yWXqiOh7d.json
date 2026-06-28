@@ -1,0 +1,9 @@
+{
+	"id": "agdIw5yWXqiOh7d",
+	"json": "{\"id\":\"agdIw5yWXqiOh7d\",\"url\":\"https://winmart.vn/products/comfort-ng-thien-nhien-thanh-khiet-3kg--s10290084?storeGroupCode=1998&storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/products/comfort-ng-thien-nhien-thanh-khiet-3kg--s10290084?storeCode=1535&storeGroupCode=1998\",\"uniqueKey\":\"https://winmart.vn/products/comfort-ng-thien-nhien-thanh-khiet-3kg--s10290084?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-06-26T17:24:21.730Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/products/comfort-ng-thien-nhien-thanh-khiet-3kg--s10290084?storeCode=1535&storeGroupCode=1998",
+	"url": "https://winmart.vn/products/comfort-ng-thien-nhien-thanh-khiet-3kg--s10290084?storeGroupCode=1998&storeCode=1535"
+}

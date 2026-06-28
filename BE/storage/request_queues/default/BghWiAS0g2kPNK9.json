@@ -1,0 +1,9 @@
+{
+	"id": "BghWiAS0g2kPNK9",
+	"json": "{\"id\":\"BghWiAS0g2kPNK9\",\"url\":\"https://winmart.vn/rau-cu-trai-cay--c02?cate2=&order=&brands=10002\",\"uniqueKey\":\"https://winmart.vn/rau-cu-trai-cay--c02?brands=10002&cate2=&order=\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
+	"method": "GET",
+	"orderNo": 1782494308841,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/rau-cu-trai-cay--c02?brands=10002&cate2=&order=",
+	"url": "https://winmart.vn/rau-cu-trai-cay--c02?cate2=&order=&brands=10002"
+}

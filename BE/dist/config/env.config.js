@@ -40,5 +40,6 @@ exports.env = {
     google: {
         clientId: requireEnv('GOOGLE_CLIENT_ID'),
     },
+    geminiApiKey: process.env.GEMINI_API_KEY || '',
 };
 //# sourceMappingURL=env.config.js.map

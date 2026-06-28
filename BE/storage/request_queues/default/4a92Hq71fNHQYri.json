@@ -1,0 +1,9 @@
+{
+	"id": "4a92Hq71fNHQYri",
+	"json": "{\"id\":\"4a92Hq71fNHQYri\",\"url\":\"https://winmart.vn/search/vifon\",\"uniqueKey\":\"https://winmart.vn/search/vifon\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
+	"method": "GET",
+	"orderNo": 1782494348189,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/search/vifon",
+	"url": "https://winmart.vn/search/vifon"
+}

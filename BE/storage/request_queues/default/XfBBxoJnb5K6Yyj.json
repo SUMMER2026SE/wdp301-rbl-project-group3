@@ -1,0 +1,9 @@
+{
+	"id": "XfBBxoJnb5K6Yyj",
+	"json": "{\"id\":\"XfBBxoJnb5K6Yyj\",\"url\":\"https://winmart.vn/duong--c01151?storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/duong--c01151?storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/duong--c01151?storeCode=1535\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-06-26T17:19:50.881Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/duong--c01151?storeCode=1535",
+	"url": "https://winmart.vn/duong--c01151?storeCode=1535"
+}

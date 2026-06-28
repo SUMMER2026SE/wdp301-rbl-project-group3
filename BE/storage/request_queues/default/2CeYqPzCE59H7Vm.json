@@ -1,0 +1,9 @@
+{
+	"id": "2CeYqPzCE59H7Vm",
+	"json": "{\"id\":\"2CeYqPzCE59H7Vm\",\"url\":\"https://winmart.vn/products/strongbow-cider-dau-do-lon-320ml--s10601528?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/strongbow-cider-dau-do-lon-320ml--s10601528?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
+	"method": "GET",
+	"orderNo": 1782494341512,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/products/strongbow-cider-dau-do-lon-320ml--s10601528?storeCode=1535&storeGroupCode=1998",
+	"url": "https://winmart.vn/products/strongbow-cider-dau-do-lon-320ml--s10601528?storeGroupCode=1998&storeCode=1535"
+}

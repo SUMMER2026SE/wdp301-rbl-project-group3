@@ -20,6 +20,7 @@ import {
   adminSystemSettingRoutes,
   publicSystemSettingRoutes,
 } from '../modules/system-setting/system-setting.routes';
+import crawlerRoutes from '../modules/crawler/crawler.routes';
 
 const router = Router();
 
@@ -42,5 +43,6 @@ router.use('/flash-sales', flashSaleRoutes);
 router.use('/banners', bannerRoutes);
 router.use('/settings', publicSystemSettingRoutes);
 router.use('/admin/settings', adminSystemSettingRoutes);
+router.use('/crawler', crawlerRoutes);
 
 export default router;

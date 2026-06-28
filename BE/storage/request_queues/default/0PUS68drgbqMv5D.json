@@ -1,0 +1,9 @@
+{
+	"id": "0PUS68drgbqMv5D",
+	"json": "{\"id\":\"0PUS68drgbqMv5D\",\"url\":\"https://winmart.vn/hai-san--c0113?storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/hai-san--c0113?storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/hai-san--c0113?storeCode=1535\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-06-26T17:18:53.590Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/hai-san--c0113?storeCode=1535",
+	"url": "https://winmart.vn/hai-san--c0113?storeCode=1535"
+}

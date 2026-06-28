@@ -1,0 +1,9 @@
+{
+	"id": "aKt7VjLnh1RHhMS",
+	"json": "{\"id\":\"aKt7VjLnh1RHhMS\",\"url\":\"https://winmart.vn/products/nivea-kem-duong-mem-da-50ml--s10017296?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/nivea-kem-duong-mem-da-50ml--s10017296?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
+	"method": "GET",
+	"orderNo": 1782494322942,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/products/nivea-kem-duong-mem-da-50ml--s10017296?storeCode=1535&storeGroupCode=1998",
+	"url": "https://winmart.vn/products/nivea-kem-duong-mem-da-50ml--s10017296?storeGroupCode=1998&storeCode=1535"
+}

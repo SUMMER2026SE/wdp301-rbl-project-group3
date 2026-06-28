@@ -1,0 +1,9 @@
+{
+	"id": "cGyliU84eja5dds",
+	"json": "{\"id\":\"cGyliU84eja5dds\",\"url\":\"https://winmart.vn/products/gum-5-k.duong-h.bacha-32g--s10640267?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/gum-5-k.duong-h.bacha-32g--s10640267?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"crawlDepth\":2,\"enqueueStrategy\":\"same-hostname\"}}}",
+	"method": "GET",
+	"orderNo": 1782494336783,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/products/gum-5-k.duong-h.bacha-32g--s10640267?storeCode=1535&storeGroupCode=1998",
+	"url": "https://winmart.vn/products/gum-5-k.duong-h.bacha-32g--s10640267?storeGroupCode=1998&storeCode=1535"
+}

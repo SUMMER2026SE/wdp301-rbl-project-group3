@@ -21,8 +21,12 @@ import {
   Download,
   Filter,
   Calendar,
+  Minus,
+  Play,
+  Square
   Minus
 } from 'lucide-react'
+import apiClient from '@/services/api';
 import { inventoryService } from '@services/inventoryService'
 import { branchService } from '@services/branchService'
 import { productService } from '@services/productService'
@@ -130,6 +134,11 @@ export const ManageInventoryPage = () => {
   })
 
 
+
+  // Crawler states
+  const [isCrawling, setIsCrawling] = useState(false);
+  const [showCrawlerStopConfirm, setShowCrawlerStopConfirm] = useState(false);
+
   // Fetch branches and categories on mount
   useEffect(() => {
     const fetchBranches = async () => {
@@ -183,6 +192,52 @@ export const ManageInventoryPage = () => {
   useEffect(() => {
     setCatalogPage(1)
   }, [catalogSearch])
+
+
+  // Poll Crawler Status
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (activeTab === 'catalog') {
+      const fetchStatus = async () => {
+        try {
+          const res = await apiClient.get('/api/crawler/status');
+          if (res.data?.success) {
+            setIsCrawling(res.data.data.isRunning);
+          }
+        } catch (err) {
+          console.error('Failed to fetch crawler status', err);
+        }
+      }
+      fetchStatus();
+      interval = setInterval(fetchStatus, 5000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    }
+  }, [activeTab]);
+
+  const handleToggleCrawler = async () => {
+    try {
+      if (isCrawling) {
+        setShowCrawlerStopConfirm(true);
+      } else {
+        await apiClient.post('/api/crawler/start');
+        setIsCrawling(true);
+      }
+    } catch (err) {
+      console.error('Crawler toggle error', err);
+    }
+  };
+
+  const confirmStopCrawler = async () => {
+    try {
+      await apiClient.post('/api/crawler/stop');
+      setIsCrawling(false);
+      setShowCrawlerStopConfirm(false);
+    } catch (err) {
+      console.error('Crawler stop error', err);
+    }
+  };
 
   // Fetch products (all active/inactive) for catalog and receipts
   const fetchProducts = async () => {
@@ -918,6 +973,41 @@ export const ManageInventoryPage = () => {
       return
     }
 
+      return
+    }
+
+    if (productForm.name.trim().length > 200) {
+      setProductError('❌ Tên sản phẩm không được quá 200 ký tự.')
+      return
+    }
+
+    // Validation 5: Price validation
+    if (productForm.salePrice < 0) {
+      setProductError('❌ Giá nhập gốc không được âm.')
+      return
+    }
+
+    if (productForm.salePrice === 0) {
+      const confirmZeroPrice = window.confirm(
+        '⚠️ Giá nhập gốc đang là 0đ. Sản phẩm này sẽ có giá nhập gốc mặc định là 0đ.\n\nBạn có chắc chắn muốn tiếp tục?'
+      )
+      if (!confirmZeroPrice) return
+    }
+
+    // Validation 6: Category selection
+    if (!productForm.categoryId) {
+      const confirmNoCategory = window.confirm(
+        '⚠️ Bạn chưa chọn danh mục cho sản phẩm này.\n\nSản phẩm không có danh mục sẽ khó quản lý và tìm kiếm.\n\nBạn có muốn tiếp tục không?'
+      )
+      if (!confirmNoCategory) return
+    }
+
+    // Validation 7: Description length
+    if (productForm.description.trim().length > 1000) {
+      setProductError('❌ Mô tả sản phẩm không được quá 1000 ký tự.')
+      return
+    }
+
     // Validation 8: Image validation (nếu là file upload)
     if (imageFile) {
       const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
@@ -1090,30 +1180,43 @@ export const ManageInventoryPage = () => {
             </>
           )}
           {activeTab === 'catalog' && (
-            <button
-              onClick={() => {
-                setEditingProduct(null)
-                setImageFile(null)
-                setProductForm({
-                  name: '',
-                  sku: '',
-                  salePrice: 0,
-                  unit: 'item',
-                  description: '',
-                  imageUrl: '',
-                  categoryId: '',
-                  status: 'active'
-                })
-                setProductError(null)
-                setProductSuccess(false)
-                setIsProductModalOpen(true)
-              }}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white transition-all hover:bg-opacity-90 active:scale-95 shadow-md hover:shadow-lg"
-              type="button"
-            >
-              <Plus size={18} />
-              Thêm sản phẩm mới
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleToggleCrawler}
+                className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold text-white transition-all shadow-md hover:shadow-lg active:scale-95 ${
+                  isCrawling ? 'bg-error hover:bg-error/90' : 'bg-primary hover:bg-primary/90'
+                }`}
+                type="button"
+              >
+                {isCrawling ? <Square size={18} /> : <Play size={18} />}
+                {isCrawling ? 'Dừng cào dữ liệu' : 'Bật cào dữ liệu'}
+              </button>
+              <button
+                onClick={() => {
+                  setEditingProduct(null)
+                  setImageFile(null)
+                  setProductForm({
+                    name: '',
+                    sku: '',
+                    salePrice: 0,
+                    unit: 'item',
+                    description: '',
+                    imageUrl: '',
+                    categoryId: '',
+                    status: 'active'
+                  })
+                  setProductError(null)
+                  setProductSuccess(false)
+                  setIsProductModalOpen(true)
+                }}
+                disabled={isCrawling}
+                className={`inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white transition-all hover:bg-opacity-90 active:scale-95 shadow-md hover:shadow-lg ${isCrawling ? 'opacity-50 cursor-not-allowed' : ''}`}
+                type="button"
+              >
+                <Plus size={18} />
+                Thêm sản phẩm mới
+              </button>
+            </div>
           )}
         </div>
       </section>
@@ -1471,6 +1574,41 @@ export const ManageInventoryPage = () => {
               </div>
             </div>
 
+      {/* ── TAB 2: IMPORT RECEIPTS HISTORY ── */}
+      {activeTab === 'import' && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          {/* Branch Selector and Search for imports */}
+          <section className="space-y-4">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant shadow-sm">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-bold text-on-surface-variant whitespace-nowrap">Lọc theo chi nhánh:</span>
+                <select
+                  value={selectedBranchId}
+                  onChange={(e) => setSelectedBranchId(e.target.value)}
+                  disabled={isManagerOrStaff}
+                  className="bg-surface-container-low border-none rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-primary text-sm font-semibold transition-all disabled:opacity-75 disabled:cursor-not-allowed"
+                >
+                  {isManagerOrStaff ? null : <option value="">Tất cả chi nhánh</option>}
+                  {branches.map((b) => (
+                    <option key={b._id} value={b._id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  placeholder="Tìm phiếu nhập (mã phiếu, NCC)..."
+                  value={receiptsSearch}
+                  onChange={(e) => setReceiptsSearch(e.target.value)}
+                  className="w-full bg-surface-container-low border-none rounded-xl py-2.5 px-5 pl-11 focus:ring-2 focus:ring-primary transition-all text-sm"
+                />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
+              </div>
+            </div>
+
             {/* Date Range Filter - Collapsible */}
             <div className="rounded-2xl border border-outline-variant bg-surface-container-lowest shadow-sm overflow-hidden">
               <button
@@ -1732,6 +1870,8 @@ export const ManageInventoryPage = () => {
                               </button>
                               <button
                                 onClick={() => handleToggleProductStatus(product)}
+                                disabled={isCrawling}
+                                className={`rounded-lg p-2 transition-colors ${isCrawling ? 'opacity-50 cursor-not-allowed' : ''} ${isActive
                                 className={`rounded-lg p-2 transition-colors ${isActive
                                   ? 'text-error hover:bg-error-container/20'
                                   : 'text-success hover:bg-success-container/20'
@@ -2645,6 +2785,32 @@ export const ManageInventoryPage = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* CRAWLER STOP CONFIRM MODAL */}
+      {showCrawlerStopConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-surface p-6 shadow-2xl">
+            <h3 className="mb-2 text-xl font-black text-on-surface">Xác nhận dừng</h3>
+            <p className="mb-6 text-on-surface-variant">
+              Việc dừng cào dữ liệu sẽ ngắt các tab trình duyệt ngay lập tức. Những sản phẩm đang lấy dở sẽ không được lưu. Bạn có chắc chắn muốn dừng?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowCrawlerStopConfirm(false)}
+                className="rounded-xl px-4 py-2 font-bold text-on-surface hover:bg-surface-container"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={confirmStopCrawler}
+                className="rounded-xl bg-error px-4 py-2 font-bold text-white hover:bg-error/90 shadow-md"
+              >
+                Dừng ngay
+              </button>
+            </div>
           </div>
         </div>
       )}
