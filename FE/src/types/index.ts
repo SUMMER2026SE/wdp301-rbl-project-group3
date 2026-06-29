@@ -103,8 +103,10 @@ export interface Product {
   productName: string
   name?: string
   categoryId: string
-  price: number
-  salePrice?: number
+  costPrice?: number      // giá vốn nhập gốc
+  price: number           // alias của salePrice (legacy)
+  salePrice?: number      // giá bán ra khách
+  suggestedPrice?: number // giá gợi ý từ AI
   sku?: string
   description?: string
   unit?: string
@@ -197,6 +199,7 @@ export interface InventoryProduct {
   productName?: string
   sku: string
   unit: string
+  costPrice?: number
   salePrice: number
   price?: number
   imageUrl?: string

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google'
 import { useAuth } from '@hooks/useAuth'
@@ -41,6 +41,18 @@ export const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState('')
+  const [storeName, setStoreName] = useState('PMAN-Mart')
+
+  useEffect(() => {
+    fetch('/api/settings/public')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.success && data?.data?.settings?.store_name) {
+          setStoreName(data.data.settings.store_name)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const BACK_OFFICE_ROLES = ['admin', 'branch_manager', 'staff']
 
@@ -142,7 +154,7 @@ export const LoginPage = () => {
               <ShoppingBasket size={16} className="text-white" />
             </div>
             <span className="font-headline-sm text-headline-sm text-primary font-bold">
-              PMAN-Mart
+              {storeName}
             </span>
           </div>
 
@@ -173,7 +185,7 @@ export const LoginPage = () => {
                 <ShoppingBasket size={20} className="text-white" />
               </div>
               <span className="font-headline-md text-headline-md text-primary font-black tracking-tight">
-                PMAN-Mart
+                {storeName}
               </span>
             </div>
 

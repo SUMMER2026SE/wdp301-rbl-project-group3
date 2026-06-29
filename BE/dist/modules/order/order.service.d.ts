@@ -5,7 +5,20 @@ export declare class OrderService {
     getOrders(filters: {
         branchId?: string;
         status?: string;
-    }, actor: BackOfficeActor): Promise<IOrder[]>;
+        keyword?: string;
+        startDate?: string;
+        endDate?: string;
+        page?: number;
+        limit?: number;
+    }, actor: BackOfficeActor): Promise<{
+        orders: IOrder[];
+        pagination: {
+            page: number;
+            limit: number;
+            total: number;
+            totalPages: number;
+        };
+    }>;
     getOrderById(id: string, actor?: BackOfficeActor): Promise<IOrder>;
     confirmOrder(id: string, actor: BackOfficeActor): Promise<IOrder>;
     updateStatus(id: string, status: OrderStatus, actor: BackOfficeActor): Promise<IOrder>;

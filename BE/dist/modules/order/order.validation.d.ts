@@ -9,13 +9,18 @@ export declare const listOrdersSchema: z.ZodObject<{
     query: z.ZodObject<{
         branchId: z.ZodOptional<z.ZodString>;
         status: z.ZodOptional<z.ZodEnum<{
-            cancelled: "cancelled";
             pending: "pending";
             confirmed: "confirmed";
             preparing: "preparing";
             delivering: "delivering";
             delivered: "delivered";
+            cancelled: "cancelled";
         }>>;
+        page: z.ZodOptional<z.ZodString>;
+        limit: z.ZodOptional<z.ZodString>;
+        keyword: z.ZodOptional<z.ZodString>;
+        startDate: z.ZodOptional<z.ZodString>;
+        endDate: z.ZodOptional<z.ZodString>;
     }, z.core.$strip>;
 }, z.core.$strip>;
 export declare const updateOrderStatusSchema: z.ZodObject<{
@@ -24,12 +29,12 @@ export declare const updateOrderStatusSchema: z.ZodObject<{
     }, z.core.$strip>;
     body: z.ZodObject<{
         status: z.ZodEnum<{
-            cancelled: "cancelled";
             pending: "pending";
             confirmed: "confirmed";
             preparing: "preparing";
             delivering: "delivering";
             delivered: "delivered";
+            cancelled: "cancelled";
         }>;
     }, z.core.$strip>;
 }, z.core.$strip>;
@@ -38,12 +43,12 @@ export declare const myOrdersSchema: z.ZodObject<{
         page: z.ZodOptional<z.ZodString>;
         limit: z.ZodOptional<z.ZodString>;
         status: z.ZodOptional<z.ZodEnum<{
-            cancelled: "cancelled";
             pending: "pending";
             confirmed: "confirmed";
             preparing: "preparing";
             delivering: "delivering";
             delivered: "delivered";
+            cancelled: "cancelled";
         }>>;
     }, z.core.$strip>;
 }, z.core.$strip>;

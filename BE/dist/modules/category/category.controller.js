@@ -11,11 +11,20 @@ class CategoryController {
             (0, response_util_1.sendSuccess)(res, { category }, 'Category created', 201);
         });
         this.getAll = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
-            const categories = await category_service_1.categoryService.getCategories({
+            const page = req.query.page ? parseInt(req.query.page, 10) : undefined;
+            const limit = req.query.limit ? parseInt(req.query.limit, 10) : undefined;
+            const result = await category_service_1.categoryService.getCategories({
                 status: req.query.status,
                 keyword: req.query.keyword,
+                page,
+                limit,
             });
-            (0, response_util_1.sendSuccess)(res, { categories }, 'Categories retrieved');
+            if (page !== undefined && limit !== undefined) {
+                (0, response_util_1.sendSuccess)(res, { categories: result.categories, pagination: result.pagination }, 'Categories retrieved');
+            }
+            else {
+                (0, response_util_1.sendSuccess)(res, { categories: result }, 'Categories retrieved');
+            }
         });
         this.getById = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
             const category = await category_service_1.categoryService.getCategoryById(String(req.params.id));

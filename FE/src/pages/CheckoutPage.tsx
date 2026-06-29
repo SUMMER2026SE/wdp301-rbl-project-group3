@@ -76,8 +76,43 @@ export const CheckoutPage = () => {
   // Saved Address states
   const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>([])
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
+  const [storeName, setStoreName] = useState('PMAN-Mart')
+  const [publicSettings, setPublicSettings] = useState<Record<string, any>>({})
+
+  const shippingFee = useMemo(() => {
+    if (!cart) return 0
+    const threshold = Number(publicSettings.free_shipping_threshold ?? 200000)
+    const fee = Number(publicSettings.default_delivery_fee ?? 15000)
+    return cart.totalAmount >= threshold ? 0 : fee
+  }, [cart, publicSettings])
+
+  const vatRate = useMemo(() => {
+    return Number(publicSettings.vat_rate ?? 10)
+  }, [publicSettings])
+
+  const vatAmount = useMemo(() => {
+    if (!cart) return 0
+    const amountAfterDiscount = Math.max(0, cart.totalAmount - discountAmount)
+    return Math.round(amountAfterDiscount * (vatRate / 100))
+  }, [cart, discountAmount, vatRate])
 
   useEffect(() => {
+    const fetchPublicSettings = async () => {
+      try {
+        const res = await fetch('/api/settings/public')
+        const data = await res.json()
+        if (data?.success && data?.data?.settings) {
+          setPublicSettings(data.data.settings)
+          if (data.data.settings.store_name) {
+            setStoreName(data.data.settings.store_name)
+          }
+        }
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    fetchPublicSettings()
+
     const fetchBranches = async () => {
       try {
         const res = await branchService.getBranches({ status: 'active' })
@@ -282,6 +317,12 @@ export const CheckoutPage = () => {
     e.preventDefault()
     if (!cart || cart.items.length === 0) return
 
+    const minOrderVal = Number(publicSettings.min_order_amount ?? 0)
+    if (cart.totalAmount < minOrderVal) {
+      setError(`Giá trị đơn hàng tối thiểu phải từ ${formatVND(minOrderVal)} trở lên.`)
+      return
+    }
+
     if (!fullName.trim() || !phoneNumber.trim() || !shippingAddress.trim()) {
       setError('Please fill in all required delivery fields.')
       return
@@ -332,7 +373,7 @@ export const CheckoutPage = () => {
           </div>
           <h1 className="text-2xl font-black text-on-surface mb-2">Order Placed Successfully!</h1>
           <p className="text-on-surface-variant mb-6 text-sm">
-            Thank you for shopping with PMAN-Mart. Your order ID is{' '}
+            Thank you for shopping with {storeName}. Your order ID is{' '}
             <span className="font-bold text-primary">{successOrder.orderId}</span>.
           </p>
 
@@ -412,6 +453,15 @@ export const CheckoutPage = () => {
                 <div className="bg-error-container text-on-error-container p-4 rounded-xl flex items-center gap-3 text-sm font-bold">
                   <AlertCircle className="w-5 h-5 shrink-0" />
                   <span>{error}</span>
+                </div>
+              )}
+
+              {cart.totalAmount < Number(publicSettings.min_order_amount ?? 0) && (
+                <div className="bg-error-container text-on-error-container p-4 rounded-xl flex items-center gap-3 text-sm font-bold">
+                  <AlertCircle className="w-5 h-5 shrink-0" />
+                  <span>
+                    Giá trị đơn hàng tối thiểu phải từ {formatVND(Number(publicSettings.min_order_amount))} trở lên để đặt hàng.
+                  </span>
                 </div>
               )}
 
@@ -732,20 +782,26 @@ export const CheckoutPage = () => {
                     </div>
                   )}
                   <div className="flex justify-between text-on-surface-variant">
+                    <span>VAT ({vatRate}%)</span>
+                    <span>{formatVND(vatAmount)}</span>
+                  </div>
+                  <div className="flex justify-between text-on-surface-variant">
                     <span>Shipping Fee</span>
-                    <span className="text-success font-bold">FREE</span>
+                    <span className={shippingFee === 0 ? "text-success font-bold" : "font-bold"}>
+                      {shippingFee === 0 ? 'FREE' : formatVND(shippingFee)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-body-lg font-bold border-t border-outline-variant/30 pt-3">
                     <span>Total Amount</span>
                     <span className="text-primary text-headline-sm">
-                      {formatVND(Math.max(0, cart.totalAmount - discountAmount))}
+                      {formatVND(Math.max(0, cart.totalAmount - discountAmount) + vatAmount + shippingFee)}
                     </span>
                   </div>
                 </div>
 
                 <button
                   onClick={handleSubmit}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || cart.totalAmount < Number(publicSettings.min_order_amount ?? 0)}
                   className="w-full bg-primary hover:bg-on-primary-fixed-variant disabled:bg-primary/50 text-white py-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer"
                   type="button"
                 >
@@ -755,7 +811,7 @@ export const CheckoutPage = () => {
                     </>
                   ) : (
                     <>
-                      Place Order ({formatVND(Math.max(0, cart.totalAmount - discountAmount))})
+                      Place Order ({formatVND(Math.max(0, cart.totalAmount - discountAmount) + vatAmount + shippingFee)})
                     </>
                   )}
                 </button>

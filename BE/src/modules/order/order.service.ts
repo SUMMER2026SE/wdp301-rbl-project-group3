@@ -29,11 +29,27 @@ const allowedTransitions: Record<OrderStatus, OrderStatus[]> = {
 
 export class OrderService {
   async getOrders(
-    filters: { branchId?: string; status?: string },
+    filters: { branchId?: string; status?: string; keyword?: string; startDate?: string; endDate?: string; page?: number; limit?: number },
     actor: BackOfficeActor
-  ): Promise<IOrder[]> {
+  ): Promise<{ orders: IOrder[]; pagination: { page: number; limit: number; total: number; totalPages: number } }> {
     const branchId = await resolveBackOfficeBranch(actor, filters.branchId);
-    return orderRepository.findAll({ ...filters, branchId });
+    const page = filters.page || 1;
+    const limit = filters.limit || 10;
+    const { orders, total } = await orderRepository.findPaginated(
+      { ...filters, branchId },
+      page,
+      limit
+    );
+    const totalPages = Math.ceil(total / limit) || 1;
+    return {
+      orders,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    };
   }
 
   async getOrderById(id: string, actor?: BackOfficeActor): Promise<IOrder> {
@@ -533,8 +549,20 @@ export class OrderService {
       }
     }
 
+    // 2.5. Kiểm tra giá trị đơn hàng tối thiểu
+    const minOrderSetting = await systemSettingRepository.findByKey('min_order_amount');
+    const minOrderVal = Number(minOrderSetting?.value ?? 0);
+    if (totalAmountBeforeDiscount < minOrderVal) {
+      throw new AppError(
+        `Giá trị đơn hàng tối thiểu phải từ ${new Intl.NumberFormat('vi-VN', {
+          style: 'currency',
+          currency: 'VND',
+        }).format(minOrderVal)} trở lên.`,
+        400
+      );
+    }
+
     // 3. Xử lý voucher nếu có
-    let totalAmount = totalAmountBeforeDiscount;
     let discountAmount = 0;
     let appliedVoucherId: string | undefined;
 
@@ -545,9 +573,24 @@ export class OrderService {
         data.branchId
       );
       discountAmount = promotionCalculationService.calculateDiscount(voucher, totalAmountBeforeDiscount);
-      totalAmount = Math.max(0, totalAmountBeforeDiscount - discountAmount);
       appliedVoucherId = voucher._id.toString();
     }
+
+    // 3.5. Tính toán phí vận chuyển (Shipping fee) và VAT từ system settings
+    const [freeShippingThresholdSetting, defaultDeliveryFeeSetting, vatRateSetting] = await Promise.all([
+      systemSettingRepository.findByKey('free_shipping_threshold'),
+      systemSettingRepository.findByKey('default_delivery_fee'),
+      systemSettingRepository.findByKey('vat_rate')
+    ]);
+    const threshold = Number(freeShippingThresholdSetting?.value ?? 200000);
+    const fee = Number(defaultDeliveryFeeSetting?.value ?? 15000);
+    const vatRate = Number(vatRateSetting?.value ?? 10);
+    const shippingFee = totalAmountBeforeDiscount >= threshold ? 0 : fee;
+
+    const amountAfterDiscount = Math.max(0, totalAmountBeforeDiscount - discountAmount);
+    const vatAmount = Math.round(amountAfterDiscount * (vatRate / 100));
+
+    const totalAmount = amountAfterDiscount + vatAmount + shippingFee;
 
     // 4. Tạo mã đơn hàng
     const orderCode = this.generateOrderCode();

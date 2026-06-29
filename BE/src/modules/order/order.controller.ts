@@ -6,14 +6,22 @@ import { OrderStatus } from '../../models/order.model';
 
 export class OrderController {
   getAll = asyncHandler(async (req: Request, res: Response) => {
-    const orders = await orderService.getOrders({
+    const page = Math.max(1, parseInt(req.query['page'] as string) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query['limit'] as string) || 10));
+
+    const result = await orderService.getOrders({
       branchId: req.query.branchId as string | undefined,
       status: req.query.status as string | undefined,
+      keyword: req.query.keyword as string | undefined,
+      startDate: req.query.startDate as string | undefined,
+      endDate: req.query.endDate as string | undefined,
+      page,
+      limit,
     }, {
       userId: req.user!.userId,
       role: req.user!.role,
     });
-    sendSuccess(res, { orders }, 'Orders retrieved');
+    sendSuccess(res, result, 'Orders retrieved');
   });
 
   getById = asyncHandler(async (req: Request, res: Response) => {

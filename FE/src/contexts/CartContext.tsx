@@ -27,6 +27,20 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return
     }
 
+    // Decode token to verify role
+    try {
+      const parts = token.split('.')
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
+        if (payload && payload.role !== 'customer') {
+          setCart(null)
+          return
+        }
+      }
+    } catch (e) {
+      console.error('Failed to decode token for role check:', e)
+    }
+
     try {
       setLoading(true)
       setError(null)

@@ -430,10 +430,12 @@ export class StatisticsRepository {
       {
         $project: {
           _id: 1,
-          name: '$product.name',
+          productId: '$_id',
+          productName: '$product.name',
           sku: '$product.sku',
+          unit: '$product.unit',
           quantitySold: 1,
-          revenue: 1,
+          totalRevenue: '$revenue',
         },
       },
     ]).exec();
@@ -520,10 +522,12 @@ export class StatisticsRepository {
       {
         $project: {
           _id: 1,
+          customerId: '$_id',
           fullName: '$user.fullName',
+          phone: '$user.phone',
           email: '$user.email',
           totalSpent: 1,
-          ordersCount: 1,
+          orderCount: '$ordersCount',
         },
       },
     ]).exec();
@@ -554,10 +558,11 @@ export class StatisticsRepository {
       {
         $project: {
           _id: 1,
+          staffId: '$_id',
           fullName: '$user.fullName',
           email: '$user.email',
-          confirmedCount: 1,
-          revenueGenerated: 1,
+          processedOrderCount: '$confirmedCount',
+          totalProcessedRevenue: '$revenueGenerated',
         },
       },
     ]).exec();

@@ -16,6 +16,8 @@ exports.listBranchesSchema = zod_1.z.object({
         keyword: zod_1.z.string().max(100).optional(),
     }),
 });
+const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+const dayEnum = zod_1.z.enum(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
 exports.createBranchSchema = zod_1.z.object({
     body: zod_1.z.object({
         name: zod_1.z.string().min(2).max(100),
@@ -24,6 +26,9 @@ exports.createBranchSchema = zod_1.z.object({
         phone: zod_1.z.string().max(20).optional(),
         managerId: objectId.optional(),
         status: zod_1.z.enum(['active', 'inactive']).optional(),
+        openingTime: zod_1.z.string().regex(timeRegex, 'Invalid time format (HH:MM)').optional(),
+        closingTime: zod_1.z.string().regex(timeRegex, 'Invalid time format (HH:MM)').optional(),
+        activeDays: zod_1.z.array(dayEnum).optional(),
     }),
 });
 exports.updateBranchSchema = zod_1.z.object({
@@ -37,6 +42,9 @@ exports.updateBranchSchema = zod_1.z.object({
         phone: zod_1.z.string().max(20).optional(),
         managerId: objectId.optional(),
         status: zod_1.z.enum(['active', 'inactive']).optional(),
+        openingTime: zod_1.z.string().regex(timeRegex, 'Invalid time format (HH:MM)').optional(),
+        closingTime: zod_1.z.string().regex(timeRegex, 'Invalid time format (HH:MM)').optional(),
+        activeDays: zod_1.z.array(dayEnum).optional(),
     }),
 });
 //# sourceMappingURL=branch.validation.js.map

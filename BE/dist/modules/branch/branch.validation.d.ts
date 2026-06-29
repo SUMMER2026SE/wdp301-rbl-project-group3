@@ -25,6 +25,17 @@ export declare const createBranchSchema: z.ZodObject<{
             active: "active";
             inactive: "inactive";
         }>>;
+        openingTime: z.ZodOptional<z.ZodString>;
+        closingTime: z.ZodOptional<z.ZodString>;
+        activeDays: z.ZodOptional<z.ZodArray<z.ZodEnum<{
+            Monday: "Monday";
+            Tuesday: "Tuesday";
+            Wednesday: "Wednesday";
+            Thursday: "Thursday";
+            Friday: "Friday";
+            Saturday: "Saturday";
+            Sunday: "Sunday";
+        }>>>;
     }, z.core.$strip>;
 }, z.core.$strip>;
 export declare const updateBranchSchema: z.ZodObject<{
@@ -41,6 +52,17 @@ export declare const updateBranchSchema: z.ZodObject<{
             active: "active";
             inactive: "inactive";
         }>>;
+        openingTime: z.ZodOptional<z.ZodString>;
+        closingTime: z.ZodOptional<z.ZodString>;
+        activeDays: z.ZodOptional<z.ZodArray<z.ZodEnum<{
+            Monday: "Monday";
+            Tuesday: "Tuesday";
+            Wednesday: "Wednesday";
+            Thursday: "Thursday";
+            Friday: "Friday";
+            Saturday: "Saturday";
+            Sunday: "Sunday";
+        }>>>;
     }, z.core.$strip>;
 }, z.core.$strip>;
 export { validate };

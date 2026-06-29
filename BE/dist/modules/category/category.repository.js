@@ -18,6 +18,27 @@ class CategoryRepository {
         }
         return category_model_1.Category.find(query).sort({ createdAt: -1 }).exec();
     }
+    async findPaginated(filters, page, limit) {
+        const query = {};
+        if (filters.status)
+            query.status = filters.status;
+        if (filters.keyword) {
+            query.$or = [
+                { name: { $regex: filters.keyword, $options: 'i' } },
+                { code: { $regex: filters.keyword, $options: 'i' } },
+            ];
+        }
+        const skip = (page - 1) * limit;
+        const [categories, total] = await Promise.all([
+            category_model_1.Category.find(query)
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .exec(),
+            category_model_1.Category.countDocuments(query).exec(),
+        ]);
+        return { categories, total };
+    }
     async findById(id) {
         return category_model_1.Category.findById(id).exec();
     }
