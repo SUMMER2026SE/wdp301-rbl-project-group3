@@ -103,35 +103,36 @@ export class CrawlerService {
               }
 
               let finalImageUrl: string | undefined = undefined;
+              const generatedSku = 'WM' + Date.now().toString() + Math.floor(Math.random() * 1000).toString();
+              const existingProduct = await Product.findOne({ name: parsedData.name });
+              const productSku = existingProduct ? existingProduct.sku : generatedSku;
+
               if (mainImageUrl) {
-                const uploaded = await crawlerImageService.uploadFromUrl(mainImageUrl, parsedData.sku);
+                const uploaded = await crawlerImageService.uploadFromUrl(mainImageUrl, productSku);
                 if (uploaded) finalImageUrl = uploaded;
               }
 
               // Lưu vào Database
-              const existingProduct = await Product.findOne({ sku: parsedData.sku });
-              const calculatedSuggestedPrice = parsedData.suggestedPrice || Math.round(parsedData.salePrice * 0.95);
               if (existingProduct) {
-                existingProduct.salePrice = parsedData.salePrice;
-                existingProduct.suggestedPrice = calculatedSuggestedPrice;
+                existingProduct.suggestedPrice = parsedData.suggestedPrice;
                 existingProduct.description = parsedData.description || existingProduct.description;
                 if (categoryId) existingProduct.categoryId = categoryId;
                 if (finalImageUrl) existingProduct.imageUrl = finalImageUrl;
                 await existingProduct.save();
-                log.info(`Updated product: ${parsedData.sku}`);
+                log.info(`Updated product: ${existingProduct.name}`);
               } else {
                 await Product.create({
                   name: parsedData.name,
-                  sku: parsedData.sku,
-                  salePrice: parsedData.salePrice,
-                  suggestedPrice: calculatedSuggestedPrice,
+                  sku: productSku,
+                  salePrice: 0,
+                  suggestedPrice: parsedData.suggestedPrice,
                   unit: parsedData.unit,
                   description: parsedData.description,
                   categoryId: categoryId,
                   imageUrl: finalImageUrl,
                   status: 'active',
                 });
-                log.info(`Created new product: ${parsedData.sku}`);
+                log.info(`Created new product: ${parsedData.name}`);
               }
 
               // Lưu log vào file cục bộ (Dataset của Crawlee) để tiện kiểm tra
