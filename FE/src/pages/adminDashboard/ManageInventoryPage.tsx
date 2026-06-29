@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   Package,
   Plus,
@@ -912,27 +912,25 @@ export const ManageInventoryPage = () => {
       return
     }
 
-    if (!productForm.sku.trim()) {
-      setProductError('❌ Mã SKU là bắt buộc.')
-      return
-    }
+    const inputSku = productForm.sku.trim().toUpperCase()
+    if (inputSku) {
+      // Validation 2: SKU format (chỉ cho phép chữ, số, gạch ngang và gạch dưới)
+      const skuPattern = /^[A-Z0-9_-]+$/
+      if (!skuPattern.test(inputSku)) {
+        setProductError('❌ Mã SKU chỉ được chứa chữ IN HOA, số, gạch ngang (-) và gạch dưới (_).')
+        return
+      }
 
-    // Validation 2: SKU format (chỉ cho phép chữ, số, gạch ngang và gạch dưới)
-    const skuPattern = /^[A-Z0-9_-]+$/
-    if (!skuPattern.test(productForm.sku.trim())) {
-      setProductError('❌ Mã SKU chỉ được chứa chữ IN HOA, số, gạch ngang (-) và gạch dưới (_).')
-      return
-    }
+      // Validation 3: SKU length
+      if (inputSku.length < 3) {
+        setProductError('❌ Mã SKU phải có ít nhất 3 ký tự.')
+        return
+      }
 
-    // Validation 3: SKU length
-    if (productForm.sku.trim().length < 3) {
-      setProductError('❌ Mã SKU phải có ít nhất 3 ký tự.')
-      return
-    }
-
-    if (productForm.sku.trim().length > 50) {
-      setProductError('❌ Mã SKU không được quá 50 ký tự.')
-      return
+      if (inputSku.length > 50) {
+        setProductError('❌ Mã SKU không được quá 50 ký tự.')
+        return
+      }
     }
 
     // Validation 4: Product name length
@@ -946,19 +944,7 @@ export const ManageInventoryPage = () => {
       return
     }
 
-    // Validation 5: Price validation
-    if (productForm.salePrice < 0) {
-      setProductError('❌ Giá bán không được âm.')
-      return
-    }
-
-    if (productForm.salePrice === 0) {
-      const confirmed = await new Promise<boolean>((resolve) => {
-        setSoftWarnResolve(() => resolve)
-        setSoftWarnType('zeroPrice')
-      })
-      if (!confirmed) return
-    }
+    // Price validation removed as price is only set per-branch upon import
 
     // Validation 6: Category selection
     if (!productForm.categoryId) {
@@ -996,7 +982,7 @@ export const ManageInventoryPage = () => {
 
       const payload: any = {
         name: productForm.name.trim(),
-        sku: productForm.sku.trim().toUpperCase(),
+        sku: productForm.sku.trim() ? productForm.sku.trim().toUpperCase() : undefined,
         costPrice: productForm.costPrice,
         salePrice: productForm.salePrice,
         unit: productForm.unit || 'item',
@@ -2213,55 +2199,20 @@ export const ManageInventoryPage = () => {
                 {/* SKU */}
                 <div className="space-y-1.5">
                   <label htmlFor="prod-sku" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
-                    Mã SKU <span className="text-error">*</span>
+                    Mã SKU (Tự sinh nếu để trống)
                   </label>
                   <input
                     type="text"
                     id="prod-sku"
-                    required
                     value={productForm.sku}
                     onChange={(e) => setProductForm({ ...productForm, sku: e.target.value.toUpperCase() })}
-                    placeholder="Ví dụ: APPLE-GALA"
+                    placeholder="Hệ thống tự động sinh mã nếu bỏ trống"
                     className="w-full bg-surface-container-low border-none rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary text-sm font-mono transition-all"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Giá vốn nhập gốc */}
-                <div className="space-y-1.5">
-                  <label htmlFor="prod-cost-price" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
-                    Giá vốn nhập gốc (đ)
-                  </label>
-                  <input
-                    type="number"
-                    id="prod-cost-price"
-                    min="0"
-                    step="1"
-                    value={productForm.costPrice}
-                    onChange={(e) => setProductForm({ ...productForm, costPrice: parseFloat(e.target.value) || 0 })}
-                    placeholder="0"
-                    className="w-full bg-surface-container-low border-none rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary text-sm transition-all"
-                  />
-                </div>
-
-                {/* Giá bán niêm yết */}
-                <div className="space-y-1.5">
-                  <label htmlFor="prod-sale-price" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
-                    Giá bán niêm yết (đ) <span className="text-error">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    id="prod-sale-price"
-                    required
-                    min="0"
-                    step="1"
-                    value={productForm.salePrice}
-                    onChange={(e) => setProductForm({ ...productForm, salePrice: parseFloat(e.target.value) || 0 })}
-                    className="w-full bg-surface-container-low border-none rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary text-sm transition-all"
-                  />
-                </div>
-              </div>
+              {/* Price inputs removed: cost/selling prices are set per-branch during import/inventory setup */}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Đơn vị tính */}
