@@ -1,9 +1,0 @@
-{
-	"id": "x6FMsJke6Lm5S5U",
-	"json": "{\"id\":\"x6FMsJke6Lm5S5U\",\"url\":\"https://winmart.vn/products/vissan-lap-xuong-goi-500g--s10007405?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/vissan-lap-xuong-goi-500g--s10007405?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
-	"method": "GET",
-	"orderNo": 1782494373790,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/products/vissan-lap-xuong-goi-500g--s10007405?storeCode=1535&storeGroupCode=1998",
-	"url": "https://winmart.vn/products/vissan-lap-xuong-goi-500g--s10007405?storeGroupCode=1998&storeCode=1535"
-}

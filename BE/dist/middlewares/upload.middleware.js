@@ -29,6 +29,6 @@ exports.uploadProductImage = (0, multer_1.default)({
 exports.uploadBannerImage = (0, multer_1.default)({
     storage,
     fileFilter,
-    limits: { fileSize: 5 * 1024 * 1024 },
+    limits: { fileSize: 10 * 1024 * 1024 },
 }).single('image');
 //# sourceMappingURL=upload.middleware.js.map

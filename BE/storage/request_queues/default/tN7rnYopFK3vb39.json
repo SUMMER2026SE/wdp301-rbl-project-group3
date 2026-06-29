@@ -1,9 +1,0 @@
-{
-	"id": "tN7rnYopFK3vb39",
-	"json": "{\"id\":\"tN7rnYopFK3vb39\",\"url\":\"https://winmart.vn/products/thach-an-thach-den-cao-bang-480g--s10315702?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/thach-an-thach-den-cao-bang-480g--s10315702?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
-	"method": "GET",
-	"orderNo": 1782494373780,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/products/thach-an-thach-den-cao-bang-480g--s10315702?storeCode=1535&storeGroupCode=1998",
-	"url": "https://winmart.vn/products/thach-an-thach-den-cao-bang-480g--s10315702?storeGroupCode=1998&storeCode=1535"
-}

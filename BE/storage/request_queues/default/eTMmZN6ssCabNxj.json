@@ -1,9 +1,0 @@
-{
-	"id": "eTMmZN6ssCabNxj",
-	"json": "{\"id\":\"eTMmZN6ssCabNxj\",\"url\":\"https://winmart.vn/search/LOF\",\"uniqueKey\":\"https://winmart.vn/search/LOF\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
-	"method": "GET",
-	"orderNo": 1782494300915,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/search/LOF",
-	"url": "https://winmart.vn/search/LOF"
-}

@@ -1,9 +1,0 @@
-{
-	"id": "4UFxS1RO3f6kpKH",
-	"json": "{\"id\":\"4UFxS1RO3f6kpKH\",\"url\":\"https://winmart.vn/search/Ricola\",\"uniqueKey\":\"https://winmart.vn/search/Ricola\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
-	"method": "GET",
-	"orderNo": 1782494334657,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/search/Ricola",
-	"url": "https://winmart.vn/search/Ricola"
-}

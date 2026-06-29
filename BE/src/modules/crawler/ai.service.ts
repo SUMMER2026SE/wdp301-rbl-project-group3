@@ -10,6 +10,7 @@ export interface ParsedProduct {
   name: string;
   sku: string;
   salePrice: number;
+  suggestedPrice?: number;
   unit: string;
   description: string;
   categoryName?: string;
@@ -29,7 +30,8 @@ Hãy trích xuất thông tin sản phẩm và định dạng lại dưới dạ
 {
   "name": "Tên sản phẩm (chuỗi)",
   "sku": "Mã SKU (chuỗi viết hoa không dấu, độ dài 5-15 ký tự, tự tạo dựa trên tên nếu không có sẵn)",
-  "salePrice": "Giá bán khuyến mãi hoặc giá bán hiện tại (số nguyên, không chứa ký tự)",
+  "salePrice": "Giá bán khuyến mãi hoặc giá bán hiện tại cào từ Winmart (số nguyên, không chứa ký tự)",
+  "suggestedPrice": "Giá gợi ý bán lẻ tối ưu cho siêu thị của chúng ta (số nguyên, đề xuất thấp hơn khoảng 2-5% so với Winmart salePrice để cạnh tranh giá)",
   "unit": "Đơn vị tính, ví dụ: kg, g, lốc, hộp, gói, cái (chuỗi)",
   "description": "Đoạn mô tả ngắn gọn về sản phẩm (chuỗi)",
   "categoryName": "Tên danh mục phù hợp nhất với sản phẩm này (chuỗi)"

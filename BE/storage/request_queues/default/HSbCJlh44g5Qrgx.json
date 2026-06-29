@@ -1,9 +1,0 @@
-{
-	"id": "HSbCJlh44g5Qrgx",
-	"json": "{\"id\":\"HSbCJlh44g5Qrgx\",\"url\":\"https://winmart.vn/products/listerine-nsm-coolmint-750ml--s10018406?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/listerine-nsm-coolmint-750ml--s10018406?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"crawlDepth\":2,\"enqueueStrategy\":\"same-hostname\"}}}",
-	"method": "GET",
-	"orderNo": 1782494321768,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/products/listerine-nsm-coolmint-750ml--s10018406?storeCode=1535&storeGroupCode=1998",
-	"url": "https://winmart.vn/products/listerine-nsm-coolmint-750ml--s10018406?storeGroupCode=1998&storeCode=1535"
-}

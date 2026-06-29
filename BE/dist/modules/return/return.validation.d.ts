@@ -13,8 +13,8 @@ export declare const listReturnsSchema: z.ZodObject<{
         orderId: z.ZodOptional<z.ZodString>;
         customerId: z.ZodOptional<z.ZodString>;
         status: z.ZodOptional<z.ZodEnum<{
-            cancelled: "cancelled";
             pending: "pending";
+            cancelled: "cancelled";
             approved: "approved";
             completing: "completing";
             completed: "completed";

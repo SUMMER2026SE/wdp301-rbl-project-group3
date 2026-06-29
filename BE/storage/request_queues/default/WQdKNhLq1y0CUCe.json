@@ -1,9 +1,0 @@
-{
-	"id": "WQdKNhLq1y0CUCe",
-	"json": "{\"id\":\"WQdKNhLq1y0CUCe\",\"url\":\"https://winmart.vn/products/otoki-dau-me-110ml--s10008903?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/otoki-dau-me-110ml--s10008903?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
-	"method": "GET",
-	"orderNo": 1782494379810,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/products/otoki-dau-me-110ml--s10008903?storeCode=1535&storeGroupCode=1998",
-	"url": "https://winmart.vn/products/otoki-dau-me-110ml--s10008903?storeGroupCode=1998&storeCode=1535"
-}

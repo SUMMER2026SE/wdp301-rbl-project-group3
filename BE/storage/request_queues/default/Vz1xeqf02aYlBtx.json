@@ -1,9 +1,0 @@
-{
-	"id": "Vz1xeqf02aYlBtx",
-	"json": "{\"id\":\"Vz1xeqf02aYlBtx\",\"url\":\"https://winmart.vn/products/nam-kim-cham-150g--s10053991?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/nam-kim-cham-150g--s10053991?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
-	"method": "GET",
-	"orderNo": 1782494309893,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/products/nam-kim-cham-150g--s10053991?storeCode=1535&storeGroupCode=1998",
-	"url": "https://winmart.vn/products/nam-kim-cham-150g--s10053991?storeGroupCode=1998&storeCode=1535"
-}

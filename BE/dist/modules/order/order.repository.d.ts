@@ -5,6 +5,16 @@ export declare class OrderRepository {
         branchId?: string;
         status?: string;
     }): Promise<IOrder[]>;
+    findPaginated(filters: {
+        branchId?: string;
+        status?: string;
+        keyword?: string;
+        startDate?: string;
+        endDate?: string;
+    }, page: number, limit: number): Promise<{
+        orders: IOrder[];
+        total: number;
+    }>;
     findById(id: string): Promise<IOrder | null>;
     updateStatus(id: string, data: {
         status: OrderStatus;

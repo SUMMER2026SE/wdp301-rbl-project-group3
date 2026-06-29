@@ -22,6 +22,7 @@ function toProfileResponse(user) {
         lastLoginAt: user.lastLoginAt,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
+        branchId: user.branchId?.toString(),
     };
 }
 class UserService {

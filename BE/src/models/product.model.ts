@@ -10,6 +10,7 @@ export interface IProduct extends Document {
   categoryId?: Types.ObjectId;
   unit: string;
   salePrice: number;
+  suggestedPrice?: number;
   imageUrl?: string;
   status: ProductStatus;
   createdAt: Date;
@@ -24,6 +25,7 @@ const ProductSchema = new Schema<IProduct>(
     categoryId: { type: Schema.Types.ObjectId, ref: 'Category' },
     unit: { type: String, required: true, trim: true, default: 'item' },
     salePrice: { type: Number, required: true, min: 0, default: 0 },
+    suggestedPrice: { type: Number, default: 0 },
     imageUrl: { type: String },
     status: {
       type: String,

@@ -1,9 +1,0 @@
-{
-	"id": "YXrBkGAWMrk6Wdr",
-	"json": "{\"id\":\"YXrBkGAWMrk6Wdr\",\"url\":\"https://winmart.vn/search/T%C6%B0%E1%BB%9Dng+An\",\"uniqueKey\":\"https://winmart.vn/search/T%C6%B0%E1%BB%9Dng+An\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
-	"method": "GET",
-	"orderNo": 1782494376855,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/search/T%C6%B0%E1%BB%9Dng+An",
-	"url": "https://winmart.vn/search/T%C6%B0%E1%BB%9Dng+An"
-}

@@ -26,7 +26,19 @@ const allowedTransitions = {
 class OrderService {
     async getOrders(filters, actor) {
         const branchId = await (0, backOfficeAccess_util_1.resolveBackOfficeBranch)(actor, filters.branchId);
-        return order_repository_1.orderRepository.findAll({ ...filters, branchId });
+        const page = filters.page || 1;
+        const limit = filters.limit || 10;
+        const { orders, total } = await order_repository_1.orderRepository.findPaginated({ ...filters, branchId }, page, limit);
+        const totalPages = Math.ceil(total / limit) || 1;
+        return {
+            orders,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages,
+            },
+        };
     }
     async getOrderById(id, actor) {
         const order = await order_repository_1.orderRepository.findById(id);

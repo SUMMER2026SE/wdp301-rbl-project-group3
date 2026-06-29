@@ -1,9 +1,0 @@
-{
-	"id": "pe8LYhzA4Z53tW7",
-	"json": "{\"id\":\"pe8LYhzA4Z53tW7\",\"url\":\"https://winmart.vn/sieu-sale-thuong-hieu\",\"uniqueKey\":\"https://winmart.vn/sieu-sale-thuong-hieu\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
-	"method": "GET",
-	"orderNo": 1782494348186,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/sieu-sale-thuong-hieu",
-	"url": "https://winmart.vn/sieu-sale-thuong-hieu"
-}
