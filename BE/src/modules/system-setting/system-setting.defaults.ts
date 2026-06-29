@@ -97,7 +97,7 @@ export const DEFAULT_SYSTEM_SETTINGS: DefaultSetting[] = [
     value: 10,
     valueType: 'number',
     description: 'VAT percentage applied to orders',
-    isPublic: false,
+    isPublic: true,
   },
   // ── Loyalty / Membership thresholds ──────────────────────────────────────
   {

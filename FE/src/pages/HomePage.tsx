@@ -323,6 +323,7 @@ export const HomePage = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | DbCategory>('All')
   const [hasLoadedProducts, setHasLoadedProducts] = useState(false)
   const [dbCategories, setDbCategories] = useState<DbCategory[]>([])
+  const [publicSettings, setPublicSettings] = useState<Record<string, any>>({})
 
   const [activeBanners, setActiveBanners] = useState<Banner[]>([])
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0)
@@ -333,6 +334,18 @@ export const HomePage = () => {
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null)
   const [isBranchModalOpen, setIsBranchModalOpen] = useState(false)
   const [branchSearch, setBranchSearch] = useState('')
+
+  const fetchPublicSettings = async () => {
+    try {
+      const res = await fetch('/api/settings/public')
+      const data = await res.json()
+      if (data?.success && data?.data?.settings) {
+        setPublicSettings(data.data.settings)
+      }
+    } catch (err) {
+      console.error('Failed to fetch public settings:', err)
+    }
+  }
 
   const fetchDbProducts = async (keyword?: string, branchId?: string) => {
     setHasLoadedProducts(false)
@@ -422,6 +435,7 @@ export const HomePage = () => {
     fetchBranches()
     fetchCategories()
     fetchActiveBanners()
+    fetchPublicSettings()
   }, [])
 
   useEffect(() => {
@@ -510,7 +524,7 @@ export const HomePage = () => {
             <Icon className="w-[18px] h-[18px]">location_on</Icon> Store Locator
           </span>
           <span className="hidden sm:flex items-center gap-1">
-            <Icon className="w-[18px] h-[18px]">phone</Icon> Hotline: 1-800-FRESH
+            <Icon className="w-[18px] h-[18px]">phone</Icon> Hotline: {publicSettings.hotline || '1-800-FRESH'}
           </span>
         </div>
         <div className="hidden md:flex items-center gap-6">
@@ -529,7 +543,9 @@ export const HomePage = () => {
       <header className="sticky top-10 w-full bg-surface-container-lowest z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 flex flex-wrap md:flex-nowrap justify-start md:justify-between items-center gap-4 md:gap-8">
           <div className="flex items-center gap-8">
-            <h1 className="font-headline-lg text-headline-lg font-black text-primary">PMAN-Mart</h1>
+            <h1 className="font-headline-lg text-headline-lg font-black text-primary">
+              {publicSettings.store_name || 'PMAN-Mart'}
+            </h1>
             <div className="hidden xl:flex flex-col">
               <span className="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">
                 Deliver from
@@ -950,7 +966,9 @@ export const HomePage = () => {
       <footer className="bg-surface-container-highest border-t border-outline-variant mt-16">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-gutter-md w-full px-8 py-stack-lg max-w-7xl mx-auto">
           <div className="flex flex-col gap-4">
-            <h2 className="font-headline-md text-headline-md font-bold text-primary">PMAN-Mart</h2>
+            <h2 className="font-headline-md text-headline-md font-bold text-primary">
+              {publicSettings.store_name || 'PMAN-Mart'}
+            </h2>
             <p className="text-body-md text-on-surface-variant">
               Your premium choice for organic groceries and fresh food since 2026.
             </p>
@@ -968,7 +986,9 @@ export const HomePage = () => {
           </div>
 
           <div>
-            <h3 className="font-label-lg text-label-lg text-on-surface mb-4">About PMAN-Mart</h3>
+            <h3 className="font-label-lg text-label-lg text-on-surface mb-4">
+              About {publicSettings.store_name || 'PMAN-Mart'}
+            </h3>
             <ul className="flex flex-col gap-2">
               {['About Us', 'Branches', 'Sustainability', 'Careers'].map((item) => (
                 <li key={item}>
@@ -1020,7 +1040,7 @@ export const HomePage = () => {
           </div>
         </div>
         <div className="max-w-7xl mx-auto px-8 py-6 border-t border-outline-variant/30 flex justify-between items-center text-on-surface-variant text-label-md">
-          <span>&copy; 2026 PMAN-Mart Premium. All rights reserved.</span>
+          <span>&copy; 2026 {publicSettings.store_name || 'PMAN-Mart'} Premium. All rights reserved.</span>
           <div className="flex gap-6">
             <Icon className="w-5 h-5">credit_card</Icon>
             <Icon className="w-5 h-5">account_balance_wallet</Icon>

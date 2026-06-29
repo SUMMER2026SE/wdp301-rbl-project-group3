@@ -63,6 +63,9 @@ export class SystemSettingService {
       },
     }));
     await systemSettingRepository.bulkWrite(ops);
+
+    // Ensure vat_rate is public in DB
+    await systemSettingRepository.updateByKey('vat_rate', { isPublic: true });
   }
 
   async listSettings(query: ListSettingsQuery): Promise<ListSettingsResult> {
