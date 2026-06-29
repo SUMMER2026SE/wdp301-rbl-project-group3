@@ -40,7 +40,7 @@ const SystemSettingSchema = new mongoose_1.Schema({
     label: { type: String, required: true, trim: true, maxlength: 100 },
     group: {
         type: String,
-        enum: ['general', 'order', 'delivery', 'inventory', 'payment', 'notification'],
+        enum: ['general', 'order', 'delivery', 'inventory', 'payment', 'notification', 'loyalty'],
         required: true,
     },
     value: { type: mongoose_1.Schema.Types.Mixed, required: true },

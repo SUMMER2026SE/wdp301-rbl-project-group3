@@ -42,6 +42,7 @@ const DeliveryTrackingSchema = new mongoose_1.Schema({
         enum: ['order_placed', 'confirmed', 'preparing', 'delivering', 'delivered', 'cancelled'],
         required: true,
     },
+    changedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
     location: { type: String, trim: true },
     note: { type: String, trim: true },
 }, { timestamps: true, versionKey: false });

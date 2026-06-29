@@ -17,6 +17,9 @@ export interface IUser extends Document {
     emailVerifyTokenExpires?: Date;
     refreshTokenVersion: number;
     status: UserStatus;
+    points: number;
+    lifetimePoints: number;
+    memberLevel: 'new' | 'bronze' | 'silver' | 'gold' | 'diamond';
     lastLoginAt?: Date;
     passwordChangedAt?: Date;
     createdAt: Date;

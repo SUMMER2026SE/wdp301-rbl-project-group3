@@ -44,6 +44,14 @@ export const errorHandler = (
     return;
   }
 
+  if (err.name === 'MulterError') {
+    res.status(400).json({
+      success: false,
+      message: err.message === 'File too large' ? 'File size exceeds the 10MB limit' : err.message,
+    });
+    return;
+  }
+
   if (err instanceof TokenExpiredError) {
     res.status(401).json({
       success: false,

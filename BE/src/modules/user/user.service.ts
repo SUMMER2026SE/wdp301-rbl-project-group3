@@ -15,9 +15,13 @@ type ProfileResponse = {
   authProvider: string;
   isEmailVerified: boolean;
   status: string;
+  points?: number;
+  lifetimePoints?: number;
+  memberLevel?: string;
   lastLoginAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+  branchId?: string;
 };
 
 function toProfileResponse(user: IUser): ProfileResponse {
@@ -32,9 +36,13 @@ function toProfileResponse(user: IUser): ProfileResponse {
     authProvider: user.authProvider,
     isEmailVerified: user.isEmailVerified,
     status: user.status,
+    points: user.points || 0,
+    lifetimePoints: user.lifetimePoints || 0,
+    memberLevel: user.memberLevel || 'new',
     lastLoginAt: user.lastLoginAt,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
+    branchId: user.branchId?.toString(),
   };
 }
 

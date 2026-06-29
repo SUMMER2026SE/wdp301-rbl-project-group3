@@ -4,6 +4,11 @@ import { AppError } from '../../middlewares/errorHandler.middleware';
 import { UserRole } from '../../types/common.types';
 import { branchService } from '../branch/branch.service';
 import { adminUserRepository } from './admin-user.repository';
+import {
+  claimBranchManager,
+  releaseBranchManager,
+  releaseBranchManagerWithRetry,
+} from '../../utils/branchManager.util';
 
 export interface ListUsersQuery {
   page: number;
@@ -66,8 +71,21 @@ export class AdminUserService {
     if (user.role === 'admin') throw new AppError('Cannot lock an admin account', 403);
     if (user.status === 'banned') throw new AppError('User is already locked', 400);
 
-    const updated = await adminUserRepository.updateStatusById(targetUserId, 'banned', true);
+    const managerBranchId =
+      user.role === 'branch_manager' ? user.branchId?.toString() : undefined;
+    const updated = await adminUserRepository.updateStatusById(
+      targetUserId,
+      'banned',
+      true
+    );
     if (!updated) throw new AppError('User not found', 404);
+
+    if (managerBranchId) {
+      await releaseBranchManagerWithRetry(
+        managerBranchId,
+        user._id.toString()
+      );
+    }
 
     return toAdminUserResponse(updated);
   }
@@ -77,8 +95,29 @@ export class AdminUserService {
     if (!user) throw new AppError('User not found', 404);
     if (user.status === 'active') throw new AppError('User is already active', 400);
 
-    const updated = await adminUserRepository.updateStatusById(targetUserId, 'active');
-    if (!updated) throw new AppError('User not found', 404);
+    const shouldClaimManager = user.role === 'branch_manager';
+    if (shouldClaimManager) {
+      if (!user.branchId) {
+        throw new AppError('Branch manager must be assigned to a branch', 409);
+      }
+      await claimBranchManager(user.branchId.toString(), user._id.toString());
+    }
+
+    let updated: IUser | null;
+    try {
+      updated = await adminUserRepository.updateStatusById(targetUserId, 'active');
+    } catch (error) {
+      if (shouldClaimManager && user.branchId) {
+        await releaseBranchManager(user.branchId.toString(), user._id.toString());
+      }
+      throw error;
+    }
+    if (!updated) {
+      if (shouldClaimManager && user.branchId) {
+        await releaseBranchManager(user.branchId.toString(), targetUserId);
+      }
+      throw new AppError('User not found', 404);
+    }
 
     return toAdminUserResponse(updated);
   }
@@ -95,7 +134,11 @@ export class AdminUserService {
     const user = await adminUserRepository.findById(targetUserId);
     if (!user) throw new AppError('User not found', 404);
 
-    if (user.role === data.role) {
+    const currentBranchId = user.branchId?.toString();
+    if (
+      user.role === data.role &&
+      (!data.branchId || data.branchId === currentBranchId)
+    ) {
       throw new AppError('User already has this role', 400);
     }
 
@@ -106,18 +149,51 @@ export class AdminUserService {
       if (!data.branchId) {
         throw new AppError('branchId is required for branch_manager and staff roles', 400);
       }
-      await branchService.getBranchById(data.branchId);
+      const branch = await branchService.getBranchById(data.branchId);
+      if (branch.status !== 'active') {
+        throw new AppError('Cannot assign users to an inactive branch', 409);
+      }
       branchObjectId = new Types.ObjectId(data.branchId);
     } else {
       branchObjectId = null;
     }
 
-    const updated = await adminUserRepository.updateRoleById(
-      targetUserId,
-      data.role,
-      branchObjectId
-    );
-    if (!updated) throw new AppError('User not found', 404);
+    const shouldClaimManager =
+      data.role === 'branch_manager' &&
+      user.status === 'active' &&
+      Boolean(data.branchId) &&
+      (user.role !== 'branch_manager' || currentBranchId !== data.branchId);
+    if (shouldClaimManager) {
+      await claimBranchManager(data.branchId!, targetUserId);
+    }
+
+    let updated: IUser | null;
+    try {
+      updated = await adminUserRepository.updateRoleById(
+        targetUserId,
+        data.role,
+        branchObjectId
+      );
+    } catch (error) {
+      if (shouldClaimManager && data.branchId) {
+        await releaseBranchManager(data.branchId, targetUserId);
+      }
+      throw error;
+    }
+    if (!updated) {
+      if (shouldClaimManager && data.branchId) {
+        await releaseBranchManager(data.branchId, targetUserId);
+      }
+      throw new AppError('User not found', 404);
+    }
+
+    if (
+      user.role === 'branch_manager' &&
+      currentBranchId &&
+      (data.role !== 'branch_manager' || currentBranchId !== data.branchId)
+    ) {
+      await releaseBranchManagerWithRetry(currentBranchId, targetUserId);
+    }
 
     return toAdminUserResponse(updated);
   }

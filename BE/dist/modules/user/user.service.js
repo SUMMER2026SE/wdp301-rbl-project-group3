@@ -16,9 +16,13 @@ function toProfileResponse(user) {
         authProvider: user.authProvider,
         isEmailVerified: user.isEmailVerified,
         status: user.status,
+        points: user.points || 0,
+        lifetimePoints: user.lifetimePoints || 0,
+        memberLevel: user.memberLevel || 'new',
         lastLoginAt: user.lastLoginAt,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
+        branchId: user.branchId?.toString(),
     };
 }
 class UserService {

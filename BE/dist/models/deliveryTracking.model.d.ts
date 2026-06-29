@@ -4,6 +4,7 @@ export interface IDeliveryTracking extends Document {
     _id: Types.ObjectId;
     orderId: Types.ObjectId;
     status: TrackingStatus;
+    changedBy?: Types.ObjectId;
     location?: string;
     note?: string;
     createdAt: Date;

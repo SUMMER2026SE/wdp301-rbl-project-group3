@@ -16,7 +16,13 @@ const statistics_routes_1 = __importDefault(require("../modules/statistics/stati
 const cart_routes_1 = __importDefault(require("../modules/cart/cart.routes"));
 const address_routes_1 = __importDefault(require("../modules/address/address.routes"));
 const promotion_routes_1 = __importDefault(require("../modules/promotion/promotion.routes"));
+const employee_routes_1 = __importDefault(require("../modules/employee/employee.routes"));
+const invoice_routes_1 = __importDefault(require("../modules/invoice/invoice.routes"));
+const return_routes_1 = __importDefault(require("../modules/return/return.routes"));
+const flash_sale_routes_1 = __importDefault(require("../modules/flash-sale/flash-sale.routes"));
+const banner_routes_1 = __importDefault(require("../modules/banner/banner.routes"));
 const system_setting_routes_1 = require("../modules/system-setting/system-setting.routes");
+const crawler_routes_1 = __importDefault(require("../modules/crawler/crawler.routes"));
 const router = (0, express_1.Router)();
 router.use('/auth', auth_routes_1.default);
 router.use('/users', user_routes_1.default);
@@ -30,7 +36,13 @@ router.use('/statistics', statistics_routes_1.default);
 router.use('/cart', cart_routes_1.default);
 router.use('/addresses', address_routes_1.default);
 router.use('/promotions', promotion_routes_1.default);
+router.use('/employees', employee_routes_1.default);
+router.use('/invoices', invoice_routes_1.default);
+router.use('/returns', return_routes_1.default);
+router.use('/flash-sales', flash_sale_routes_1.default);
+router.use('/banners', banner_routes_1.default);
 router.use('/settings', system_setting_routes_1.publicSystemSettingRoutes);
 router.use('/admin/settings', system_setting_routes_1.adminSystemSettingRoutes);
+router.use('/crawler', crawler_routes_1.default);
 exports.default = router;
 //# sourceMappingURL=index.js.map

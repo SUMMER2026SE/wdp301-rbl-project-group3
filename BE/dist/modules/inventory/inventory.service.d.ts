@@ -50,6 +50,23 @@ export declare class InventoryService {
     private ensureActiveBranch;
     private resolveAccessibleBranch;
     private ensureReceiptStockUnchanged;
+    createInventory(data: {
+        branchId: string;
+        productId: string;
+        quantity: number;
+        averageCost: number;
+        lowStockThreshold: number;
+        createdBy: string;
+        actor: InventoryActor;
+    }): Promise<IInventory>;
+    updateInventory(id: string, data: {
+        quantity?: number;
+        averageCost?: number;
+        lowStockThreshold?: number;
+        updatedBy: string;
+        actor: InventoryActor;
+    }): Promise<IInventory>;
+    deleteInventory(id: string, actor: InventoryActor): Promise<void>;
 }
 export declare const inventoryService: InventoryService;
 export {};

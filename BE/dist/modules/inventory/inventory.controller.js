@@ -65,6 +65,35 @@ class InventoryController {
             });
             (0, response_util_1.sendSuccess)(res, { receipt }, 'Import receipt cancelled and stock reversed');
         });
+        this.createInventory = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
+            const inventory = await inventory_service_1.inventoryService.createInventory({
+                ...req.body,
+                createdBy: req.user.userId,
+                actor: {
+                    userId: req.user.userId,
+                    role: req.user.role,
+                },
+            });
+            (0, response_util_1.sendSuccess)(res, { inventory }, 'Inventory item created successfully', 201);
+        });
+        this.updateInventory = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
+            const inventory = await inventory_service_1.inventoryService.updateInventory(String(req.params.id), {
+                ...req.body,
+                updatedBy: req.user.userId,
+                actor: {
+                    userId: req.user.userId,
+                    role: req.user.role,
+                },
+            });
+            (0, response_util_1.sendSuccess)(res, { inventory }, 'Inventory item updated successfully');
+        });
+        this.deleteInventory = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
+            await inventory_service_1.inventoryService.deleteInventory(String(req.params.id), {
+                userId: req.user.userId,
+                role: req.user.role,
+            });
+            (0, response_util_1.sendSuccess)(res, null, 'Inventory item deleted successfully');
+        });
     }
 }
 exports.InventoryController = InventoryController;

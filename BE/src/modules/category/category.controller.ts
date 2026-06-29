@@ -10,11 +10,21 @@ export class CategoryController {
   });
 
   getAll = asyncHandler(async (req: Request, res: Response) => {
-    const categories = await categoryService.getCategories({
+    const page = req.query.page ? parseInt(req.query.page as string, 10) : undefined;
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
+
+    const result = await categoryService.getCategories({
       status: req.query.status as string | undefined,
       keyword: req.query.keyword as string | undefined,
+      page,
+      limit,
     });
-    sendSuccess(res, { categories }, 'Categories retrieved');
+
+    if (page !== undefined && limit !== undefined) {
+      sendSuccess(res, { categories: result.categories, pagination: result.pagination }, 'Categories retrieved');
+    } else {
+      sendSuccess(res, { categories: result }, 'Categories retrieved');
+    }
   });
 
   getById = asyncHandler(async (req: Request, res: Response) => {

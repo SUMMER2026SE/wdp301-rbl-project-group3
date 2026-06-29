@@ -10,6 +10,9 @@ export interface IBranch extends Document {
   phone?: string;
   managerId?: Types.ObjectId;
   status: BranchStatus;
+  openingTime?: string;
+  closingTime?: string;
+  activeDays?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -25,6 +28,12 @@ const BranchSchema = new Schema<IBranch>(
       type: String,
       enum: ['active', 'inactive'],
       default: 'active',
+    },
+    openingTime: { type: String, default: '08:00' },
+    closingTime: { type: String, default: '22:00' },
+    activeDays: {
+      type: [String],
+      default: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
     },
   },
   {

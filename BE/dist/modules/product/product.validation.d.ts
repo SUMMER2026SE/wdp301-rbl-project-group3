@@ -14,10 +14,10 @@ export declare const listProductsSchema: z.ZodObject<{
             inactive: "inactive";
         }>>;
         keyword: z.ZodOptional<z.ZodString>;
-        categoryId: z.ZodOptional<z.ZodString>;
+        categoryId: z.ZodPreprocess<z.ZodOptional<z.ZodString>>;
         minPrice: z.ZodOptional<z.ZodCoercedNumber<unknown>>;
         maxPrice: z.ZodOptional<z.ZodCoercedNumber<unknown>>;
-        branchId: z.ZodOptional<z.ZodString>;
+        branchId: z.ZodPreprocess<z.ZodOptional<z.ZodString>>;
     }, z.core.$strip>;
 }, z.core.$strip>;
 export declare const createProductSchema: z.ZodObject<{

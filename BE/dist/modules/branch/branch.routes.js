@@ -10,8 +10,9 @@ router.get('/', (0, branch_validation_1.validate)(branch_validation_1.listBranch
 router.get('/:id', (0, branch_validation_1.validate)(branch_validation_1.branchIdParamSchema), branch_controller_1.branchController.getById);
 // Apply authentication middleware for mutative actions (create, update, delete)
 router.use(auth_middleware_1.authenticate);
+router.get('/:id/quick-stats', (0, branch_validation_1.validate)(branch_validation_1.branchIdParamSchema), branch_controller_1.branchController.getQuickStats);
 router.post('/', (0, role_middleware_1.authorize)('admin'), (0, branch_validation_1.validate)(branch_validation_1.createBranchSchema), branch_controller_1.branchController.create);
-router.patch('/:id', (0, role_middleware_1.authorize)('admin'), (0, branch_validation_1.validate)(branch_validation_1.updateBranchSchema), branch_controller_1.branchController.update);
+router.patch('/:id', (0, role_middleware_1.authorize)('admin', 'branch_manager'), (0, branch_validation_1.validate)(branch_validation_1.updateBranchSchema), branch_controller_1.branchController.update);
 router.delete('/:id', (0, role_middleware_1.authorize)('admin'), (0, branch_validation_1.validate)(branch_validation_1.branchIdParamSchema), branch_controller_1.branchController.deactivate);
 exports.default = router;
 //# sourceMappingURL=branch.routes.js.map

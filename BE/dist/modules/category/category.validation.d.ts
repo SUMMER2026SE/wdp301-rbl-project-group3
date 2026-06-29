@@ -12,6 +12,8 @@ export declare const listCategoriesSchema: z.ZodObject<{
             inactive: "inactive";
         }>>;
         keyword: z.ZodOptional<z.ZodString>;
+        page: z.ZodOptional<z.ZodString>;
+        limit: z.ZodOptional<z.ZodString>;
     }, z.core.$strip>;
 }, z.core.$strip>;
 export declare const createCategorySchema: z.ZodObject<{

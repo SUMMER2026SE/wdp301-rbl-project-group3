@@ -2,6 +2,8 @@ import { cartRepository } from './cart.repository';
 import { AppError } from '../../middlewares/errorHandler.middleware';
 import { Product } from '../../models/product.model';
 import { Inventory } from '../../models/inventory.model';
+import { Types } from 'mongoose';
+import { flashSaleRepository } from '../flash-sale/flash-sale.repository';
 
 
 // ─── Response shape ───────────────────────────────────────────────────────────
@@ -26,8 +28,21 @@ interface CartResponse {
     totalAmount: number;
 }
 
+function getObjectIdString(value: any): string {
+    if (!value) return '';
+    if (value instanceof Types.ObjectId) return value.toString();
+    if (typeof value === 'object' && '_id' in value) {
+        return value._id ? value._id.toString() : '';
+    }
+    return value.toString();
+}
+
 async function buildCartResponse(cart: any, branchId?: string): Promise<CartResponse> {
     const items: CartItemResponse[] = [];
+    
+    // Fetch the active flash sale for this branch (or fallback to global)
+    const cleanBranchId = (branchId && Types.ObjectId.isValid(branchId)) ? branchId : undefined;
+    const activeFlashSale = await flashSaleRepository.findActiveFlashSale(cleanBranchId);
     
     for (const item of cart.items) {
         if (!item.productId || item.productId.status !== 'active') continue;
@@ -36,7 +51,7 @@ async function buildCartResponse(cart: any, branchId?: string): Promise<CartResp
         let price = product?.salePrice ?? 0;
         
         // If branchId is provided, get price from Inventory.lastImportCost
-        if (branchId) {
+        if (branchId && Types.ObjectId.isValid(branchId)) {
             const inventory = await Inventory.findOne({
                 productId: product._id,
                 branchId: branchId,
@@ -44,6 +59,19 @@ async function buildCartResponse(cart: any, branchId?: string): Promise<CartResp
             
             if (inventory && inventory.lastImportCost) {
                 price = inventory.lastImportCost;
+            }
+        }
+        
+        // Apply flash sale price override if applicable
+        if (activeFlashSale) {
+            const flashProduct = activeFlashSale.products.find(
+                (p: any) => getObjectIdString(p.productId) === getObjectIdString(product._id)
+            );
+            if (
+                flashProduct &&
+                flashProduct.soldQuantity + item.quantity <= flashProduct.limitQuantity
+            ) {
+                price = flashProduct.flashSalePrice;
             }
         }
         

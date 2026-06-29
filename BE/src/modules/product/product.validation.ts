@@ -19,10 +19,10 @@ export const listProductsSchema = z
       limit: z.coerce.number().int().min(1).max(10000).default(10),
       status: z.enum(['active', 'inactive']).optional(),
       keyword: z.string().max(100).optional(),
-      categoryId: objectId.optional(),
+      categoryId: emptyToUndefined(objectId.optional()),
       minPrice: z.coerce.number().min(0).optional(),
       maxPrice: z.coerce.number().min(0).optional(),
-      branchId: objectId.optional(),
+      branchId: emptyToUndefined(objectId.optional()),
     }),
   })
   .refine(
@@ -43,6 +43,7 @@ export const createProductSchema = z.object({
     description: emptyToUndefined(z.string().max(1000).optional()),
     categoryId: emptyToUndefined(objectId.optional()),
     unit: emptyToUndefined(z.string().min(1).max(30).optional()),
+    costPrice: z.coerce.number().min(0).optional(),
     salePrice: z.coerce.number().min(0).optional(),
     status: z.enum(['active', 'inactive']).optional(),
   }),
@@ -58,6 +59,7 @@ export const updateProductSchema = z.object({
     description: emptyToUndefined(z.string().max(1000).optional()),
     categoryId: emptyToUndefined(objectId.optional()),
     unit: emptyToUndefined(z.string().min(1).max(30).optional()),
+    costPrice: z.coerce.number().min(0).optional(),
     salePrice: z.coerce.number().min(0).optional(),
     status: z.enum(['active', 'inactive']).optional(),
   }),

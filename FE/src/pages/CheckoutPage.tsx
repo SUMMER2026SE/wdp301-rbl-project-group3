@@ -4,7 +4,8 @@ import { useCart } from '@/contexts/CartContext'
 import { orderService } from '@/services/orderService'
 import { promotionService } from '@/services/promotionService'
 import { branchService } from '@/services/branchService'
-import type { Branch } from '@/types'
+import { addressService } from '@/services/addressService'
+import type { Branch, UserAddress } from '@/types'
 
 const formatVND = (num: number) => {
   return new Intl.NumberFormat('vi-VN', {
@@ -43,7 +44,7 @@ const productImageMap: Record<string, string> = {
 
 export const CheckoutPage = () => {
   const navigate = useNavigate()
-  const { cart, clearCart } = useCart()
+  const { cart, clearCart, refreshCart } = useCart()
 
   const [fullName, setFullName] = useState('')
   const [phoneNumber, setPhoneNumber] = useState('')
@@ -72,7 +73,46 @@ export const CheckoutPage = () => {
   const [isVoucherListModalOpen, setIsVoucherListModalOpen] = useState(false)
   const [isLoadingAvailableVouchers, setIsLoadingAvailableVouchers] = useState(false)
 
+  // Saved Address states
+  const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>([])
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
+  const [storeName, setStoreName] = useState('PMAN-Mart')
+  const [publicSettings, setPublicSettings] = useState<Record<string, any>>({})
+
+  const shippingFee = useMemo(() => {
+    if (!cart) return 0
+    const threshold = Number(publicSettings.free_shipping_threshold ?? 200000)
+    const fee = Number(publicSettings.default_delivery_fee ?? 15000)
+    return cart.totalAmount >= threshold ? 0 : fee
+  }, [cart, publicSettings])
+
+  const vatRate = useMemo(() => {
+    return Number(publicSettings.vat_rate ?? 10)
+  }, [publicSettings])
+
+  const vatAmount = useMemo(() => {
+    if (!cart) return 0
+    const amountAfterDiscount = Math.max(0, cart.totalAmount - discountAmount)
+    return Math.round(amountAfterDiscount * (vatRate / 100))
+  }, [cart, discountAmount, vatRate])
+
   useEffect(() => {
+    const fetchPublicSettings = async () => {
+      try {
+        const res = await fetch('/api/settings/public')
+        const data = await res.json()
+        if (data?.success && data?.data?.settings) {
+          setPublicSettings(data.data.settings)
+          if (data.data.settings.store_name) {
+            setStoreName(data.data.settings.store_name)
+          }
+        }
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    fetchPublicSettings()
+
     const fetchBranches = async () => {
       try {
         const res = await branchService.getBranches({ status: 'active' })
@@ -125,6 +165,31 @@ export const CheckoutPage = () => {
       }
     }
     fetchAvailablePromotions()
+
+    const fetchSavedAddresses = async () => {
+      try {
+        const res = await addressService.getAddresses()
+        if (res.success && res.data) {
+          const list = Array.isArray(res.data) ? res.data : (res.data as any).addresses || []
+          setSavedAddresses(list)
+          const defaultAddr = list.find((addr: any) => addr.isDefault)
+          if (defaultAddr) {
+            setSelectedAddressId(defaultAddr._id)
+            setFullName(defaultAddr.receiverName)
+            setPhoneNumber(defaultAddr.phoneNumber)
+            setShippingAddress(defaultAddr.addressDetail)
+          } else if (list.length > 0) {
+            setSelectedAddressId(list[0]._id)
+            setFullName(list[0].receiverName)
+            setPhoneNumber(list[0].phoneNumber)
+            setShippingAddress(list[0].addressDetail)
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch saved addresses:', err)
+      }
+    }
+    fetchSavedAddresses()
   }, [selectedBranch])
 
   const handleSelectVoucherFromList = (code: string) => {
@@ -163,6 +228,20 @@ export const CheckoutPage = () => {
     }
   }
 
+  const handleSelectSavedAddress = (addr: UserAddress) => {
+    setSelectedAddressId(addr._id)
+    setFullName(addr.receiverName)
+    setPhoneNumber(addr.phoneNumber)
+    setShippingAddress(addr.addressDetail)
+  }
+
+  const handleUseNewAddress = () => {
+    setSelectedAddressId(null)
+    setFullName('')
+    setPhoneNumber('')
+    setShippingAddress('')
+  }
+
   const filteredBranches = useMemo(() => {
     const kw = branchSearch.trim().toLowerCase()
     if (!kw) return branches
@@ -178,6 +257,7 @@ export const CheckoutPage = () => {
     setSelectedBranch(branch)
     localStorage.setItem('selectedBranch', JSON.stringify(branch))
     setIsBranchModalOpen(false)
+    refreshCart()
     if (appliedVoucher) {
       handleRemoveVoucher()
       setVoucherError('Chi nhánh thay đổi, vui lòng áp dụng lại mã giảm giá.')
@@ -237,6 +317,12 @@ export const CheckoutPage = () => {
     e.preventDefault()
     if (!cart || cart.items.length === 0) return
 
+    const minOrderVal = Number(publicSettings.min_order_amount ?? 0)
+    if (cart.totalAmount < minOrderVal) {
+      setError(`Giá trị đơn hàng tối thiểu phải từ ${formatVND(minOrderVal)} trở lên.`)
+      return
+    }
+
     if (!fullName.trim() || !phoneNumber.trim() || !shippingAddress.trim()) {
       setError('Please fill in all required delivery fields.')
       return
@@ -287,7 +373,7 @@ export const CheckoutPage = () => {
           </div>
           <h1 className="text-2xl font-black text-on-surface mb-2">Order Placed Successfully!</h1>
           <p className="text-on-surface-variant mb-6 text-sm">
-            Thank you for shopping with PMAN-Mart. Your order ID is{' '}
+            Thank you for shopping with {storeName}. Your order ID is{' '}
             <span className="font-bold text-primary">{successOrder.orderId}</span>.
           </p>
 
@@ -370,12 +456,74 @@ export const CheckoutPage = () => {
                 </div>
               )}
 
+              {cart.totalAmount < Number(publicSettings.min_order_amount ?? 0) && (
+                <div className="bg-error-container text-on-error-container p-4 rounded-xl flex items-center gap-3 text-sm font-bold">
+                  <AlertCircle className="w-5 h-5 shrink-0" />
+                  <span>
+                    Giá trị đơn hàng tối thiểu phải từ {formatVND(Number(publicSettings.min_order_amount))} trở lên để đặt hàng.
+                  </span>
+                </div>
+              )}
+
               {/* Delivery Information */}
               <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant/30 space-y-4">
                 <h3 className="text-lg font-bold flex items-center gap-2 border-b border-outline-variant/30 pb-3">
                   <MapPin className="text-primary w-5 h-5" />
                   Delivery Details
                 </h3>
+
+                {savedAddresses.length > 0 && (
+                  <div className="space-y-2 mb-4 pb-4 border-b border-outline-variant/30">
+                    <label className="text-[12px] text-on-surface-variant font-bold uppercase tracking-wider">
+                      Chọn địa chỉ đã lưu
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {savedAddresses.map((addr) => {
+                        const isSelected = selectedAddressId === addr._id
+                        return (
+                          <div
+                            key={addr._id}
+                            onClick={() => handleSelectSavedAddress(addr)}
+                            className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                              isSelected
+                                ? 'border-primary bg-primary/5'
+                                : 'border-outline-variant/40 hover:border-primary/20 hover:bg-surface-container-high'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-sm truncate max-w-[150px]">
+                                {addr.receiverName}
+                              </span>
+                              {addr.isDefault && (
+                                <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">
+                                  Default
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-on-surface-variant mt-1.5 leading-relaxed">
+                              SĐT: {addr.phoneNumber}
+                            </p>
+                            <p className="text-xs text-on-surface-variant mt-0.5 line-clamp-1">
+                              Đ/C: {addr.addressDetail}
+                            </p>
+                          </div>
+                        )
+                      })}
+                      <div
+                        onClick={handleUseNewAddress}
+                        className={`p-4 rounded-xl border-2 border-dashed cursor-pointer transition-all duration-200 flex flex-col items-center justify-center min-h-[96px] ${
+                          selectedAddressId === null
+                            ? 'border-primary bg-primary/5'
+                            : 'border-outline-variant/60 hover:border-primary/30 hover:bg-surface-container-high'
+                        }`}
+                      >
+                        <span className="text-xs font-bold text-primary flex items-center gap-1">
+                          + Nhập địa chỉ mới
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
@@ -440,15 +588,11 @@ export const CheckoutPage = () => {
                 <div className="flex justify-between items-center border-b border-outline-variant/30 pb-3 mb-4">
                   <h3 className="text-lg font-bold flex items-center gap-2">
                     <MapPin className="text-primary w-5 h-5" />
-                    Select Branch
+                    Chi nhánh mua hàng
                   </h3>
-                  <button
-                    type="button"
-                    onClick={() => setIsBranchModalOpen(true)}
-                    className="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    Change Branch
-                  </button>
+                  <span className="text-[11px] font-bold text-on-surface-variant bg-surface-container-high px-2.5 py-1 rounded-full shrink-0">
+                    Cố định theo giỏ hàng
+                  </span>
                 </div>
                 {selectedBranch ? (
                   <div className="flex items-center gap-3 bg-surface p-4 rounded-xl border border-primary/20">
@@ -469,14 +613,7 @@ export const CheckoutPage = () => {
                   </div>
                 ) : (
                   <div className="text-center py-6 text-on-surface-variant border border-dashed border-outline-variant rounded-xl">
-                    <p className="text-sm font-bold text-error">No branch selected</p>
-                    <button
-                      type="button"
-                      onClick={() => setIsBranchModalOpen(true)}
-                      className="mt-2 text-xs font-bold text-primary underline"
-                    >
-                      Click here to select a branch
-                    </button>
+                    <p className="text-sm font-bold text-error">Vui lòng chọn chi nhánh mua hàng tại Trang chủ trước khi thêm sản phẩm.</p>
                   </div>
                 )}
               </div>
@@ -533,7 +670,7 @@ export const CheckoutPage = () => {
 
                 <div className="divide-y divide-outline-variant/30 max-h-96 overflow-y-auto pr-2">
                   {cart.items.map((item) => {
-                    const image = productImageMap[item.product.name] || '/assets/winmart/tomatoes.png'
+                    const image = item.product.imageUrl || productImageMap[item.product.name] || '/assets/winmart/tomatoes.png'
                     return (
                       <div key={item.itemId} className="flex gap-4 py-3 first:pt-0 last:pb-0">
                         <div className="w-12 h-12 rounded-lg bg-surface overflow-hidden border border-outline-variant/30 flex-shrink-0">
@@ -645,20 +782,26 @@ export const CheckoutPage = () => {
                     </div>
                   )}
                   <div className="flex justify-between text-on-surface-variant">
+                    <span>VAT ({vatRate}%)</span>
+                    <span>{formatVND(vatAmount)}</span>
+                  </div>
+                  <div className="flex justify-between text-on-surface-variant">
                     <span>Shipping Fee</span>
-                    <span className="text-success font-bold">FREE</span>
+                    <span className={shippingFee === 0 ? "text-success font-bold" : "font-bold"}>
+                      {shippingFee === 0 ? 'FREE' : formatVND(shippingFee)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-body-lg font-bold border-t border-outline-variant/30 pt-3">
                     <span>Total Amount</span>
                     <span className="text-primary text-headline-sm">
-                      {formatVND(Math.max(0, cart.totalAmount - discountAmount))}
+                      {formatVND(Math.max(0, cart.totalAmount - discountAmount) + vatAmount + shippingFee)}
                     </span>
                   </div>
                 </div>
 
                 <button
                   onClick={handleSubmit}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || cart.totalAmount < Number(publicSettings.min_order_amount ?? 0)}
                   className="w-full bg-primary hover:bg-on-primary-fixed-variant disabled:bg-primary/50 text-white py-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer"
                   type="button"
                 >
@@ -668,7 +811,7 @@ export const CheckoutPage = () => {
                     </>
                   ) : (
                     <>
-                      Place Order ({formatVND(Math.max(0, cart.totalAmount - discountAmount))})
+                      Place Order ({formatVND(Math.max(0, cart.totalAmount - discountAmount) + vatAmount + shippingFee)})
                     </>
                   )}
                 </button>

@@ -62,6 +62,7 @@ const sendPasswordResetEmail = async (email, token) => {
 };
 exports.sendPasswordResetEmail = sendPasswordResetEmail;
 const sendOtpEmail = async (email, otp) => {
+    console.log(`[Email OTP] Sending OTP to ${email}: ${otp}`);
     await transporter.sendMail({
         from: env_config_1.env.email.from,
         to: email,

@@ -4,6 +4,7 @@ import { CallerContext } from '../types';
 import { AppError } from '../../../middlewares/errorHandler.middleware';
 import { IVoucher, Voucher } from '../../../models/voucher.model';
 import { Promotion } from '../../../models/promotion.model';
+import { User } from '../../../models/user.model';
 
 function toVoucherResponse(v: IVoucher) {
   return {
@@ -14,6 +15,8 @@ function toVoucherResponse(v: IVoucher) {
     discountValue: v.discountValue,
     maxDiscountAmount: v.maxDiscountAmount,
     minOrderAmount: v.minOrderAmount,
+    pointCost: v.pointCost || 0,
+    targetMemberLevel: v.targetMemberLevel || 'all',
     branchId: v.branchId?.toString(),
     expiresAt: v.expiresAt,
     status: v.status,
@@ -57,6 +60,8 @@ export class CouponService {
       discountValue: promotion.discountValue,
       maxDiscountAmount: promotion.maxDiscountAmount,
       minOrderAmount: promotion.minOrderAmount,
+      pointCost: promotion.pointCost || 0,
+      targetMemberLevel: promotion.targetMemberLevel || 'all',
       branchId: promotion.branchId,
       expiresAt: promotion.endDate,
       status: 'active' as const,
@@ -145,6 +150,51 @@ export class CouponService {
     );
     if (alreadyClaimed) {
       throw new AppError('Bạn đã nhận mã giảm giá này rồi', 400);
+    }
+
+    // Kiểm tra điều kiện cấp độ thành viên để nhận voucher
+    const targetLevel = voucher.targetMemberLevel || 'all';
+    if (targetLevel !== 'all') {
+      const user = await User.findById(caller.userId).exec();
+      if (!user) {
+        throw new AppError('Không tìm thấy thông tin người dùng', 404);
+      }
+      const userLevel = user.memberLevel || 'new';
+
+      const levelRanks: Record<string, number> = { new: 0, bronze: 1, silver: 2, gold: 3, diamond: 4 };
+      const levelNames: Record<string, string> = { new: 'Mới', bronze: 'Đồng', silver: 'Bạc', gold: 'Vàng', diamond: 'Kim cương' };
+
+      if (targetLevel === 'new') {
+        if (userLevel !== 'new') {
+          throw new AppError('Mã giảm giá này chỉ dành riêng cho khách hàng mới', 400);
+        }
+      } else {
+        const userRank = levelRanks[userLevel] || 0;
+        const requiredRank = levelRanks[targetLevel] || 0;
+        if (userRank < requiredRank) {
+          throw new AppError(
+            `Bạn phải đạt cấp độ thành viên ${levelNames[targetLevel]} trở lên để nhận mã này (Hiện tại: ${levelNames[userLevel]})`,
+            400
+          );
+        }
+      }
+    }
+
+    // Nếu voucher yêu cầu đổi bằng điểm, kiểm tra điểm của user và thực hiện trừ điểm
+    if (voucher.pointCost && voucher.pointCost > 0) {
+      const user = await User.findById(caller.userId).exec();
+      if (!user) {
+        throw new AppError('Không tìm thấy thông tin người dùng', 404);
+      }
+      if ((user.points || 0) < voucher.pointCost) {
+        throw new AppError(
+          `Bạn không đủ điểm để đổi mã này (Cần ${voucher.pointCost} điểm, hiện có ${user.points || 0} điểm)`,
+          400
+        );
+      }
+      // Khấu trừ điểm của người dùng
+      user.points = (user.points || 0) - voucher.pointCost;
+      await user.save();
     }
 
     // Push claim mới vào mảng claims

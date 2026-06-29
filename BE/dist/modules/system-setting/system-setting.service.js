@@ -5,6 +5,7 @@ const mongoose_1 = require("mongoose");
 const errorHandler_middleware_1 = require("../../middlewares/errorHandler.middleware");
 const system_setting_repository_1 = require("./system-setting.repository");
 const system_setting_defaults_1 = require("./system-setting.defaults");
+const maintenanceMode_middleware_1 = require("../../middlewares/maintenanceMode.middleware");
 function toSettingResponse(setting) {
     return {
         id: setting._id.toString(),
@@ -33,10 +34,16 @@ function assertValueMatchesType(value, valueType) {
 }
 class SystemSettingService {
     async ensureDefaultSettings() {
-        const count = await system_setting_repository_1.systemSettingRepository.countAll();
-        if (count > 0)
-            return;
-        await system_setting_repository_1.systemSettingRepository.insertMany(system_setting_defaults_1.DEFAULT_SYSTEM_SETTINGS);
+        // Upsert each default setting — only inserts if the key doesn't exist yet.
+        // This allows adding new defaults without wiping existing data.
+        const ops = system_setting_defaults_1.DEFAULT_SYSTEM_SETTINGS.map((s) => ({
+            updateOne: {
+                filter: { key: s.key },
+                update: { $setOnInsert: s },
+                upsert: true,
+            },
+        }));
+        await system_setting_repository_1.systemSettingRepository.bulkWrite(ops);
     }
     async listSettings(query) {
         await this.ensureDefaultSettings();
@@ -107,6 +114,9 @@ class SystemSettingService {
         });
         if (!updated)
             throw new errorHandler_middleware_1.AppError('Setting not found', 404);
+        // Immediately invalidate maintenance cache when that key changes
+        if (key === 'maintenance_mode')
+            (0, maintenanceMode_middleware_1.invalidateMaintenanceCache)();
         return toSettingResponse(updated);
     }
     async bulkUpdateSettings(items, adminUserId) {
@@ -129,6 +139,10 @@ class SystemSettingService {
         if (notFound.length > 0) {
             throw new errorHandler_middleware_1.AppError(`Settings not found: ${notFound.join(', ')}`, 404);
         }
+        // Invalidate maintenance cache if that key was part of the bulk update
+        const hasMaintenance = items.some((i) => i.key === 'maintenance_mode');
+        if (hasMaintenance)
+            (0, maintenanceMode_middleware_1.invalidateMaintenanceCache)();
         return { settings: updated };
     }
     async deleteSetting(key) {
