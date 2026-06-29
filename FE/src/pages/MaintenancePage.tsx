@@ -1,6 +1,20 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 
 export const MaintenancePage = () => {
+  const [storeName, setStoreName] = useState('PMAN-Mart')
+
+  useEffect(() => {
+    fetch('/api/settings/public')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.success && data?.data?.settings?.store_name) {
+          setStoreName(data.data.settings.store_name)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4 text-center">
       {/* Animated gear icon */}
@@ -43,7 +57,7 @@ export const MaintenancePage = () => {
       {/* Store info */}
       <div className="flex flex-col items-center gap-1">
         <p className="text-xs font-bold uppercase tracking-widest text-slate-600">
-          PMAN-Mart
+          {storeName}
         </p>
         <p className="text-xs text-slate-600">
           Nếu cần hỗ trợ gấp, vui lòng liên hệ hotline hoặc email của chúng tôi.

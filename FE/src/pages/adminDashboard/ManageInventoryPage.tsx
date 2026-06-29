@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo } from 'react'
 import {
   Package,
   Plus,
@@ -107,6 +107,23 @@ export const ManageInventoryPage = () => {
   const [editStockLoading, setEditStockLoading] = useState(false)
   const [editStockSuccess, setEditStockSuccess] = useState(false)
 
+  // Delete Inventory Confirm Modal
+  const [deleteConfirmItem, setDeleteConfirmItem] = useState<Inventory | null>(null)
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
+
+  // Import zero-cost confirm modal
+  const [showZeroCostConfirm, setShowZeroCostConfirm] = useState(false)
+  const [zeroCostResolve, setZeroCostResolve] = useState<((v: boolean) => void) | null>(null)
+
+  // Toggle product status confirm modal
+  const [toggleProductTarget, setToggleProductTarget] = useState<Product | null>(null)
+  const [isToggleConfirmOpen, setIsToggleConfirmOpen] = useState(false)
+
+  // Product form soft-warning modals (zero price / no category)
+  type SoftWarnType = 'zeroPrice' | 'noCategory' | null
+  const [softWarnType, setSoftWarnType] = useState<SoftWarnType>(null)
+  const [softWarnResolve, setSoftWarnResolve] = useState<((v: boolean) => void) | null>(null)
+
   // Tab 3: Catalog states
   const [catalogLoading, setCatalogLoading] = useState(false)
   const [catalogError, setCatalogError] = useState<string | null>(null)
@@ -124,6 +141,7 @@ export const ManageInventoryPage = () => {
   const [productForm, setProductForm] = useState({
     name: '',
     sku: '',
+    costPrice: 0,
     salePrice: 0,
     unit: 'item',
     description: '',
@@ -688,23 +706,19 @@ export const ManageInventoryPage = () => {
   }
 
   // Delete manual stock confirmation and execution
-  const handleDeleteStockClick = async (item: Inventory) => {
-    const productName = item.productId?.productName || item.productId?.name || 'sản phẩm'
-    const branchName = branches.find(b => b._id === selectedBranchId)?.name || 'chi nhánh'
-    const confirmMsg = `⚠️ CẢNH BÁO XÓA TỒN KHO\n\n` +
-      `Sản phẩm: ${productName}\n` +
-      `Chi nhánh: ${branchName}\n\n` +
-      `Hành động này sẽ XÓA BẢN GHI TỒN KHO của sản phẩm này tại chi nhánh. ` +
-      `Số lượng tồn kho, giá vốn và định mức cảnh báo liên quan sẽ biến mất hoàn toàn.\n\n` +
-      `Bạn có chắc chắn muốn XÓA không?`
+  const handleDeleteStockClick = (item: Inventory) => {
+    setDeleteConfirmItem(item)
+    setIsDeleteConfirmOpen(true)
+  }
 
-    if (!window.confirm(confirmMsg)) return
-
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirmItem) return
+    setIsDeleteConfirmOpen(false)
     try {
       setStockLoading(true)
-      const res = await inventoryService.deleteInventory(item._id)
+      const res = await inventoryService.deleteInventory(deleteConfirmItem._id)
       if (res.success) {
-        fetchInventory() // Refresh stock list
+        fetchInventory()
       } else {
         setStockError('❌ ' + (res.message || 'Không thể xóa tồn kho.'))
       }
@@ -713,6 +727,7 @@ export const ManageInventoryPage = () => {
       setStockError('❌ ' + msg)
     } finally {
       setStockLoading(false)
+      setDeleteConfirmItem(null)
     }
   }
 
@@ -764,10 +779,11 @@ export const ManageInventoryPage = () => {
     // Validation 6: Warning for zero cost
     const hasZeroCost = importItems.some((item) => item.unitCost === 0)
     if (hasZeroCost) {
-      const confirmZero = window.confirm(
-        '⚠️ Một số sản phẩm có giá vốn = 0đ. Đây có thể là hàng khuyến mãi/tặng.\n\nBạn có chắc chắn muốn tiếp tục?'
-      )
-      if (!confirmZero) return
+      const confirmed = await new Promise<boolean>((resolve) => {
+        setZeroCostResolve(() => resolve)
+        setShowZeroCostConfirm(true)
+      })
+      if (!confirmed) return
     }
 
     try {
@@ -813,6 +829,7 @@ export const ManageInventoryPage = () => {
     setProductForm({
       name: product.productName || product.name || '',
       sku: product.sku || '',
+      costPrice: product.costPrice ?? 0,
       salePrice: product.price ?? product.salePrice ?? 0,
       unit: product.unit || 'item',
       description: product.description || '',
@@ -834,6 +851,7 @@ export const ManageInventoryPage = () => {
     setProductForm({
       name: '',
       sku: '',
+      costPrice: 0,
       salePrice: 0,
       unit: 'item',
       description: '',
@@ -845,35 +863,18 @@ export const ManageInventoryPage = () => {
 
 
   // Toggle activation status (Dừng bán / Mở bán lại)
-  const handleToggleProductStatus = async (product: Product) => {
+  const handleToggleProductStatus = (product: Product) => {
+    // Open custom confirm modal instead of window.confirm
+    setToggleProductTarget(product)
+    setIsToggleConfirmOpen(true)
+  }
+
+  const handleConfirmToggleProduct = async () => {
+    const product = toggleProductTarget
+    if (!product) return
+    setIsToggleConfirmOpen(false)
+    setToggleProductTarget(null)
     const isActive = product.status === 'active' || product.status === true
-    const productName = product.productName || product.name || 'sản phẩm này'
-
-    // Different confirm messages based on action
-    let confirmMessage = ''
-    if (isActive) {
-      confirmMessage = `⚠️ DỪNG BÁN SẢN PHẨM\n\n` +
-        `Sản phẩm: ${productName}\n` +
-        `SKU: ${product.sku}\n\n` +
-        `Hành động này sẽ:\n` +
-        `• Ẩn sản phẩm khỏi danh sách bán hàng\n` +
-        `• Khách hàng không thể đặt mua sản phẩm này\n` +
-        `• Sản phẩm vẫn tồn tại trong hệ thống và có thể kích hoạt lại\n\n` +
-        `Bạn có chắc chắn muốn DỪNG BÁN sản phẩm này?`
-    } else {
-      confirmMessage = `✅ MỞ LẠI SẢN PHẨM\n\n` +
-        `Sản phẩm: ${productName}\n` +
-        `SKU: ${product.sku}\n\n` +
-        `Hành động này sẽ:\n` +
-        `• Kích hoạt lại sản phẩm trong hệ thống\n` +
-        `• Sản phẩm sẽ xuất hiện trong danh sách bán hàng\n` +
-        `• Khách hàng có thể đặt mua sản phẩm này\n\n` +
-        `Bạn có chắc chắn muốn MỞ BÁN LẠI sản phẩm này?`
-    }
-
-    if (!window.confirm(confirmMessage)) {
-      return
-    }
 
     try {
       setCatalogLoading(true)
@@ -947,23 +948,25 @@ export const ManageInventoryPage = () => {
 
     // Validation 5: Price validation
     if (productForm.salePrice < 0) {
-      setProductError('❌ Giá nhập gốc không được âm.')
+      setProductError('❌ Giá bán không được âm.')
       return
     }
 
     if (productForm.salePrice === 0) {
-      const confirmZeroPrice = window.confirm(
-        '⚠️ Giá nhập gốc đang là 0đ. Sản phẩm này sẽ có giá nhập gốc mặc định là 0đ.\n\nBạn có chắc chắn muốn tiếp tục?'
-      )
-      if (!confirmZeroPrice) return
+      const confirmed = await new Promise<boolean>((resolve) => {
+        setSoftWarnResolve(() => resolve)
+        setSoftWarnType('zeroPrice')
+      })
+      if (!confirmed) return
     }
 
     // Validation 6: Category selection
     if (!productForm.categoryId) {
-      const confirmNoCategory = window.confirm(
-        '⚠️ Bạn chưa chọn danh mục cho sản phẩm này.\n\nSản phẩm không có danh mục sẽ khó quản lý và tìm kiếm.\n\nBạn có muốn tiếp tục không?'
-      )
-      if (!confirmNoCategory) return
+      const confirmed = await new Promise<boolean>((resolve) => {
+        setSoftWarnResolve(() => resolve)
+        setSoftWarnType('noCategory')
+      })
+      if (!confirmed) return
     }
 
     // Validation 7: Description length
@@ -994,6 +997,7 @@ export const ManageInventoryPage = () => {
       const payload: any = {
         name: productForm.name.trim(),
         sku: productForm.sku.trim().toUpperCase(),
+        costPrice: productForm.costPrice,
         salePrice: productForm.salePrice,
         unit: productForm.unit || 'item',
         description: productForm.description.trim(),
@@ -1021,6 +1025,7 @@ export const ManageInventoryPage = () => {
         setProductForm({
           name: '',
           sku: '',
+          costPrice: 0,
           salePrice: 0,
           unit: 'item',
           description: '',
@@ -1161,6 +1166,7 @@ export const ManageInventoryPage = () => {
                   setProductForm({
                     name: '',
                     sku: '',
+                    costPrice: 0,
                     salePrice: 0,
                     unit: 'item',
                     description: '',
@@ -2215,15 +2221,32 @@ export const ManageInventoryPage = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Giá bán niêm yết */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Giá vốn nhập gốc */}
                 <div className="space-y-1.5">
-                  <label htmlFor="prod-price" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
-                    Giá nhập gốc (đ) <span className="text-error">*</span>
+                  <label htmlFor="prod-cost-price" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                    Giá vốn nhập gốc (đ)
                   </label>
                   <input
                     type="number"
-                    id="prod-price"
+                    id="prod-cost-price"
+                    min="0"
+                    step="1"
+                    value={productForm.costPrice}
+                    onChange={(e) => setProductForm({ ...productForm, costPrice: parseFloat(e.target.value) || 0 })}
+                    placeholder="0"
+                    className="w-full bg-surface-container-low border-none rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary text-sm transition-all"
+                  />
+                </div>
+
+                {/* Giá bán niêm yết */}
+                <div className="space-y-1.5">
+                  <label htmlFor="prod-sale-price" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                    Giá bán niêm yết (đ) <span className="text-error">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    id="prod-sale-price"
                     required
                     min="0"
                     step="1"
@@ -2232,7 +2255,9 @@ export const ManageInventoryPage = () => {
                     className="w-full bg-surface-container-low border-none rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary text-sm transition-all"
                   />
                 </div>
+              </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Đơn vị tính */}
                 <div className="space-y-1.5">
                   <label htmlFor="prod-unit" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
@@ -2737,6 +2762,197 @@ export const ManageInventoryPage = () => {
               >
                 Dừng ngay
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete Inventory Confirm Modal ── */}
+      {isDeleteConfirmOpen && deleteConfirmItem && (() => {
+        const productName = deleteConfirmItem.productId?.productName || deleteConfirmItem.productId?.name || 'sản phẩm'
+        const branchName = branches.find(b => b._id === selectedBranchId)?.name || 'chi nhánh'
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="w-full max-w-lg bg-surface rounded-2xl border border-outline-variant shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+
+              {/* Modal Header */}
+              <div className="flex items-center justify-between border-b border-outline-variant bg-surface-container-low px-6 py-4">
+                <h2 className="text-lg font-black text-on-surface flex items-center gap-2">
+                  <Trash2 size={20} className="text-error" />
+                  Xác nhận xóa tồn kho
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setIsDeleteConfirmOpen(false)}
+                  className="rounded-full p-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6 space-y-4">
+
+                {/* Sản phẩm info */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                    Sản phẩm &amp; Chi nhánh
+                  </label>
+                  <div className="flex items-center gap-3 p-3 bg-surface-container-low rounded-xl border border-outline-variant/60">
+                    <div className="w-10 h-10 bg-surface rounded-lg overflow-hidden border border-outline-variant flex items-center justify-center shrink-0">
+                      {deleteConfirmItem.productId?.imageUrl ? (
+                        <img
+                          src={deleteConfirmItem.productId.imageUrl}
+                          alt={productName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <Package size={18} className="text-on-surface-variant opacity-60" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-on-surface truncate">{productName}</p>
+                      <p className="text-xs text-on-surface-variant font-mono">
+                        SKU: {deleteConfirmItem.productId?.sku || 'N/A'} | Chi nhánh: {branchName}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Warning note */}
+                <div className="text-[11px] leading-relaxed text-on-surface-variant font-medium bg-error-container/30 p-3 rounded-xl border border-error/20">
+                  ⚠️ **Cảnh báo:** Hành động này sẽ **xóa vĩnh viễn** bản ghi tồn kho của sản phẩm này tại chi nhánh. Số lượng tồn kho, giá vốn và định mức cảnh báo liên quan sẽ **biến mất hoàn toàn** và không thể khôi phục.
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-outline-variant">
+                  <button
+                    type="button"
+                    onClick={() => setIsDeleteConfirmOpen(false)}
+                    className="rounded-xl px-5 py-3 text-sm font-bold text-on-surface-variant hover:bg-surface-container-low transition-colors"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmDelete}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-error px-6 py-3 text-sm font-bold text-white transition-all hover:bg-error/90 active:scale-95"
+                  >
+                    <Trash2 size={16} />
+                    Xóa tồn kho
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* ── Zero Cost Import Confirm ── */}
+      {showZeroCostConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-surface rounded-2xl border border-outline-variant shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-outline-variant bg-surface-container-low px-6 py-4">
+              <h2 className="text-lg font-black text-on-surface flex items-center gap-2">
+                <AlertTriangle size={20} style={{ color: '#f59e0b' }} />
+                Xác nhận giá vốn = 0đ
+              </h2>
+              <button type="button" onClick={() => { setShowZeroCostConfirm(false); zeroCostResolve?.(false); setZeroCostResolve(null) }} className="rounded-full p-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="text-[11px] leading-relaxed text-on-surface-variant font-medium bg-surface-container-low p-3 rounded-xl border border-outline-variant/60">
+                💡 Một số sản phẩm trong phiếu có giá vốn = 0đ. Đây có thể là hàng khuyến mãi hoặc hàng tặng kèm.
+              </div>
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-outline-variant">
+                <button type="button" onClick={() => { setShowZeroCostConfirm(false); zeroCostResolve?.(false); setZeroCostResolve(null) }} className="rounded-xl px-5 py-3 text-sm font-bold text-on-surface-variant hover:bg-surface-container-low transition-colors">Hủy</button>
+                <button type="button" onClick={() => { setShowZeroCostConfirm(false); zeroCostResolve?.(true); setZeroCostResolve(null) }} className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white transition-all hover:bg-opacity-90 active:scale-95">Tiếp tục</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Toggle Product Status Confirm ── */}
+      {isToggleConfirmOpen && toggleProductTarget && (() => {
+        const product = toggleProductTarget
+        const isActive = product.status === 'active' || product.status === true
+        const pName = product.productName || product.name || 'sản phẩm'
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="w-full max-w-lg bg-surface rounded-2xl border border-outline-variant shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex items-center justify-between border-b border-outline-variant bg-surface-container-low px-6 py-4">
+                <h2 className="text-lg font-black text-on-surface flex items-center gap-2">
+                  {isActive
+                    ? <><Square size={20} className="text-error" /> Dừng bán sản phẩm</>
+                    : <><Play size={20} className="text-primary" /> Mở bán lại sản phẩm</>
+                  }
+                </h2>
+                <button type="button" onClick={() => { setIsToggleConfirmOpen(false); setToggleProductTarget(null) }} className="rounded-full p-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Sản phẩm</label>
+                  <div className="flex items-center gap-3 p-3 bg-surface-container-low rounded-xl border border-outline-variant/60">
+                    <div className="w-10 h-10 bg-surface rounded-lg overflow-hidden border border-outline-variant flex items-center justify-center shrink-0">
+                      {product.imageUrl
+                        ? <img src={product.imageUrl} alt={pName} className="w-full h-full object-cover" />
+                        : <Package size={18} className="text-on-surface-variant opacity-60" />
+                      }
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-on-surface truncate">{pName}</p>
+                      <p className="text-xs text-on-surface-variant font-mono">SKU: {product.sku || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className={`text-[11px] leading-relaxed font-medium p-3 rounded-xl border space-y-0.5 ${isActive ? 'bg-error-container/30 border-error/20 text-on-surface-variant' : 'bg-surface-container-low border-outline-variant/60 text-on-surface-variant'}`}>
+                  {isActive ? (
+                    <><p className="font-bold text-error mb-1">Khi dừng bán:</p><p>• Sản phẩm sẽ bị ẩn khỏi danh sách bán hàng</p><p>• Khách hàng không thể đặt mua sản phẩm này</p><p>• Có thể kích hoạt lại bất cứ lúc nào</p></>
+                  ) : (
+                    <><p className="font-bold text-primary mb-1">Khi mở bán lại:</p><p>• Sản phẩm sẽ xuất hiện trong danh sách bán hàng</p><p>• Khách hàng có thể đặt mua sản phẩm này</p></>
+                  )}
+                </div>
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-outline-variant">
+                  <button type="button" onClick={() => { setIsToggleConfirmOpen(false); setToggleProductTarget(null) }} className="rounded-xl px-5 py-3 text-sm font-bold text-on-surface-variant hover:bg-surface-container-low transition-colors">Hủy</button>
+                  <button type="button" onClick={handleConfirmToggleProduct} className={`inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white transition-all active:scale-95 ${isActive ? 'bg-error hover:bg-error/90' : 'bg-primary hover:bg-opacity-90'}`}>
+                    {isActive ? <><Square size={16} /> Dừng bán</> : <><Play size={16} /> Mở bán lại</>}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* ── Product Form Soft Warnings (zero price / no category) ── */}
+      {softWarnType && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-surface rounded-2xl border border-outline-variant shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-outline-variant bg-surface-container-low px-6 py-4">
+              <h2 className="text-lg font-black text-on-surface flex items-center gap-2">
+                <AlertTriangle size={20} style={{ color: '#f59e0b' }} />
+                {softWarnType === 'zeroPrice' ? 'Giá nhập gốc bằng 0đ' : 'Chưa chọn danh mục'}
+              </h2>
+              <button type="button" onClick={() => { setSoftWarnType(null); softWarnResolve?.(false); setSoftWarnResolve(null) }} className="rounded-full p-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="text-[11px] leading-relaxed text-on-surface-variant font-medium bg-surface-container-low p-3 rounded-xl border border-outline-variant/60">
+                {softWarnType === 'zeroPrice'
+                  ? '💡 Giá nhập gốc đang là 0đ. Sản phẩm này sẽ có giá mặc định là 0đ. Bạn vẫn có thể chỉnh sửa sau khi tạo.'
+                  : '💡 Bạn chưa chọn danh mục cho sản phẩm. Sản phẩm không có danh mục sẽ khó quản lý và tìm kiếm hơn.'
+                }
+              </div>
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-outline-variant">
+                <button type="button" onClick={() => { setSoftWarnType(null); softWarnResolve?.(false); setSoftWarnResolve(null) }} className="rounded-xl px-5 py-3 text-sm font-bold text-on-surface-variant hover:bg-surface-container-low transition-colors">Quay lại</button>
+                <button type="button" onClick={() => { setSoftWarnType(null); softWarnResolve?.(true); setSoftWarnResolve(null) }} className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white transition-all hover:bg-opacity-90 active:scale-95">Tiếp tục</button>
+              </div>
             </div>
           </div>
         </div>

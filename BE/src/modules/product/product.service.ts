@@ -85,6 +85,7 @@ export class ProductService {
       ...data,
       sku,
       unit: data.unit || 'item',
+      costPrice: data.costPrice ?? 0,
       salePrice: data.salePrice ?? 0,
       imageUrl,
     });
