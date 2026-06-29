@@ -1,0 +1,20 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const auth_middleware_1 = require("../../middlewares/auth.middleware");
+const role_middleware_1 = require("../../middlewares/role.middleware");
+const return_controller_1 = require("./return.controller");
+const return_validation_1 = require("./return.validation");
+const router = (0, express_1.Router)();
+router.use(auth_middleware_1.authenticate);
+router.use((0, role_middleware_1.authorize)('admin', 'branch_manager', 'staff'));
+router.get('/', (0, return_validation_1.validate)(return_validation_1.listReturnsSchema), return_controller_1.returnController.list);
+router.post('/', (0, return_validation_1.validate)(return_validation_1.createReturnSchema), return_controller_1.returnController.create);
+router.get('/:id', (0, return_validation_1.validate)(return_validation_1.returnIdParamSchema), return_controller_1.returnController.getById);
+router.patch('/:id', (0, return_validation_1.validate)(return_validation_1.updateReturnSchema), return_controller_1.returnController.update);
+router.delete('/:id', (0, return_validation_1.validate)(return_validation_1.cancelReturnSchema), return_controller_1.returnController.cancel);
+router.patch('/:id/approve', (0, return_validation_1.validate)(return_validation_1.resolveReturnSchema), return_controller_1.returnController.approve);
+router.patch('/:id/reject', (0, return_validation_1.validate)(return_validation_1.rejectReturnSchema), return_controller_1.returnController.reject);
+router.patch('/:id/complete', (0, return_validation_1.validate)(return_validation_1.completeReturnSchema), return_controller_1.returnController.complete);
+exports.default = router;
+//# sourceMappingURL=return.routes.js.map

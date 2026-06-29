@@ -4,25 +4,61 @@ exports.cartService = exports.CartService = void 0;
 const cart_repository_1 = require("./cart.repository");
 const errorHandler_middleware_1 = require("../../middlewares/errorHandler.middleware");
 const product_model_1 = require("../../models/product.model");
-function buildCartResponse(cart) {
-    const items = cart.items
-        .filter((item) => item.productId && item.productId.status !== false)
-        .map((item) => {
+const inventory_model_1 = require("../../models/inventory.model");
+const mongoose_1 = require("mongoose");
+const flash_sale_repository_1 = require("../flash-sale/flash-sale.repository");
+function getObjectIdString(value) {
+    if (!value)
+        return '';
+    if (value instanceof mongoose_1.Types.ObjectId)
+        return value.toString();
+    if (typeof value === 'object' && '_id' in value) {
+        return value._id ? value._id.toString() : '';
+    }
+    return value.toString();
+}
+async function buildCartResponse(cart, branchId) {
+    const items = [];
+    // Fetch the active flash sale for this branch (or fallback to global)
+    const cleanBranchId = (branchId && mongoose_1.Types.ObjectId.isValid(branchId)) ? branchId : undefined;
+    const activeFlashSale = await flash_sale_repository_1.flashSaleRepository.findActiveFlashSale(cleanBranchId);
+    for (const item of cart.items) {
+        if (!item.productId || item.productId.status !== 'active')
+            continue;
         const product = item.productId;
-        const price = product?.price ?? 0;
-        return {
+        let price = product?.salePrice ?? 0;
+        // If branchId is provided, get price from Inventory.lastImportCost
+        if (branchId && mongoose_1.Types.ObjectId.isValid(branchId)) {
+            const inventory = await inventory_model_1.Inventory.findOne({
+                productId: product._id,
+                branchId: branchId,
+            }).exec();
+            if (inventory && inventory.lastImportCost) {
+                price = inventory.lastImportCost;
+            }
+        }
+        // Apply flash sale price override if applicable
+        if (activeFlashSale) {
+            const flashProduct = activeFlashSale.products.find((p) => getObjectIdString(p.productId) === getObjectIdString(product._id));
+            if (flashProduct &&
+                flashProduct.soldQuantity + item.quantity <= flashProduct.limitQuantity) {
+                price = flashProduct.flashSalePrice;
+            }
+        }
+        items.push({
             itemId: item._id.toString(),
             product: {
                 id: product?._id?.toString() ?? '',
-                name: product?.productName ?? 'Unknown',
+                name: product?.name ?? 'Unknown',
                 price,
                 unit: product?.unit,
+                imageUrl: product?.imageUrl,
             },
             quantity: item.quantity,
             subtotal: price * item.quantity,
             addedAt: item.addedAt,
-        };
-    });
+        });
+    }
     const totalAmount = items.reduce((sum, i) => sum + i.subtotal, 0);
     return {
         cartId: cart._id.toString(),
@@ -33,7 +69,7 @@ function buildCartResponse(cart) {
 }
 class CartService {
     // ─── UC07: Thêm vào giỏ hàng ─────────────────────────────────────────────
-    async addToCart(userId, productId, quantity) {
+    async addToCart(userId, productId, quantity, branchId) {
         if (quantity < 1) {
             throw new errorHandler_middleware_1.AppError('Quantity must be at least 1', 400);
         }
@@ -56,19 +92,19 @@ class CartService {
             }
         }
         const cart = await cart_repository_1.cartRepository.upsertItem(userId, productId, quantity);
-        return buildCartResponse(cart);
+        return await buildCartResponse(cart, branchId);
     }
     // ─── UC08: Xem giỏ hàng ──────────────────────────────────────────────────
-    async getCart(userId) {
+    async getCart(userId, branchId) {
         const cart = await cart_repository_1.cartRepository.findByUserId(userId);
         if (!cart) {
             // Trả về giỏ rỗng thay vì lỗi 404
             return { cartId: '', items: [], totalItems: 0, totalAmount: 0 };
         }
-        return buildCartResponse(cart);
+        return await buildCartResponse(cart, branchId);
     }
     // ─── UC08: Cập nhật số lượng ──────────────────────────────────────────────
-    async updateItemQuantity(userId, itemId, quantity) {
+    async updateItemQuantity(userId, itemId, quantity, branchId) {
         if (quantity < 0) {
             throw new errorHandler_middleware_1.AppError('Quantity must be non-negative', 400);
         }
@@ -85,10 +121,10 @@ class CartService {
         const cart = await cart_repository_1.cartRepository.updateItemQuantity(userId, itemId, quantity);
         if (!cart)
             throw new errorHandler_middleware_1.AppError('Failed to update cart', 500);
-        return buildCartResponse(cart);
+        return await buildCartResponse(cart, branchId);
     }
     // ─── UC08: Xóa một item ───────────────────────────────────────────────────
-    async removeItem(userId, itemId) {
+    async removeItem(userId, itemId, branchId) {
         const rawCart = await cart_repository_1.cartRepository.findRawByUserId(userId);
         if (!rawCart)
             throw new errorHandler_middleware_1.AppError('Cart not found', 404);
@@ -98,7 +134,7 @@ class CartService {
         const cart = await cart_repository_1.cartRepository.removeItem(userId, itemId);
         if (!cart)
             throw new errorHandler_middleware_1.AppError('Failed to remove item', 500);
-        return buildCartResponse(cart);
+        return await buildCartResponse(cart, branchId);
     }
     // ─── UC08: Xóa toàn bộ giỏ ───────────────────────────────────────────────
     async clearCart(userId) {

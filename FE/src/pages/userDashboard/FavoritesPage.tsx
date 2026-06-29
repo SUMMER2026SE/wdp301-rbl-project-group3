@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { Grid, Heart, List, ShoppingCart, Star, Trash2 } from 'lucide-react'
 
+const formatVND = (num: number) => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+  }).format(num)
+}
+
 type Product = {
   id: string
   name: string
@@ -12,37 +19,7 @@ type Product = {
   unit: string
 }
 
-const favorites: Product[] = [
-  {
-    id: '1',
-    name: 'Fresh Organic Tomato',
-    price: 1.2,
-    originalPrice: 1.6,
-    image: '/assets/winmart/tomatoes.png',
-    inStock: true,
-    rating: 4.8,
-    unit: '500g / box',
-  },
-  {
-    id: '2',
-    name: 'Premium Ribeye Steak',
-    price: 8.5,
-    originalPrice: 10,
-    image: '/assets/winmart/ribeye.png',
-    inStock: true,
-    rating: 4.9,
-    unit: '300g / pack',
-  },
-  {
-    id: '3',
-    name: 'Organic Bunch Carrots',
-    price: 2.45,
-    image: '/assets/winmart/carrots.png',
-    inStock: false,
-    rating: 4.7,
-    unit: '1 kg',
-  },
-]
+const favorites: Product[] = []
 
 export const FavoritesPage = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
@@ -51,12 +28,12 @@ export const FavoritesPage = () => {
     <div className="space-y-6">
       <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-bold uppercase tracking-wide text-primary">Favorites</p>
+          <p className="text-sm font-bold uppercase tracking-wide text-primary">Yêu thích</p>
           <h1 className="mt-1 text-2xl font-black text-on-surface sm:text-3xl">
-            Saved products
+            Sản phẩm đã lưu
           </h1>
           <p className="mt-2 text-sm text-on-surface-variant">
-            {favorites.length} items saved for later.
+            {favorites.length} sản phẩm được lưu.
           </p>
         </div>
 
@@ -154,11 +131,11 @@ export const FavoritesPage = () => {
 
               <div className="mt-4 flex items-baseline gap-2">
                 <span className="text-xl font-black text-primary">
-                  ${product.price.toFixed(2)}
+                  {formatVND(product.price)}
                 </span>
                 {product.originalPrice ? (
                   <span className="text-sm text-on-surface-variant line-through">
-                    ${product.originalPrice.toFixed(2)}
+                    {formatVND(product.originalPrice)}
                   </span>
                 ) : null}
               </div>
@@ -189,10 +166,10 @@ export const FavoritesPage = () => {
 
       {favorites.length === 0 ? (
         <div className="rounded-xl border border-dashed border-outline-variant bg-surface-container-lowest py-16 text-center">
-          <Heart size={54} className="mx-auto mb-4 text-on-surface-variant" />
-          <h3 className="text-lg font-black text-on-surface">No favorites yet</h3>
+          <Heart size={54} className="mx-auto mb-4 text-on-surface-variant/40 animate-pulse" />
+          <h3 className="text-lg font-black text-on-surface">Chưa có sản phẩm yêu thích nào</h3>
           <p className="mt-2 text-sm text-on-surface-variant">
-            Save products to compare and buy them later.
+            Lưu các sản phẩm bạn yêu thích để dễ dàng mua sắm sau này.
           </p>
         </div>
       ) : null}

@@ -68,7 +68,6 @@ export const DashboardLayout = () => {
       label: 'Orders',
       description: 'Track purchases',
       icon: <ShoppingBag size={20} />,
-      badge: 2,
     },
     {
       path: '/dashboard/favorites',

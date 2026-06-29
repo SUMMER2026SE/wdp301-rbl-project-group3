@@ -12,6 +12,11 @@ import {
   Layers,
   X,
   UserCheck,
+  Users,
+  Ticket,
+  Settings2,
+  Zap,
+  TrendingUp,
 } from 'lucide-react'
 
 type NavItem = {
@@ -50,7 +55,7 @@ export const AdminLayout = () => {
 
   // Redirect non-backoffice users
   if (!user || !isBackOffice(user.role)) {
-    return <Navigate to="/" replace />
+    return <Navigate to="/login" replace />
   }
 
   const displayName = user.fullName || 'Staff'
@@ -76,6 +81,60 @@ export const AdminLayout = () => {
       icon: <MapPin size={20} />,
     },
   ]
+
+  if (user?.role === 'admin' || user?.role === 'branch_manager') {
+    navItems.unshift({
+      path: '/admin/statistics',
+      label: 'Báo cáo & Thống kê',
+      description: 'Phân tích doanh thu & KPIs',
+      icon: <TrendingUp size={20} />,
+    })
+    navItems.push({
+      path: '/admin/promotions',
+      label: 'Khuyến mãi',
+      description: 'Quản lý ưu đãi & voucher',
+      icon: <Ticket size={20} />,
+    })
+    navItems.push({
+      path: '/admin/flash-sales',
+      label: 'Quản lý Flash Sale',
+      description: 'Giờ vàng giảm giá sốc',
+      icon: <Zap size={20} />,
+    })
+    navItems.push({
+      path: '/admin/banners',
+      label: 'Quản lý Banner',
+      description: 'Thiết lập banner trang chủ',
+      icon: <Layers size={20} />,
+    })
+    navItems.push({
+      path: '/admin/employees',
+      label: 'Nhân viên',
+      description: 'Quản lý nhân viên chi nhánh',
+      icon: <UserCheck size={20} />,
+    })
+  }
+
+  if (user?.role === 'admin') {
+    navItems.push({
+      path: '/admin/categories',
+      label: 'Danh mục',
+      description: 'Quản lý danh mục sản phẩm',
+      icon: <Layers size={20} />,
+    })
+    navItems.push({
+      path: '/admin/users',
+      label: 'Thành viên',
+      description: 'Quản lý người dùng',
+      icon: <Users size={20} />,
+    })
+    navItems.push({
+      path: '/admin/settings',
+      label: 'Cài đặt hệ thống',
+      description: 'Thông số vận hành hệ thống',
+      icon: <Settings2 size={20} />,
+    })
+  }
 
   const handleLogout = async () => {
     try {

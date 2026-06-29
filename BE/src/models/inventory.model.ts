@@ -9,6 +9,9 @@ export interface IInventory extends Document {
   lastImportCost?: number;
   lowStockThreshold: number;
   updatedBy?: Types.ObjectId;
+  appliedReturnIds: Types.ObjectId[];
+  deductedOrderIds: Types.ObjectId[];
+  restoredOrderIds: Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,6 +25,21 @@ const InventorySchema = new Schema<IInventory>(
     lastImportCost: { type: Number, min: 0 },
     lowStockThreshold: { type: Number, required: true, min: 0, default: 10 },
     updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    appliedReturnIds: {
+      type: [{ type: Schema.Types.ObjectId, ref: 'ReturnRequest' }],
+      default: [],
+      select: false,
+    },
+    deductedOrderIds: {
+      type: [{ type: Schema.Types.ObjectId, ref: 'Order' }],
+      default: [],
+      select: false,
+    },
+    restoredOrderIds: {
+      type: [{ type: Schema.Types.ObjectId, ref: 'Order' }],
+      default: [],
+      select: false,
+    },
   },
   {
     timestamps: true,

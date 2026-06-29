@@ -21,7 +21,7 @@ export const userService = {
     const formData = new FormData()
     formData.append('avatar', file)
 
-    const response = await apiClient.patch('/api/users/avatar', formData, {
+    const response = await apiClient.patch('/api/users/me/avatar', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

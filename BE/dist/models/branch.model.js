@@ -46,6 +46,12 @@ const BranchSchema = new mongoose_1.Schema({
         enum: ['active', 'inactive'],
         default: 'active',
     },
+    openingTime: { type: String, default: '08:00' },
+    closingTime: { type: String, default: '22:00' },
+    activeDays: {
+        type: [String],
+        default: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+    },
 }, {
     timestamps: true,
     versionKey: false,

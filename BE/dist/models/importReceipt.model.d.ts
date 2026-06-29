@@ -4,6 +4,8 @@ export interface IImportReceiptItem {
     quantity: number;
     unitCost: number;
     subtotal: number;
+    appliedInventoryQuantity?: number;
+    appliedAverageCost?: number;
 }
 export interface IImportReceipt extends Document {
     _id: Types.ObjectId;
@@ -14,6 +16,11 @@ export interface IImportReceipt extends Document {
     items: IImportReceiptItem[];
     totalCost: number;
     createdBy: Types.ObjectId;
+    updatedBy?: Types.ObjectId;
+    status: 'active' | 'adjusting' | 'cancelled';
+    mutationLockedAt?: Date;
+    cancelledBy?: Types.ObjectId;
+    cancelledAt?: Date;
     createdAt: Date;
     updatedAt: Date;
 }

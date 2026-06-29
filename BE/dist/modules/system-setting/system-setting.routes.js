@@ -1,0 +1,24 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.publicSystemSettingRoutes = exports.adminSystemSettingRoutes = void 0;
+const express_1 = require("express");
+const system_setting_controller_1 = require("./system-setting.controller");
+const auth_middleware_1 = require("../../middlewares/auth.middleware");
+const role_middleware_1 = require("../../middlewares/role.middleware");
+const system_setting_validation_1 = require("./system-setting.validation");
+const adminRouter = (0, express_1.Router)();
+exports.adminSystemSettingRoutes = adminRouter;
+const publicRouter = (0, express_1.Router)();
+exports.publicSystemSettingRoutes = publicRouter;
+const adminRoles = ['admin'];
+publicRouter.get('/public', system_setting_controller_1.systemSettingController.getPublic);
+adminRouter.use(auth_middleware_1.authenticate);
+adminRouter.use((0, role_middleware_1.authorize)(...adminRoles));
+adminRouter.get('/', (0, system_setting_validation_1.validate)(system_setting_validation_1.listSettingsSchema), system_setting_controller_1.systemSettingController.list);
+adminRouter.get('/groups', system_setting_controller_1.systemSettingController.getByGroup);
+adminRouter.patch('/bulk', (0, system_setting_validation_1.validate)(system_setting_validation_1.bulkUpdateSettingsSchema), system_setting_controller_1.systemSettingController.bulkUpdate);
+adminRouter.get('/:key', (0, system_setting_validation_1.validate)(system_setting_validation_1.settingKeyParamSchema), system_setting_controller_1.systemSettingController.getByKey);
+adminRouter.post('/', (0, system_setting_validation_1.validate)(system_setting_validation_1.createSettingSchema), system_setting_controller_1.systemSettingController.create);
+adminRouter.patch('/:key', (0, system_setting_validation_1.validate)(system_setting_validation_1.updateSettingSchema), system_setting_controller_1.systemSettingController.update);
+adminRouter.delete('/:key', (0, system_setting_validation_1.validate)(system_setting_validation_1.settingKeyParamSchema), system_setting_controller_1.systemSettingController.delete);
+//# sourceMappingURL=system-setting.routes.js.map

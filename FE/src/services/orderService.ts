@@ -13,17 +13,29 @@ export const orderService = {
 
   // Get all orders for the current customer (paginated, filterable by status)
   getOrders: async (params?: { page?: number; limit?: number; status?: string }): Promise<ApiResponse<OrdersListResponse>> => {
-    const response = await apiClient.get('/api/orders', { params })
+    const response = await apiClient.get('/api/orders/my', { params })
     return response.data
   },
 
   // Get order details by ID for customer
   getOrderById: async (orderId: string): Promise<ApiResponse<Order>> => {
-    const response = await apiClient.get(`/api/orders/${orderId}`)
+    const response = await apiClient.get(`/api/orders/my/${orderId}`)
     return response.data
   },
 
-  // Place a new order (customer checkout)
+  // Cancel customer order (only if status is pending)
+  cancelOrder: async (orderId: string, reason?: string): Promise<ApiResponse<Order>> => {
+    const response = await apiClient.patch(`/api/orders/my/${orderId}/cancel`, { reason })
+    return response.data
+  },
+
+  // Track customer order timeline
+  trackOrder: async (orderId: string): Promise<ApiResponse<{ order: Order; tracking: any[]; currentStatus: string }>> => {
+    const response = await apiClient.get(`/api/orders/my/${orderId}/tracking`)
+    return response.data
+  },
+
+  // Place a new order (customer checkout - BE implementation pending)
   placeOrder: async (data: PlaceOrderInput): Promise<ApiResponse<Order>> => {
     const response = await apiClient.post('/api/orders', data)
     return response.data
@@ -32,7 +44,7 @@ export const orderService = {
   // ── BACK-OFFICE ADMIN PORTAL API CALLS ──
 
   // Get all orders for admin, filterable by branchId and status
-  getAdminOrders: async (params?: { branchId?: string; status?: string }): Promise<ApiResponse<AdminOrder[]>> => {
+  getAdminOrders: async (params?: { branchId?: string; status?: string; page?: number; limit?: number }): Promise<ApiResponse<{ orders: AdminOrder[]; pagination?: any }>> => {
     const response = await apiClient.get('/api/orders', { params })
     const raw = response.data
     // Backend wraps response in: { success, data: { orders: [...] } } or { success, data: [...] }
@@ -61,7 +73,10 @@ export const orderService = {
     return {
       success: raw.success,
       message: raw.message,
-      data: normalized,
+      data: {
+        orders: normalized,
+        pagination: raw.data?.pagination,
+      },
     }
   },
 

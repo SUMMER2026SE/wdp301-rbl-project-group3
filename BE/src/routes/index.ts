@@ -1,22 +1,48 @@
 import { Router } from 'express';
 import authRoutes from '../modules/auth/auth.routes';
 import userRoutes from '../modules/user/user.routes';
+import adminUserRoutes from '../modules/admin-user/admin-user.routes';
 import branchRoutes from '../modules/branch/branch.routes';
+import categoryRoutes from '../modules/category/category.routes';
 import productRoutes from '../modules/product/product.routes';
 import inventoryRoutes from '../modules/inventory/inventory.routes';
 import orderRoutes from '../modules/order/order.routes';
+import statisticsRoutes from '../modules/statistics/statistics.routes';
 import cartRoutes from '../modules/cart/cart.routes';
+import addressRoutes from '../modules/address/address.routes';
 import promotionRoutes from '../modules/promotion/promotion.routes';
+import employeeRoutes from '../modules/employee/employee.routes';
+import invoiceRoutes from '../modules/invoice/invoice.routes';
+import returnRoutes from '../modules/return/return.routes';
+import flashSaleRoutes from '../modules/flash-sale/flash-sale.routes';
+import bannerRoutes from '../modules/banner/banner.routes';
+import {
+  adminSystemSettingRoutes,
+  publicSystemSettingRoutes,
+} from '../modules/system-setting/system-setting.routes';
+import crawlerRoutes from '../modules/crawler/crawler.routes';
 
 const router = Router();
 
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
+router.use('/admin/users', adminUserRoutes);
 router.use('/branches', branchRoutes);
+router.use('/categories', categoryRoutes);
 router.use('/products', productRoutes);
 router.use('/inventory', inventoryRoutes);
 router.use('/orders', orderRoutes);
+router.use('/statistics', statisticsRoutes);
 router.use('/cart', cartRoutes);
+router.use('/addresses', addressRoutes);
 router.use('/promotions', promotionRoutes);
+router.use('/employees', employeeRoutes);
+router.use('/invoices', invoiceRoutes);
+router.use('/returns', returnRoutes);
+router.use('/flash-sales', flashSaleRoutes);
+router.use('/banners', bannerRoutes);
+router.use('/settings', publicSystemSettingRoutes);
+router.use('/admin/settings', adminSystemSettingRoutes);
+router.use('/crawler', crawlerRoutes);
 
 export default router;

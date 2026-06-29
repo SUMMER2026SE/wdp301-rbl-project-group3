@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google'
 import { useAuth } from '@hooks/useAuth'
@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 import '@/styles/login.css'
 
-type UserRole = 'customer' | 'management'
+
 
 type ApiError = {
   response?: {
@@ -40,8 +40,19 @@ export const LoginPage = () => {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
-  const [selectedRole, setSelectedRole] = useState<UserRole>('customer')
   const [error, setError] = useState('')
+  const [storeName, setStoreName] = useState('PMAN-Mart')
+
+  useEffect(() => {
+    fetch('/api/settings/public')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.success && data?.data?.settings?.store_name) {
+          setStoreName(data.data.settings.store_name)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const BACK_OFFICE_ROLES = ['admin', 'branch_manager', 'staff']
 
@@ -75,9 +86,13 @@ export const LoginPage = () => {
         return
       }
 
-      await authService.googleLogin(credentialResponse.credential)
-      await authService.getCurrentUser()
-      navigate('/')
+      const response = await authService.googleLogin(credentialResponse.credential)
+      const role = response?.data?.user?.role
+      if (role && BACK_OFFICE_ROLES.includes(role)) {
+        navigate('/admin')
+      } else {
+        navigate('/')
+      }
       window.location.reload()
     } catch (err) {
       setError(getErrorMessage(err, 'Google login failed'))
@@ -139,7 +154,7 @@ export const LoginPage = () => {
               <ShoppingBasket size={16} className="text-white" />
             </div>
             <span className="font-headline-sm text-headline-sm text-primary font-bold">
-              PMAN-Mart
+              {storeName}
             </span>
           </div>
 
@@ -170,7 +185,7 @@ export const LoginPage = () => {
                 <ShoppingBasket size={20} className="text-white" />
               </div>
               <span className="font-headline-md text-headline-md text-primary font-black tracking-tight">
-                PMAN-Mart
+                {storeName}
               </span>
             </div>
 
@@ -180,34 +195,8 @@ export const LoginPage = () => {
                 Welcome Back
               </h2>
               <p className="font-body-md text-body-md text-on-surface-variant">
-                Please select your role and sign in to access your dashboard.
+                Sign in to your account to access your dashboard.
               </p>
-            </div>
-
-            {/* Role Selector */}
-            <div className="flex p-1 bg-surface-container-low rounded-xl mb-8">
-              <button
-                type="button"
-                onClick={() => setSelectedRole('customer')}
-                className={`flex-1 py-2.5 rounded-lg font-label-lg text-label-lg transition-all ${
-                  selectedRole === 'customer'
-                    ? 'bg-primary-container text-on-primary-container shadow-sm'
-                    : 'text-on-surface-variant hover:text-on-surface'
-                }`}
-              >
-                Customer Portal
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedRole('management')}
-                className={`flex-1 py-2.5 rounded-lg font-label-lg text-label-lg transition-all ${
-                  selectedRole === 'management'
-                    ? 'bg-primary-container text-on-primary-container shadow-sm'
-                    : 'text-on-surface-variant hover:text-on-surface'
-                }`}
-              >
-                Management System
-              </button>
             </div>
 
             {/* Error Message */}
@@ -334,19 +323,17 @@ export const LoginPage = () => {
             </div>
 
             {/* Footer */}
-            {selectedRole === 'customer' && (
-              <div className="mt-10 text-center transition-opacity duration-300">
-                <p className="font-body-md text-body-md text-on-surface-variant">
-                  New to our supermarket?{' '}
-                  <Link
-                    to="/register"
-                    className="text-primary font-bold hover:underline ml-1"
-                  >
-                    Create an account
-                  </Link>
-                </p>
-              </div>
-            )}
+            <div className="mt-10 text-center transition-opacity duration-300">
+              <p className="font-body-md text-body-md text-on-surface-variant">
+                New to our supermarket?{' '}
+                <Link
+                  to="/register"
+                  className="text-primary font-bold hover:underline ml-1"
+                >
+                  Create an account
+                </Link>
+              </p>
+            </div>
           </div>
         </div>
 

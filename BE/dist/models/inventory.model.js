@@ -43,6 +43,21 @@ const InventorySchema = new mongoose_1.Schema({
     lastImportCost: { type: Number, min: 0 },
     lowStockThreshold: { type: Number, required: true, min: 0, default: 10 },
     updatedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
+    appliedReturnIds: {
+        type: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'ReturnRequest' }],
+        default: [],
+        select: false,
+    },
+    deductedOrderIds: {
+        type: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'Order' }],
+        default: [],
+        select: false,
+    },
+    restoredOrderIds: {
+        type: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'Order' }],
+        default: [],
+        select: false,
+    },
 }, {
     timestamps: true,
     versionKey: false,

@@ -1,9 +1,13 @@
-import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, useMemo, type MouseEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@hooks/useAuth'
 import { useCart } from '@/contexts/CartContext'
 import { productService } from '@services/productService'
-import type { Product } from '@/types'
+import { branchService } from '@services/branchService'
+import { categoryService } from '@services/categoryService'
+import { flashSaleService } from '@services/flashSaleService'
+import { bannerService } from '@services/bannerService'
+import type { Product, Branch, Category as DbCategory, Banner } from '@/types'
 import {
   ArrowRight,
   Camera,
@@ -32,6 +36,7 @@ import {
   WalletCards,
   Zap,
   LogOut,
+  X,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -58,27 +63,6 @@ const productImageMap: Record<string, string> = {
   'Young Green Asparagus': '/assets/winmart/asparagus.png',
   'Velvet Greek Yogurt': '/assets/winmart/greek-yogurt.png',
   'Fresh Whole Sea Bass': '/assets/winmart/sea-bass.png',
-}
-
-type FlashSaleProduct = {
-  discount: string
-  image: string
-  alt: string
-  title: string
-  unit: string
-  price: string
-  originalPrice: string
-}
-
-type RecommendedProduct = {
-  image: string
-  alt: string
-  rating: string
-  reviews: string
-  title: string
-  unit: string
-  price: string
-  hasFavorite?: boolean
 }
 
 type CountdownTime = {
@@ -116,6 +100,22 @@ const iconMap: Record<string, LucideIcon> = {
   shopping_cart: ShoppingCart,
   social_leaderboard: Trophy,
   star: Star,
+  close: X,
+}
+
+const categoryIconMap: Record<string, string> = {
+  'DO-UONG': 'local_drink',
+  'THUC-AN-NHE': 'bakery_dining',
+  'FRUITS': 'eco',
+  'MEAT': 'restaurant',
+  'DAIRY': 'egg',
+  'COOKING': 'outdoor_grill',
+  'Beverages': 'local_drink',
+  'Snacks & Bakery': 'bakery_dining',
+  'Fruits & Vegetables': 'eco',
+  'Fresh Meat & Seafood': 'restaurant',
+  'Dairy & Eggs': 'egg',
+  'Cooking Essentials': 'outdoor_grill',
 }
 
 const categories: Category[] = [
@@ -127,117 +127,26 @@ const categories: Category[] = [
   { icon: 'outdoor_grill', label: 'Cooking Essentials' },
 ]
 
-const flashSaleProducts: FlashSaleProduct[] = [
-  {
-    discount: '-25%',
-    image: '/assets/winmart/tomatoes.png',
-    alt: 'Fresh organic tomatoes on the vine',
-    title: 'Fresh Organic Tomato',
-    unit: '500g / box',
-    price: '$1.20',
-    originalPrice: '$1.60',
-  },
-  {
-    discount: '-15%',
-    image: '/assets/winmart/ribeye.png',
-    alt: 'Premium ribeye steak with rosemary',
-    title: 'Premium Ribeye Steak',
-    unit: '300g / pack',
-    price: '$8.50',
-    originalPrice: '$10.00',
-  },
-  {
-    discount: '-40%',
-    image: '/assets/winmart/berries.png',
-    alt: 'Mixed berry bowl',
-    title: 'Mixed Berry Bowl',
-    unit: '250g / box',
-    price: '$4.20',
-    originalPrice: '$7.00',
-  },
-  {
-    discount: '-10%',
-    image: '/assets/winmart/milk.png',
-    alt: 'Whole organic milk bottle',
-    title: 'Whole Organic Milk',
-    unit: '1L / bottle',
-    price: '$2.10',
-    originalPrice: '$2.35',
-  },
-  {
-    discount: '-20%',
-    image: '/assets/winmart/sourdough.png',
-    alt: 'Artisan sourdough loaf',
-    title: 'Artisan Sourdough',
-    unit: '450g / loaf',
-    price: '$3.60',
-    originalPrice: '$4.50',
-  },
-]
-
-const recommendedProducts: RecommendedProduct[] = [
-  {
-    image: '/assets/winmart/carrots.png',
-    alt: 'Organic carrots with green tops',
-    rating: '4.8',
-    reviews: '120',
-    title: 'Organic Bunch Carrots',
-    unit: '/ kg',
-    price: '$2.45',
-    hasFavorite: true,
-  },
-  {
-    image: '/assets/winmart/sparkling-water.png',
-    alt: 'Sparkling water bottle on ice',
-    rating: '4.9',
-    reviews: '85',
-    title: 'Pure Alpine Sparkle',
-    unit: '750ml / bottle',
-    price: '$1.99',
-  },
-  {
-    image: '/assets/winmart/asparagus.png',
-    alt: 'Fresh green asparagus bunch',
-    rating: '4.7',
-    reviews: '240',
-    title: 'Young Green Asparagus',
-    unit: '250g / bunch',
-    price: '$3.50',
-  },
-  {
-    image: '/assets/winmart/greek-yogurt.png',
-    alt: 'Greek yogurt with honey and walnuts',
-    rating: '4.9',
-    reviews: '310',
-    title: 'Velvet Greek Yogurt',
-    unit: '500g / tub',
-    price: '$4.15',
-  },
-  {
-    image: '/assets/winmart/sea-bass.png',
-    alt: 'Fresh whole sea bass on ice',
-    rating: '5.0',
-    reviews: '42',
-    title: 'Fresh Whole Sea Bass',
-    unit: '/ kg',
-    price: '$12.50',
-  },
-]
-
-const filterTabs = ['All', 'Fresh Food', 'Drinks', 'Snacks']
-
 const heroImage = '/assets/winmart/hero-market.png'
-
 const citrusImage = '/assets/winmart/citrus.png'
-
 const bbqImage = '/assets/winmart/bbq.png'
 
 
-const getCountdownTime = (): CountdownTime => {
-  const now = new Date()
-  const hours = 23 - now.getHours()
-  const minutes = 59 - now.getMinutes()
-  const seconds = 59 - now.getSeconds()
+const getCountdownTime = (endDateStr?: string): CountdownTime => {
+  if (!endDateStr) {
+    return { hours: '00', minutes: '00', seconds: '00' }
+  }
+  const end = new Date(endDateStr).getTime()
+  const now = new Date().getTime()
+  const diff = end - now
+
+  if (diff <= 0) {
+    return { hours: '00', minutes: '00', seconds: '00' }
+  }
+
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000)
 
   return {
     hours: hours.toString().padStart(2, '0'),
@@ -261,113 +170,325 @@ const Icon = ({ children, className = '', filled = false }: IconProps) => {
   )
 }
 
-const FlashSaleCard = ({ product, onAddToCart }: { product: FlashSaleProduct; onAddToCart?: () => void }) => (
-  <article className="bg-surface-container-lowest rounded-xl p-4 soft-lift group hover:scale-[0.98] transition-all cursor-pointer relative border border-transparent hover:border-primary/20">
-    <div className="absolute top-2 left-2 bg-secondary-fixed text-on-secondary-fixed text-[10px] font-bold px-2 py-1 rounded-full z-10">
-      {product.discount}
-    </div>
-    <div className="aspect-square bg-surface-container-low rounded-lg mb-4 overflow-hidden">
-      <img
-        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-        src={product.image}
-        alt={product.alt}
-      />
-    </div>
-    <h3 className="font-label-lg text-label-lg mb-1 truncate">{product.title}</h3>
-    <p className="text-[12px] text-on-surface-variant mb-3">{product.unit}</p>
-    <div className="flex justify-between items-center">
-      <div className="flex flex-col">
-        <span className="text-secondary font-bold text-headline-sm">{product.price}</span>
-        <span className="text-[10px] line-through text-on-surface-variant opacity-60">
-          {product.originalPrice}
-        </span>
-      </div>
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          onAddToCart?.()
-        }}
-        className="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center beveled-btn hover:bg-primary hover:text-white transition-colors"
-        type="button"
-        aria-label={`Add ${product.title} to cart`}
-      >
-        <Icon>add_shopping_cart</Icon>
-      </button>
-    </div>
-  </article>
-)
+const getCategoryKeywords = (label: string): string[] => {
+  switch (label) {
+    case 'Fruits & Vegetables':
+      return ['tomato', 'carrot', 'asparagus', 'fruit', 'vegetable', 'onion', 'potato', 'cabbage', 'apple', 'banana', 'orange', 'lemon', 'berry', 'berries', 'citrus']
+    case 'Fresh Meat & Seafood':
+      return ['steak', 'ribeye', 'meat', 'beef', 'pork', 'chicken', 'fish', 'bass', 'salmon', 'seafood', 'shrimp']
+    case 'Dairy & Eggs':
+      return ['milk', 'egg', 'yogurt', 'cheese', 'butter', 'dairy']
+    case 'Beverages':
+    case 'Drinks':
+      return ['water', 'sparkle', 'drink', 'juice', 'soda', 'coke', 'tea', 'coffee']
+    case 'Snacks & Bakery':
+    case 'Snacks':
+      return ['sourdough', 'bread', 'croissant', 'snack', 'bakery', 'cake', 'cookie', 'chip']
+    case 'Cooking Essentials':
+      return ['oil', 'salt', 'sauce', 'pepper', 'sugar', 'vinegar', 'spice']
+    case 'Fresh Food':
+      return ['tomato', 'carrot', 'asparagus', 'fruit', 'vegetable', 'onion', 'potato', 'cabbage', 'apple', 'banana', 'orange', 'lemon', 'berry', 'berries', 'citrus', 'steak', 'ribeye', 'meat', 'beef', 'pork', 'chicken', 'fish', 'bass', 'salmon', 'seafood', 'shrimp']
+    default:
+      return []
+  }
+}
 
-const RecommendedCard = ({ product, onAddToCart }: { product: RecommendedProduct; onAddToCart?: () => void }) => (
-  <article className="bg-surface-container-lowest rounded-xl p-4 soft-lift border border-transparent hover:border-primary/20 group transition-all">
-    <div className="aspect-square bg-surface-container-low rounded-lg mb-4 relative overflow-hidden">
-      <img className="w-full h-full object-cover" src={product.image} alt={product.alt} />
-      {product.hasFavorite ? (
+const formatVND = (num: number) => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+  }).format(num)
+}
+
+const FlashSaleCard = ({ 
+  product, 
+  flashSalePrice, 
+  onAddToCart 
+}: { 
+  product: any; 
+  flashSalePrice: number; 
+  onAddToCart?: () => void 
+}) => {
+  const title = product.productName || product.name
+  const price = formatVND(flashSalePrice)
+  const originalPrice = formatVND(product.salePrice || product.price || 0)
+  
+  const originalVal = product.salePrice || product.price || 0
+  const discountPercent = originalVal > 0 
+    ? Math.round(((originalVal - flashSalePrice) / originalVal) * 100)
+    : 20
+  const discount = `-${discountPercent}%`
+  
+  const unit = product.unit || 'unit'
+  const image = product.imageUrl || productImageMap[title] || '/assets/winmart/tomatoes.png'
+
+  return (
+    <article className="bg-surface-container-lowest rounded-xl p-4 soft-lift group hover:scale-[0.98] transition-all cursor-pointer relative border border-transparent hover:border-primary/20">
+      <div className="absolute top-2 left-2 bg-secondary-fixed text-on-secondary-fixed text-[10px] font-bold px-2 py-1 rounded-full z-10">
+        {discount}
+      </div>
+      <div className="aspect-square bg-surface-container-low rounded-lg mb-4 overflow-hidden">
+        <img
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+          src={image}
+          alt={title}
+        />
+      </div>
+      <h3 className="font-label-lg text-label-lg mb-1 truncate" title={title}>{title}</h3>
+      <p className="text-[12px] text-on-surface-variant mb-3">{unit}</p>
+      <div className="flex justify-between items-center">
+        <div className="flex flex-col">
+          <span className="text-secondary font-bold text-headline-sm">{price}</span>
+          <span className="text-[10px] line-through text-on-surface-variant opacity-60">
+            {originalPrice}
+          </span>
+        </div>
         <button
-          className="absolute bottom-2 right-2 bg-white/90 p-2 rounded-full shadow-md text-primary opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0"
+          onClick={(e) => {
+            e.stopPropagation()
+            onAddToCart?.()
+          }}
+          className="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center beveled-btn hover:bg-primary hover:text-white transition-colors"
           type="button"
-          aria-label={`Favorite ${product.title}`}
+          aria-label={`Add ${title} to cart`}
         >
-          <Icon>favorite</Icon>
+          <Icon>add_shopping_cart</Icon>
         </button>
-      ) : null}
-    </div>
-    <div className="flex items-center gap-1 mb-1">
-      <Icon className="text-tertiary w-[14px] h-[14px]" filled>
-        star
-      </Icon>
-      <span className="text-[12px] font-bold">{product.rating}</span>
-      <span className="text-[12px] text-on-surface-variant opacity-60">({product.reviews})</span>
-    </div>
-    <h3 className="font-label-lg text-label-lg mb-1 truncate">{product.title}</h3>
-    <p className="text-[12px] text-on-surface-variant mb-4">{product.unit}</p>
-    <div className="flex justify-between items-center">
-      <span className="text-primary font-bold text-headline-sm">{product.price}</span>
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          onAddToCart?.()
-        }}
-        className="flex items-center justify-center gap-1 bg-primary text-white px-3 py-1.5 rounded-lg text-[12px] font-bold beveled-btn hover:bg-primary-container transition-all"
-        type="button"
-        aria-label={`Add ${product.title} to cart`}
-      >
-        <Icon className="w-[18px] h-[18px]">add</Icon> Add
-      </button>
-    </div>
-  </article>
-)
+      </div>
+    </article>
+  )
+}
+
+const RecommendedCard = ({ product, onAddToCart }: { product: any; onAddToCart?: () => void }) => {
+  const title = product.productName || product.name
+  const price = formatVND(product.salePrice || product.price || 0)
+  const unit = product.unit || 'unit'
+  const image = product.imageUrl || productImageMap[title] || '/assets/winmart/tomatoes.png'
+  const rating = '4.8'
+  const reviews = '15'
+  const hasFavorite = true
+
+  return (
+    <article className="bg-surface-container-lowest rounded-xl p-4 soft-lift border border-transparent hover:border-primary/20 group transition-all">
+      <div className="aspect-square bg-surface-container-low rounded-lg mb-4 relative overflow-hidden">
+        <img className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" src={image} alt={title} />
+        {hasFavorite ? (
+          <button
+            className="absolute bottom-2 right-2 bg-white/90 p-2 rounded-full shadow-md text-primary opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0"
+            type="button"
+            aria-label={`Favorite ${title}`}
+          >
+            <Icon>favorite</Icon>
+          </button>
+        ) : null}
+      </div>
+      <div className="flex items-center gap-1 mb-1">
+        <Icon className="text-tertiary w-[14px] h-[14px]" filled>
+          star
+        </Icon>
+        <span className="text-[12px] font-bold">{rating}</span>
+        <span className="text-[12px] text-on-surface-variant opacity-60">({reviews})</span>
+      </div>
+      <h3 className="font-label-lg text-label-lg mb-1 truncate" title={title}>{title}</h3>
+      <p className="text-[12px] text-on-surface-variant mb-4">{unit}</p>
+      <div className="flex justify-between items-center">
+        <span className="text-primary font-bold text-headline-sm">{price}</span>
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onAddToCart?.()
+          }}
+          className="flex items-center justify-center gap-1 bg-primary text-white px-3 py-1.5 rounded-lg text-[12px] font-bold beveled-btn hover:bg-primary-container transition-all"
+          type="button"
+          aria-label={`Add ${title} to cart`}
+        >
+          <Icon className="w-[18px] h-[18px]">add</Icon> Add
+        </button>
+      </div>
+    </article>
+  )
+}
 
 export const HomePage = () => {
   const navigate = useNavigate()
   const { user, isAuthenticated, logout } = useAuth()
-  const { cart, addToCart, updateQuantity, removeItem, clearCart } = useCart()
-  const [countdown, setCountdown] = useState<CountdownTime>(() => getCountdownTime())
+  const { cart, addToCart, updateQuantity, removeItem, clearCart, refreshCart } = useCart()
+  const [activeFlashSale, setActiveFlashSale] = useState<any | null>(null)
+  const [countdown, setCountdown] = useState<CountdownTime>({ hours: '00', minutes: '00', seconds: '00' })
   const heroImageRef = useRef<HTMLImageElement | null>(null)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [dbProducts, setDbProducts] = useState<Product[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState<string | DbCategory>('All')
+  const [hasLoadedProducts, setHasLoadedProducts] = useState(false)
+  const [dbCategories, setDbCategories] = useState<DbCategory[]>([])
+  const [publicSettings, setPublicSettings] = useState<Record<string, any>>({})
+
+  const [activeBanners, setActiveBanners] = useState<Banner[]>([])
+  const [currentBannerIndex, setCurrentBannerIndex] = useState(0)
+  const currentBanner = activeBanners[currentBannerIndex]
+
+  // Branch states
+  const [branches, setBranches] = useState<Branch[]>([])
+  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null)
+  const [isBranchModalOpen, setIsBranchModalOpen] = useState(false)
+  const [branchSearch, setBranchSearch] = useState('')
+
+  const fetchPublicSettings = async () => {
+    try {
+      const res = await fetch('/api/settings/public')
+      const data = await res.json()
+      if (data?.success && data?.data?.settings) {
+        setPublicSettings(data.data.settings)
+      }
+    } catch (err) {
+      console.error('Failed to fetch public settings:', err)
+    }
+  }
+
+  const fetchDbProducts = async (keyword?: string, branchId?: string) => {
+    setHasLoadedProducts(false)
+    try {
+      const activeBranchId = branchId || selectedBranch?._id
+      const res = await productService.getProducts({ 
+        keyword, 
+        status: 'active',
+        branchId: activeBranchId
+      })
+      if (res.success) {
+        setDbProducts(res.data)
+      }
+    } catch (err) {
+      console.error('Failed to fetch products:', err)
+    } finally {
+      setHasLoadedProducts(true)
+    }
+  }
+
+  const fetchActiveFlashSale = async (branchId?: string) => {
+    try {
+      const activeBranchId = branchId || selectedBranch?._id
+      const res = await flashSaleService.getActiveFlashSale(activeBranchId)
+      if (res.success && res.data) {
+        setActiveFlashSale(res.data.flashSale)
+      } else {
+        setActiveFlashSale(null)
+      }
+    } catch (err) {
+      console.error('Failed to fetch active flash sale:', err)
+      setActiveFlashSale(null)
+    }
+  }
+
+  const fetchBranches = async () => {
+    try {
+      const res = await branchService.getBranches({ status: 'active' })
+      if (res.success && res.data) {
+        setBranches(res.data)
+        let activeBranch = res.data[0]
+        const savedBranchStr = localStorage.getItem('selectedBranch')
+        if (savedBranchStr) {
+          try {
+            const parsed = JSON.parse(savedBranchStr)
+            const found = res.data.find((b) => b._id === parsed._id)
+            if (found) {
+              activeBranch = found
+            }
+          } catch (e) {
+            console.error('Failed to parse saved branch', e)
+          }
+        }
+        setSelectedBranch(activeBranch)
+        localStorage.setItem('selectedBranch', JSON.stringify(activeBranch))
+        fetchDbProducts(searchQuery, activeBranch?._id)
+        fetchActiveFlashSale(activeBranch?._id)
+      }
+    } catch (err) {
+      console.error('Failed to fetch branches:', err)
+    }
+  }
+
+  const fetchCategories = async () => {
+    try {
+      const res = await categoryService.getCategories({ status: 'active' })
+      if (res.success && res.data) {
+        setDbCategories(res.data)
+      }
+    } catch (err) {
+      console.error('Failed to fetch categories:', err)
+    }
+  }
+
+  const fetchActiveBanners = async () => {
+    try {
+      const res = await bannerService.getActiveBanners()
+      if (res.success && res.data?.banners) {
+        setActiveBanners(res.data.banners)
+      }
+    } catch (err) {
+      console.error('Failed to fetch banners:', err)
+    }
+  }
 
   useEffect(() => {
-    const fetchDbProducts = async () => {
-      try {
-        const res = await productService.getProducts()
-        if (res.success) {
-          setDbProducts(res.data)
-        }
-      } catch (err) {
-        console.error('Failed to fetch products:', err)
-      }
-    }
-    fetchDbProducts()
+    fetchBranches()
+    fetchCategories()
+    fetchActiveBanners()
+    fetchPublicSettings()
   }, [])
+
+  useEffect(() => {
+    if (activeBanners.length <= 1) return
+    const interval = setInterval(() => {
+      setCurrentBannerIndex((prev) => (prev + 1) % activeBanners.length)
+    }, 6000)
+    return () => clearInterval(interval)
+  }, [activeBanners])
+
+  const filteredBranches = useMemo(() => {
+    const kw = branchSearch.trim().toLowerCase()
+    if (!kw) return branches
+    return branches.filter(
+      (b) =>
+        b.name.toLowerCase().includes(kw) ||
+        (b.address && b.address.toLowerCase().includes(kw)) ||
+        (b.code && b.code.toLowerCase().includes(kw))
+    )
+  }, [branches, branchSearch])
+
+  const handleSelectBranch = (branch: Branch) => {
+    setSelectedBranch(branch)
+    localStorage.setItem('selectedBranch', JSON.stringify(branch))
+    setIsBranchModalOpen(false)
+    fetchDbProducts(searchQuery, branch._id)
+    fetchActiveFlashSale(branch._id)
+    refreshCart()
+  }
+
+  const filteredRecommendedProducts = useMemo(() => {
+    if (hasLoadedProducts && dbProducts.length === 0) return []
+
+    if (selectedCategory === 'All') return dbProducts
+
+    if (typeof selectedCategory === 'object' && selectedCategory !== null) {
+      return dbProducts.filter((product) => product.categoryId === selectedCategory._id)
+    }
+
+    const keywords = getCategoryKeywords(selectedCategory)
+    return dbProducts.filter((product) => {
+      const name = (product.productName || product.name || '').toLowerCase()
+      return keywords.some((kw) => name.includes(kw))
+    })
+  }, [dbProducts, selectedCategory, hasLoadedProducts])
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
-      setCountdown(getCountdownTime())
+      setCountdown(getCountdownTime(activeFlashSale?.endDate))
     }, 1000)
 
     return () => window.clearInterval(intervalId)
-  }, [])
+  }, [activeFlashSale])
 
   const handleHeroMouseMove = (event: MouseEvent<HTMLElement>) => {
     if (!heroImageRef.current) {
@@ -403,7 +524,7 @@ export const HomePage = () => {
             <Icon className="w-[18px] h-[18px]">location_on</Icon> Store Locator
           </span>
           <span className="hidden sm:flex items-center gap-1">
-            <Icon className="w-[18px] h-[18px]">phone</Icon> Hotline: 1-800-FRESH
+            <Icon className="w-[18px] h-[18px]">phone</Icon> Hotline: {publicSettings.hotline || '1-800-FRESH'}
           </span>
         </div>
         <div className="hidden md:flex items-center gap-6">
@@ -422,13 +543,20 @@ export const HomePage = () => {
       <header className="sticky top-10 w-full bg-surface-container-lowest z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 flex flex-wrap md:flex-nowrap justify-start md:justify-between items-center gap-4 md:gap-8">
           <div className="flex items-center gap-8">
-            <h1 className="font-headline-lg text-headline-lg font-black text-primary">PMAN-Mart</h1>
+            <h1 className="font-headline-lg text-headline-lg font-black text-primary">
+              {publicSettings.store_name || 'PMAN-Mart'}
+            </h1>
             <div className="hidden xl:flex flex-col">
               <span className="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">
                 Deliver from
               </span>
-              <div className="flex items-center text-primary font-bold cursor-pointer">
-                <span className="text-body-md">PMAN-Mart Nguyen Hue</span>
+              <div 
+                onClick={() => setIsBranchModalOpen(true)}
+                className="flex items-center text-primary font-bold cursor-pointer hover:opacity-80 transition-all"
+              >
+                <span className="text-body-md truncate max-w-[180px]">
+                  {selectedBranch ? selectedBranch.name : 'Chọn chi nhánh'}
+                </span>
                 <Icon>expand_more</Icon>
               </div>
             </div>
@@ -437,13 +565,24 @@ export const HomePage = () => {
           <div className="order-3 w-full md:order-none md:flex-1 md:max-w-2xl relative group">
             <input
               className="w-full bg-surface-container-low border-none rounded-full py-3 px-6 pl-12 focus:ring-2 focus:ring-primary transition-all"
-              placeholder="What are you looking for today?"
+              placeholder="What are you looking for today? (Press Enter to search)"
               type="text"
               aria-label="Search products"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  fetchDbProducts(searchQuery)
+                }
+              }}
             />
-            <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">
-              search
-            </Icon>
+            <button
+              onClick={() => fetchDbProducts(searchQuery)}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
+              type="button"
+            >
+              <Icon>search</Icon>
+            </button>
           </div>
 
           <div className="ml-auto hidden sm:flex items-center gap-3 md:gap-6">
@@ -539,20 +678,43 @@ export const HomePage = () => {
               <p className="text-label-md text-on-surface-variant">Shop by Department</p>
             </div>
             <nav className="flex flex-col gap-1" aria-label="Product categories">
-              {categories.map((category) => (
-                <a
-                  key={category.label}
-                  className={
-                    category.active
-                      ? 'flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary-container text-on-primary-container font-bold transition-all scale-[0.98]'
-                      : 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:bg-primary-container/10 hover:text-primary transition-all'
-                  }
-                  href="/"
-                >
-                  <Icon className="w-5 h-5">{category.icon}</Icon>
-                  {category.label}
-                </a>
-              ))}
+              <button
+                onClick={() => setSelectedCategory('All')}
+                className={
+                  selectedCategory === 'All'
+                    ? 'flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary-container text-on-primary-container font-bold transition-all scale-[0.98] text-left w-full'
+                    : 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:bg-primary-container/10 hover:text-primary transition-all text-left w-full'
+                }
+                type="button"
+              >
+                <Icon className="w-5 h-5">shop</Icon>
+                All Departments
+              </button>
+              {(dbCategories.length > 0 ? dbCategories : categories).map((category) => {
+                const isDb = '_id' in category
+                const label = isDb ? (category as DbCategory).name : (category as any).label
+                const code = isDb ? (category as DbCategory).code : (category as any).label
+                const iconName = isDb ? (categoryIconMap[code] || categoryIconMap[label] || 'eco') : (category as any).icon
+                const active = typeof selectedCategory === 'object' && selectedCategory !== null
+                  ? (isDb && selectedCategory._id === (category as DbCategory)._id)
+                  : (!isDb && selectedCategory === label)
+
+                return (
+                  <button
+                    key={isDb ? (category as DbCategory)._id : label}
+                    onClick={() => setSelectedCategory(category as any)}
+                    className={
+                      active
+                        ? 'flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary-container text-on-primary-container font-bold transition-all scale-[0.98] text-left w-full'
+                        : 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:bg-primary-container/10 hover:text-primary transition-all text-left w-full'
+                    }
+                    type="button"
+                  >
+                    <Icon className="w-5 h-5">{iconName}</Icon>
+                    {label}
+                  </button>
+                )
+              })}
             </nav>
           </aside>
 
@@ -564,30 +726,65 @@ export const HomePage = () => {
             <img
               ref={heroImageRef}
               className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-80 transition-transform duration-700 group-hover:scale-105"
-              src={heroImage}
-              alt="Premium organic supermarket aisle with fresh produce"
+              src={currentBanner ? currentBanner.imageUrl : heroImage}
+              alt={currentBanner ? currentBanner.title : "Premium organic supermarket aisle with fresh produce"}
             />
             <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent flex flex-col justify-center px-6 md:px-12 text-white">
               <span className="bg-secondary text-white font-bold px-4 py-1 rounded-full w-fit mb-4 text-label-lg animate-bounce">
-                Exclusive Offer
+                {currentBanner ? "Ưu Đãi Đặc Biệt" : "Exclusive Offer"}
               </span>
               <h2 className="font-headline-lg text-[36px] sm:text-[40px] md:text-[48px] leading-tight mb-4 max-w-[11ch] sm:max-w-none">
-                Fresh Food Festival
+                {currentBanner ? currentBanner.title : "Fresh Food Festival"}
                 <br />
-                <span className="text-primary-fixed">Up to 30% OFF</span>
+                <span className="text-primary-fixed">{currentBanner ? currentBanner.subtitle : "Up to 30% OFF"}</span>
               </h2>
               <p className="text-body-lg mb-8 opacity-90 max-w-[280px] sm:max-w-sm md:max-w-none">
-                Experience the peak of season&apos;s harvest with our premium organic selection.
-                <br />
-                Use code: <span className="font-bold border-b-2 border-primary-fixed">FRESH2026</span>
+                {currentBanner ? currentBanner.description : "Experience the peak of season's harvest with our premium organic selection."}
+                {currentBanner?.promoCode && (
+                  <>
+                    <br />
+                    Mã code: <span className="font-bold border-b-2 border-primary-fixed">{currentBanner.promoCode}</span>
+                  </>
+                )}
+                {!currentBanner && (
+                  <>
+                    <br />
+                    Use code: <span className="font-bold border-b-2 border-primary-fixed">FRESH2026</span>
+                  </>
+                )}
               </p>
               <button
+                onClick={() => {
+                  const targetId = currentBanner?.linkUrl || '#recommended-products';
+                  if (targetId.startsWith('#')) {
+                    document.getElementById(targetId.substring(1))?.scrollIntoView({ behavior: 'smooth' });
+                  } else {
+                    navigate(targetId);
+                  }
+                }}
                 className="beveled-btn bg-primary-container hover:bg-primary text-on-primary-container hover:text-white px-8 py-4 rounded-xl font-bold w-fit transition-all flex items-center gap-2 group-hover:translate-x-2"
                 type="button"
               >
                 Shop Now <Icon>arrow_forward</Icon>
               </button>
             </div>
+
+            {/* Dot Indicators for carousel */}
+            {activeBanners.length > 1 && (
+              <div className="absolute bottom-4 right-4 flex gap-2 z-10">
+                {activeBanners.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentBannerIndex(idx)}
+                    className={`w-2.5 h-2.5 rounded-full transition-all ${
+                      idx === currentBannerIndex ? 'bg-primary w-6' : 'bg-white/50 hover:bg-white'
+                    }`}
+                    type="button"
+                    aria-label={`Go to slide ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            )}
           </section>
         </section>
 
@@ -611,30 +808,36 @@ export const HomePage = () => {
             </a>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-gutter-md">
-            {flashSaleProducts.map((product) => {
-              const dbProduct = dbProducts.find((p) => p.productName === product.title)
-              return (
-                <FlashSaleCard
-                  key={product.title}
-                  product={product}
-                  onAddToCart={async () => {
-                    if (!isAuthenticated) {
-                      navigate('/login')
-                      return
-                    }
-                    if (dbProduct) {
+            {!activeFlashSale || !activeFlashSale.products || activeFlashSale.products.length === 0 ? (
+              <div className="col-span-full text-center py-12 text-on-surface-variant bg-surface-container-low rounded-xl border border-outline-variant/30">
+                <p className="text-sm font-bold">Không có sản phẩm Flash Sale nào đang hoạt động tại chi nhánh này</p>
+              </div>
+            ) : (
+              activeFlashSale.products.slice(0, 5).map((fp: any) => {
+                const product = fp.productId
+                if (!product) return null
+                const productIdStr = typeof product === 'object' && product !== null ? product._id : product
+
+                return (
+                  <FlashSaleCard
+                    key={productIdStr}
+                    product={product}
+                    flashSalePrice={fp.flashSalePrice}
+                    onAddToCart={async () => {
+                      if (!isAuthenticated) {
+                        navigate('/login')
+                        return
+                      }
                       try {
-                        await addToCart(dbProduct._id, 1)
+                        await addToCart(productIdStr, 1)
                       } catch (err: any) {
                         alert(err.message || 'Failed to add to cart')
                       }
-                    } else {
-                      alert('Product not available in database!')
-                    }
-                  }}
-                />
-              )
-            })}
+                    }}
+                  />
+                )
+              })
+            )}
           </div>
         </section>
 
@@ -680,51 +883,37 @@ export const HomePage = () => {
           </div>
         </section>
 
-        <section className="mt-stack-lg">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <section id="recommended-products" className="mt-stack-lg">
+          <div className="mb-8">
             <h2 className="font-headline-md text-headline-md">Recommended for You</h2>
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {filterTabs.map((tab, index) => (
-                <button
-                  key={tab}
-                  className={
-                    index === 0
-                      ? 'px-6 py-2 rounded-full bg-primary text-white font-bold text-label-lg transition-all'
-                      : 'px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant font-bold text-label-lg hover:bg-primary-container/20 hover:text-primary transition-all'
-                  }
-                  type="button"
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-gutter-md">
-            {recommendedProducts.map((product) => {
-              const dbProduct = dbProducts.find((p) => p.productName === product.title)
-              return (
-                <RecommendedCard
-                  key={product.title}
-                  product={product}
-                  onAddToCart={async () => {
-                    if (!isAuthenticated) {
-                      navigate('/login')
-                      return
-                    }
-                    if (dbProduct) {
+            {hasLoadedProducts && filteredRecommendedProducts.length === 0 ? (
+              <div className="col-span-full text-center py-12 text-on-surface-variant bg-surface-container-low rounded-xl border border-outline-variant/30">
+                <p className="text-sm font-bold">Không có sản phẩm nào được gợi ý tại chi nhánh này</p>
+              </div>
+            ) : (
+              filteredRecommendedProducts.map((product) => {
+                return (
+                  <RecommendedCard
+                    key={product._id}
+                    product={product}
+                    onAddToCart={async () => {
+                      if (!isAuthenticated) {
+                        navigate('/login')
+                        return
+                      }
                       try {
-                        await addToCart(dbProduct._id, 1)
+                        await addToCart(product._id, 1)
                       } catch (err: any) {
                         alert(err.message || 'Failed to add to cart')
                       }
-                    } else {
-                      alert('Product not available in database!')
-                    }
-                  }}
-                />
-              )
-            })}
+                    }}
+                  />
+                )
+              })
+            )}
           </div>
         </section>
       </main>
@@ -737,7 +926,7 @@ export const HomePage = () => {
           <div className="flex items-center gap-3 md:gap-4 min-w-0">
             <div className="flex -space-x-4">
               {cart.items.slice(0, 3).map((item) => {
-                const image = productImageMap[item.product.name] || '/assets/winmart/tomatoes.png'
+                const image = item.product.imageUrl || productImageMap[item.product.name] || '/assets/winmart/tomatoes.png'
                 return (
                   <div
                     key={item.itemId}
@@ -756,7 +945,7 @@ export const HomePage = () => {
             <div>
               <p className="text-label-lg font-bold whitespace-nowrap">{cart.totalItems} items in cart</p>
               <p className="text-[12px] text-on-surface-variant">
-                Estimated Total: <span className="text-primary font-bold">${cart.totalAmount.toFixed(2)}</span>
+                Estimated Total: <span className="text-primary font-bold">{formatVND(cart.totalAmount)}</span>
               </p>
             </div>
           </div>
@@ -777,7 +966,9 @@ export const HomePage = () => {
       <footer className="bg-surface-container-highest border-t border-outline-variant mt-16">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-gutter-md w-full px-8 py-stack-lg max-w-7xl mx-auto">
           <div className="flex flex-col gap-4">
-            <h2 className="font-headline-md text-headline-md font-bold text-primary">PMAN-Mart</h2>
+            <h2 className="font-headline-md text-headline-md font-bold text-primary">
+              {publicSettings.store_name || 'PMAN-Mart'}
+            </h2>
             <p className="text-body-md text-on-surface-variant">
               Your premium choice for organic groceries and fresh food since 2026.
             </p>
@@ -795,7 +986,9 @@ export const HomePage = () => {
           </div>
 
           <div>
-            <h3 className="font-label-lg text-label-lg text-on-surface mb-4">About PMAN-Mart</h3>
+            <h3 className="font-label-lg text-label-lg text-on-surface mb-4">
+              About {publicSettings.store_name || 'PMAN-Mart'}
+            </h3>
             <ul className="flex flex-col gap-2">
               {['About Us', 'Branches', 'Sustainability', 'Careers'].map((item) => (
                 <li key={item}>
@@ -847,7 +1040,7 @@ export const HomePage = () => {
           </div>
         </div>
         <div className="max-w-7xl mx-auto px-8 py-6 border-t border-outline-variant/30 flex justify-between items-center text-on-surface-variant text-label-md">
-          <span>&copy; 2026 PMAN-Mart Premium. All rights reserved.</span>
+          <span>&copy; 2026 {publicSettings.store_name || 'PMAN-Mart'} Premium. All rights reserved.</span>
           <div className="flex gap-6">
             <Icon className="w-5 h-5">credit_card</Icon>
             <Icon className="w-5 h-5">account_balance_wallet</Icon>
@@ -912,7 +1105,7 @@ export const HomePage = () => {
                   </div>
                 ) : (
                   cart.items.map((item) => {
-                    const image = productImageMap[item.product.name] || '/assets/winmart/tomatoes.png'
+                    const image = (item.product as any).imageUrl || productImageMap[item.product.name] || '/assets/winmart/tomatoes.png'
                     return (
                       <div
                         key={item.itemId}
@@ -927,7 +1120,7 @@ export const HomePage = () => {
                             <p className="text-label-md text-on-surface-variant">{item.product.unit}</p>
                           )}
                           <p className="text-primary font-bold text-body-md mt-1">
-                            ${item.product.price.toFixed(2)}
+                            {formatVND(item.product.price)}
                           </p>
                         </div>
                         <div className="flex flex-col items-end gap-2">
@@ -996,7 +1189,7 @@ export const HomePage = () => {
                 <div className="px-6 py-5 border-t border-outline-variant bg-surface-container-low space-y-4">
                   <div className="flex justify-between items-center text-body-lg font-bold">
                     <span>Total Amount</span>
-                    <span className="text-primary text-headline-sm">${cart.totalAmount.toFixed(2)}</span>
+                    <span className="text-primary text-headline-sm">{formatVND(cart.totalAmount)}</span>
                   </div>
                   <button
                     onClick={() => {
@@ -1010,6 +1203,97 @@ export const HomePage = () => {
                     <Icon>arrow_forward</Icon>
                   </button>
                 </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Branch Selection Modal */}
+      {isBranchModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in">
+          <div className="bg-surface-container-lowest max-w-lg w-full rounded-2xl border border-outline-variant shadow-2xl overflow-hidden flex flex-col max-h-[85vh] text-on-surface">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-outline-variant p-5 bg-surface-container-low">
+              <div>
+                <h3 className="text-lg font-black text-primary flex items-center gap-2">
+                  <Icon className="text-primary">location_on</Icon>
+                  Chọn chi nhánh mua hàng
+                </h3>
+                <p className="text-xs text-on-surface-variant mt-1">
+                  Chọn chi nhánh gần nhất để đặt hàng nhanh hơn
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsBranchModalOpen(false)}
+                className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container-high transition-colors cursor-pointer"
+              >
+                <Icon>close</Icon>
+              </button>
+            </div>
+
+            {/* Search Bar */}
+            <div className="p-5 border-b border-outline-variant/30 bg-surface-container-lowest">
+              <div className="relative">
+                <Icon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant/60">search</Icon>
+                <input
+                  type="text"
+                  value={branchSearch}
+                  onChange={(e) => setBranchSearch(e.target.value)}
+                  placeholder="Tìm theo tên chi nhánh, mã code hoặc địa chỉ..."
+                  className="w-full bg-surface-container-low border border-outline/30 rounded-full py-3 pl-12 pr-6 focus:ring-2 focus:ring-primary focus:bg-surface transition-all text-sm outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Branches List */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-3 bg-surface-container-lowest">
+              {filteredBranches.length === 0 ? (
+                <div className="text-center py-10 text-on-surface-variant">
+                  <MapPin className="mx-auto mb-3 text-on-surface-variant/40" size={40} />
+                  <p className="text-sm font-bold">Không tìm thấy chi nhánh nào</p>
+                  <p className="text-xs mt-1">Vui lòng thử từ khóa khác.</p>
+                </div>
+              ) : (
+                filteredBranches.map((branch) => {
+                  const isSelected = selectedBranch?._id === branch._id
+                  return (
+                    <div
+                      key={branch._id}
+                      onClick={() => handleSelectBranch(branch)}
+                      className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 flex items-center justify-between gap-4 ${
+                        isSelected
+                          ? 'border-primary bg-primary/5'
+                          : 'border-outline-variant/40 hover:border-primary/30 hover:bg-surface-container-low'
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
+                            isSelected ? 'bg-primary text-white' : 'bg-surface-container-highest text-on-surface-variant'
+                          }`}>
+                            {branch.code}
+                          </span>
+                          <h4 className="font-black text-sm truncate text-on-surface">{branch.name}</h4>
+                        </div>
+                        <p className="text-xs text-on-surface-variant mt-1.5 line-clamp-2 leading-relaxed">
+                          Địa chỉ: {branch.address}
+                        </p>
+                        {branch.phone && (
+                          <p className="text-[10px] text-on-surface-variant mt-1">
+                            SĐT: {branch.phone}
+                          </p>
+                        )}
+                      </div>
+                      <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${
+                        isSelected ? 'border-primary bg-primary' : 'border-outline'
+                      }`}>
+                        {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                      </div>
+                    </div>
+                  )
+                })
               )}
             </div>
           </div>

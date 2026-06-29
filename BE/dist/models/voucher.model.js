@@ -53,6 +53,12 @@ const VoucherSchema = new mongoose_1.Schema({
     discountValue: { type: Number, required: true, min: 0 },
     maxDiscountAmount: { type: Number, min: 0 },
     minOrderAmount: { type: Number, min: 0, default: 0 },
+    pointCost: { type: Number, default: 0, min: 0 },
+    targetMemberLevel: {
+        type: String,
+        enum: ['all', 'new', 'bronze', 'silver', 'gold', 'diamond'],
+        default: 'all',
+    },
     branchId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Branch' },
     expiresAt: { type: Date, required: true },
     status: {
@@ -62,6 +68,19 @@ const VoucherSchema = new mongoose_1.Schema({
     },
     usedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
     usedAt: { type: Date },
+    orderId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Order' },
+    claims: {
+        type: [
+            {
+                userId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },
+                status: { type: String, enum: ['active', 'used'], default: 'active' },
+                claimedAt: { type: Date, default: Date.now },
+                usedAt: { type: Date },
+                orderId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Order' },
+            },
+        ],
+        default: [],
+    },
     createdBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },
 }, {
     timestamps: true,
@@ -71,5 +90,6 @@ VoucherSchema.index({ code: 1 }, { unique: true });
 VoucherSchema.index({ promotionId: 1, status: 1 });
 VoucherSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 VoucherSchema.index({ branchId: 1, status: 1 });
+VoucherSchema.index({ 'claims.userId': 1, 'claims.status': 1 });
 exports.Voucher = mongoose_1.default.model('Voucher', VoucherSchema);
 //# sourceMappingURL=voucher.model.js.map

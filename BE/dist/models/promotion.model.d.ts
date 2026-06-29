@@ -10,6 +10,8 @@ export interface IPromotion extends Document {
     discountValue: number;
     maxDiscountAmount?: number;
     minOrderAmount?: number;
+    pointCost: number;
+    targetMemberLevel: 'all' | 'new' | 'bronze' | 'silver' | 'gold' | 'diamond';
     scope: PromotionScope;
     branchId?: Types.ObjectId;
     startDate: Date;

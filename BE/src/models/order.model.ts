@@ -8,6 +8,8 @@ export type OrderStatus =
   | 'delivered'
   | 'cancelled';
 
+export type PaymentMethod = 'COD' | 'banking' | 'momo' | 'vnpay';
+
 export interface IOrderItem {
   productId: Types.ObjectId;
   quantity: number;
@@ -24,9 +26,16 @@ export interface IOrder extends Document {
   totalAmount: number;
   status: OrderStatus;
   deliveryAddress?: string;
+  phoneNumber?: string;
+  paymentMethod?: PaymentMethod;
   note?: string;
   confirmedBy?: Types.ObjectId;
   confirmedAt?: Date;
+  invoiceId?: Types.ObjectId;
+  invoiceReservationAt?: Date;
+  invoiceIssuedAt?: Date;
+  returnMutationLockedAt?: Date;
+  returnMutationLockId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -54,9 +63,20 @@ const OrderSchema = new Schema<IOrder>(
       default: 'pending',
     },
     deliveryAddress: { type: String, trim: true },
+    phoneNumber: { type: String, trim: true },
+    paymentMethod: {
+      type: String,
+      enum: ['COD', 'banking', 'momo', 'vnpay'],
+      default: 'COD',
+    },
     note: { type: String, trim: true },
     confirmedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     confirmedAt: { type: Date },
+    invoiceId: { type: Schema.Types.ObjectId, ref: 'Invoice' },
+    invoiceReservationAt: { type: Date },
+    invoiceIssuedAt: { type: Date },
+    returnMutationLockedAt: { type: Date },
+    returnMutationLockId: { type: String },
   },
   {
     timestamps: true,

@@ -10,6 +10,15 @@ export declare const createPromotionSchema: z.ZodObject<{
         discountValue: z.ZodNumber;
         maxDiscountAmount: z.ZodOptional<z.ZodNumber>;
         minOrderAmount: z.ZodOptional<z.ZodNumber>;
+        pointCost: z.ZodOptional<z.ZodNumber>;
+        targetMemberLevel: z.ZodOptional<z.ZodEnum<{
+            new: "new";
+            bronze: "bronze";
+            silver: "silver";
+            gold: "gold";
+            diamond: "diamond";
+            all: "all";
+        }>>;
         scope: z.ZodEnum<{
             global: "global";
             branch: "branch";
@@ -38,6 +47,15 @@ export declare const updatePromotionSchema: z.ZodObject<{
         discountValue: z.ZodOptional<z.ZodNumber>;
         maxDiscountAmount: z.ZodOptional<z.ZodNumber>;
         minOrderAmount: z.ZodOptional<z.ZodNumber>;
+        pointCost: z.ZodOptional<z.ZodNumber>;
+        targetMemberLevel: z.ZodOptional<z.ZodEnum<{
+            new: "new";
+            bronze: "bronze";
+            silver: "silver";
+            gold: "gold";
+            diamond: "diamond";
+            all: "all";
+        }>>;
         startDate: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodDate]>>;
         endDate: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodDate]>>;
         usageLimit: z.ZodOptional<z.ZodNumber>;
@@ -75,6 +93,12 @@ export declare const listActivePromotionsSchema: z.ZodObject<{
         branchId: z.ZodOptional<z.ZodString>;
         page: z.ZodOptional<z.ZodCoercedNumber<unknown>>;
         limit: z.ZodOptional<z.ZodCoercedNumber<unknown>>;
+        onlyClaimed: z.ZodOptional<z.ZodPreprocess<z.ZodBoolean>>;
+    }, z.core.$strip>;
+}, z.core.$strip>;
+export declare const claimVoucherSchema: z.ZodObject<{
+    body: z.ZodObject<{
+        code: z.ZodString;
     }, z.core.$strip>;
 }, z.core.$strip>;
 export declare const generateVouchersSchema: z.ZodObject<{
@@ -82,7 +106,7 @@ export declare const generateVouchersSchema: z.ZodObject<{
         id: z.ZodString;
     }, z.core.$strip>;
     body: z.ZodObject<{
-        quantity: z.ZodNumber;
+        code: z.ZodString;
     }, z.core.$strip>;
 }, z.core.$strip>;
 export declare const listVouchersSchema: z.ZodObject<{
@@ -108,6 +132,16 @@ export declare const voucherIdParamSchema: z.ZodObject<{
 export declare const lookupVoucherSchema: z.ZodObject<{
     query: z.ZodObject<{
         code: z.ZodString;
+        orderValue: z.ZodOptional<z.ZodCoercedNumber<unknown>>;
+        branchId: z.ZodOptional<z.ZodString>;
+    }, z.core.$strip>;
+}, z.core.$strip>;
+export declare const applyVoucherSchema: z.ZodObject<{
+    body: z.ZodObject<{
+        code: z.ZodString;
+        orderValue: z.ZodNumber;
+        branchId: z.ZodOptional<z.ZodString>;
+        orderId: z.ZodString;
     }, z.core.$strip>;
 }, z.core.$strip>;
 export declare const validate: <T extends z.ZodTypeAny>(schema: T) => (req: import("express").Request, _res: import("express").Response, next: import("express").NextFunction) => void;

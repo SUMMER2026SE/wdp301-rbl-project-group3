@@ -9,9 +9,13 @@ type ProfileResponse = {
     authProvider: string;
     isEmailVerified: boolean;
     status: string;
+    points?: number;
+    lifetimePoints?: number;
+    memberLevel?: string;
     lastLoginAt?: Date;
     createdAt: Date;
     updatedAt: Date;
+    branchId?: string;
 };
 export declare class UserService {
     getProfile(userId: string): Promise<ProfileResponse>;

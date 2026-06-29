@@ -1,6 +1,10 @@
 import { cartRepository } from './cart.repository';
 import { AppError } from '../../middlewares/errorHandler.middleware';
 import { Product } from '../../models/product.model';
+import { Inventory } from '../../models/inventory.model';
+import { Types } from 'mongoose';
+import { flashSaleRepository } from '../flash-sale/flash-sale.repository';
+
 
 // ─── Response shape ───────────────────────────────────────────────────────────
 interface CartItemResponse {
@@ -10,6 +14,7 @@ interface CartItemResponse {
         name: string;
         price: number;
         unit?: string;
+        imageUrl?: string;
     };
     quantity: number;
     subtotal: number;
@@ -23,25 +28,67 @@ interface CartResponse {
     totalAmount: number;
 }
 
-function buildCartResponse(cart: any): CartResponse {
-    const items: CartItemResponse[] = cart.items
-        .filter((item: any) => item.productId && item.productId.status !== false)
-        .map((item: any) => {
-            const product = item.productId;
-            const price = product?.price ?? 0;
-            return {
-                itemId: item._id.toString(),
-                product: {
-                    id: product?._id?.toString() ?? '',
-                    name: product?.productName ?? 'Unknown',
-                    price,
-                    unit: product?.unit,
-                },
-                quantity: item.quantity,
-                subtotal: price * item.quantity,
-                addedAt: item.addedAt,
-            };
+function getObjectIdString(value: any): string {
+    if (!value) return '';
+    if (value instanceof Types.ObjectId) return value.toString();
+    if (typeof value === 'object' && '_id' in value) {
+        return value._id ? value._id.toString() : '';
+    }
+    return value.toString();
+}
+
+async function buildCartResponse(cart: any, branchId?: string): Promise<CartResponse> {
+    const items: CartItemResponse[] = [];
+    
+    // Fetch the active flash sale for this branch (or fallback to global)
+    const cleanBranchId = (branchId && Types.ObjectId.isValid(branchId)) ? branchId : undefined;
+    const activeFlashSale = await flashSaleRepository.findActiveFlashSale(cleanBranchId);
+    
+    for (const item of cart.items) {
+        if (!item.productId || item.productId.status !== 'active') continue;
+        
+        const product = item.productId;
+        let price = product?.salePrice ?? 0;
+        
+        // If branchId is provided, get price from Inventory.lastImportCost
+        if (branchId && Types.ObjectId.isValid(branchId)) {
+            const inventory = await Inventory.findOne({
+                productId: product._id,
+                branchId: branchId,
+            }).exec();
+            
+            if (inventory && inventory.lastImportCost) {
+                price = inventory.lastImportCost;
+            }
+        }
+        
+        // Apply flash sale price override if applicable
+        if (activeFlashSale) {
+            const flashProduct = activeFlashSale.products.find(
+                (p: any) => getObjectIdString(p.productId) === getObjectIdString(product._id)
+            );
+            if (
+                flashProduct &&
+                flashProduct.soldQuantity + item.quantity <= flashProduct.limitQuantity
+            ) {
+                price = flashProduct.flashSalePrice;
+            }
+        }
+        
+        items.push({
+            itemId: item._id.toString(),
+            product: {
+                id: product?._id?.toString() ?? '',
+                name: product?.name ?? 'Unknown',
+                price,
+                unit: product?.unit,
+                imageUrl: product?.imageUrl,
+            },
+            quantity: item.quantity,
+            subtotal: price * item.quantity,
+            addedAt: item.addedAt,
         });
+    }
 
     const totalAmount = items.reduce((sum, i) => sum + i.subtotal, 0);
 
@@ -58,7 +105,8 @@ export class CartService {
     async addToCart(
         userId: string,
         productId: string,
-        quantity: number
+        quantity: number,
+        branchId?: string
     ): Promise<CartResponse> {
         if (quantity < 1) {
             throw new AppError('Quantity must be at least 1', 400);
@@ -85,24 +133,25 @@ export class CartService {
         }
 
         const cart = await cartRepository.upsertItem(userId, productId, quantity);
-        return buildCartResponse(cart);
+        return await buildCartResponse(cart, branchId);
     }
 
     // ─── UC08: Xem giỏ hàng ──────────────────────────────────────────────────
-    async getCart(userId: string): Promise<CartResponse> {
+    async getCart(userId: string, branchId?: string): Promise<CartResponse> {
         const cart = await cartRepository.findByUserId(userId);
         if (!cart) {
             // Trả về giỏ rỗng thay vì lỗi 404
             return { cartId: '', items: [], totalItems: 0, totalAmount: 0 };
         }
-        return buildCartResponse(cart);
+        return await buildCartResponse(cart, branchId);
     }
 
     // ─── UC08: Cập nhật số lượng ──────────────────────────────────────────────
     async updateItemQuantity(
         userId: string,
         itemId: string,
-        quantity: number
+        quantity: number,
+        branchId?: string
     ): Promise<CartResponse> {
         if (quantity < 0) {
             throw new AppError('Quantity must be non-negative', 400);
@@ -123,11 +172,11 @@ export class CartService {
         const cart = await cartRepository.updateItemQuantity(userId, itemId, quantity);
         if (!cart) throw new AppError('Failed to update cart', 500);
 
-        return buildCartResponse(cart);
+        return await buildCartResponse(cart, branchId);
     }
 
     // ─── UC08: Xóa một item ───────────────────────────────────────────────────
-    async removeItem(userId: string, itemId: string): Promise<CartResponse> {
+    async removeItem(userId: string, itemId: string, branchId?: string): Promise<CartResponse> {
         const rawCart = await cartRepository.findRawByUserId(userId);
         if (!rawCart) throw new AppError('Cart not found', 404);
 
@@ -139,7 +188,7 @@ export class CartService {
         const cart = await cartRepository.removeItem(userId, itemId);
         if (!cart) throw new AppError('Failed to remove item', 500);
 
-        return buildCartResponse(cart);
+        return await buildCartResponse(cart, branchId);
     }
 
     // ─── UC08: Xóa toàn bộ giỏ ───────────────────────────────────────────────
