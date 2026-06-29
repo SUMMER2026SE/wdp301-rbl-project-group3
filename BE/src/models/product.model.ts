@@ -26,7 +26,7 @@ const ProductSchema = new Schema<IProduct>(
     categoryId: { type: Schema.Types.ObjectId, ref: 'Category' },
     unit: { type: String, required: true, trim: true, default: 'item' },
     costPrice: { type: Number, required: false, min: 0, default: 0 },
-    salePrice: { type: Number, required: true, min: 0, default: 0 },
+    salePrice: { type: Number, required: false, min: 0, default: 0 },
     suggestedPrice: { type: Number, default: 0 },
     imageUrl: { type: String },
     status: {

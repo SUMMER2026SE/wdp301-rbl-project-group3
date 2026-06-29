@@ -72,9 +72,24 @@ export class ProductService {
   }
 
   async createProduct(data: Partial<IProduct>, file?: ProductFile): Promise<IProduct> {
-    const sku = String(data.sku).toUpperCase();
-    const existing = await productRepository.findBySku(sku);
-    if (existing) throw new AppError('Product SKU already exists', 409);
+    let sku = data.sku ? String(data.sku).toUpperCase().trim() : '';
+    if (!sku) {
+      let isUnique = false;
+      let attempts = 0;
+      while (!isUnique && attempts < 10) {
+        const stamp = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(2, 10);
+        const random = Math.floor(1000 + Math.random() * 9000);
+        sku = `SP-${stamp}-${random}`;
+        const existing = await productRepository.findBySku(sku);
+        if (!existing) {
+          isUnique = true;
+        }
+        attempts++;
+      }
+    } else {
+      const existing = await productRepository.findBySku(sku);
+      if (existing) throw new AppError('Product SKU already exists', 409);
+    }
 
     let imageUrl: string | undefined;
     if (file) {
