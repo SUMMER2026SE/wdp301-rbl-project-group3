@@ -1,9 +1,0 @@
-{
-	"id": "An1Zhl9fDtOnVWC",
-	"json": "{\"id\":\"An1Zhl9fDtOnVWC\",\"url\":\"https://winmart.vn/search/nam+ngu\",\"uniqueKey\":\"https://winmart.vn/search/nam+ngu\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
-	"method": "GET",
-	"orderNo": 1782494376858,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/search/nam+ngu",
-	"url": "https://winmart.vn/search/nam+ngu"
-}

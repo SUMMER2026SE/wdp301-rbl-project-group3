@@ -1,9 +1,0 @@
-{
-	"id": "zWzTGpZHOubkuaA",
-	"json": "{\"id\":\"zWzTGpZHOubkuaA\",\"url\":\"https://winmart.vn/products/colgate-bcdr-slimsoft-advanced-bo-2--s10600130?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/colgate-bcdr-slimsoft-advanced-bo-2--s10600130?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"crawlDepth\":2,\"enqueueStrategy\":\"same-hostname\"}}}",
-	"method": "GET",
-	"orderNo": 1782494321765,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/products/colgate-bcdr-slimsoft-advanced-bo-2--s10600130?storeCode=1535&storeGroupCode=1998",
-	"url": "https://winmart.vn/products/colgate-bcdr-slimsoft-advanced-bo-2--s10600130?storeGroupCode=1998&storeCode=1535"
-}

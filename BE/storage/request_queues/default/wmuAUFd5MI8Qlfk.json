@@ -1,9 +1,0 @@
-{
-	"id": "wmuAUFd5MI8Qlfk",
-	"json": "{\"id\":\"wmuAUFd5MI8Qlfk\",\"url\":\"https://winmart.vn/products/bi-xanh--s10053954?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/bi-xanh--s10053954?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
-	"method": "GET",
-	"orderNo": 1782494310973,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/products/bi-xanh--s10053954?storeCode=1535&storeGroupCode=1998",
-	"url": "https://winmart.vn/products/bi-xanh--s10053954?storeGroupCode=1998&storeCode=1535"
-}

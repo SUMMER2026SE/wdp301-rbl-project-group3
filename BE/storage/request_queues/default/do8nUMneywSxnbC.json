@@ -1,9 +1,0 @@
-{
-	"id": "do8nUMneywSxnbC",
-	"json": "{\"id\":\"do8nUMneywSxnbC\",\"url\":\"https://winmart.vn/search/CADBURY\",\"uniqueKey\":\"https://winmart.vn/search/CADBURY\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
-	"method": "GET",
-	"orderNo": 1782494334654,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/search/CADBURY",
-	"url": "https://winmart.vn/search/CADBURY"
-}

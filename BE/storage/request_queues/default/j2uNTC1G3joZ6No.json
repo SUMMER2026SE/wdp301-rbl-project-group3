@@ -1,9 +1,0 @@
-{
-	"id": "j2uNTC1G3joZ6No",
-	"json": "{\"id\":\"j2uNTC1G3joZ6No\",\"url\":\"https://winmart.vn/search/morinaga\",\"uniqueKey\":\"https://winmart.vn/search/morinaga\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
-	"method": "GET",
-	"orderNo": 1782494300904,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/search/morinaga",
-	"url": "https://winmart.vn/search/morinaga"
-}

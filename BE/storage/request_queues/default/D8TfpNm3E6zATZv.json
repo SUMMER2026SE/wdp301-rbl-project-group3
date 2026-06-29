@@ -1,9 +1,0 @@
-{
-	"id": "D8TfpNm3E6zATZv",
-	"json": "{\"id\":\"D8TfpNm3E6zATZv\",\"url\":\"https://winmart.vn/products/evian-nuoc-khoang-500ml--s10011550?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/evian-nuoc-khoang-500ml--s10011550?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
-	"method": "GET",
-	"orderNo": 1782494345002,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/products/evian-nuoc-khoang-500ml--s10011550?storeCode=1535&storeGroupCode=1998",
-	"url": "https://winmart.vn/products/evian-nuoc-khoang-500ml--s10011550?storeGroupCode=1998&storeCode=1535"
-}

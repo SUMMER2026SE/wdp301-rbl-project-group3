@@ -1,9 +1,0 @@
-{
-	"id": "zac56Yc5jJwcmML",
-	"json": "{\"id\":\"zac56Yc5jJwcmML\",\"url\":\"https://winmart.vn/gio-qua-tet-winmart\",\"uniqueKey\":\"https://winmart.vn/gio-qua-tet-winmart\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
-	"method": "GET",
-	"orderNo": 1782494334659,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/gio-qua-tet-winmart",
-	"url": "https://winmart.vn/gio-qua-tet-winmart"
-}

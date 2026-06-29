@@ -1,9 +1,0 @@
-{
-	"id": "BH3PlxNH3otsKfV",
-	"json": "{\"id\":\"BH3PlxNH3otsKfV\",\"url\":\"https://winmart.vn/search/budweiser\",\"uniqueKey\":\"https://winmart.vn/search/budweiser\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
-	"method": "GET",
-	"orderNo": 1782494340059,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/search/budweiser",
-	"url": "https://winmart.vn/search/budweiser"
-}

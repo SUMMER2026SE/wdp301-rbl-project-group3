@@ -15,6 +15,7 @@ type ProfileResponse = {
     lastLoginAt?: Date;
     createdAt: Date;
     updatedAt: Date;
+    branchId?: string;
 };
 export declare class UserService {
     getProfile(userId: string): Promise<ProfileResponse>;

@@ -110,8 +110,10 @@ export class CrawlerService {
 
               // Lưu vào Database
               const existingProduct = await Product.findOne({ sku: parsedData.sku });
+              const calculatedSuggestedPrice = parsedData.suggestedPrice || Math.round(parsedData.salePrice * 0.95);
               if (existingProduct) {
                 existingProduct.salePrice = parsedData.salePrice;
+                existingProduct.suggestedPrice = calculatedSuggestedPrice;
                 existingProduct.description = parsedData.description || existingProduct.description;
                 if (categoryId) existingProduct.categoryId = categoryId;
                 if (finalImageUrl) existingProduct.imageUrl = finalImageUrl;
@@ -122,6 +124,7 @@ export class CrawlerService {
                   name: parsedData.name,
                   sku: parsedData.sku,
                   salePrice: parsedData.salePrice,
+                  suggestedPrice: calculatedSuggestedPrice,
                   unit: parsedData.unit,
                   description: parsedData.description,
                   categoryId: categoryId,

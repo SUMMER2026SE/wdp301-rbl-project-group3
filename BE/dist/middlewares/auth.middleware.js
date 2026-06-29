@@ -19,7 +19,7 @@ const authenticate = async (req, _res, next) => {
         }
         const payload = (0, token_util_1.verifyAccessToken)(token);
         const user = await user_model_1.User.findById(payload.userId)
-            .select('email role status refreshTokenVersion')
+            .select('email role status branchId refreshTokenVersion')
             .lean()
             .exec();
         if (!user) {
@@ -37,6 +37,7 @@ const authenticate = async (req, _res, next) => {
             email: user.email,
             role: user.role,
             tokenVersion: payload.tokenVersion,
+            branchId: user.branchId?.toString(),
         };
         next();
     }

@@ -1983,11 +1983,12 @@ export const ManageInventoryPage = () => {
                       <table className="w-full text-left border-collapse text-xs">
                         <thead>
                           <tr className="border-b border-outline-variant bg-surface-container-low/50">
-                            <th className="p-3 font-bold text-on-surface-variant">Sản phẩm</th>
-                            <th className="p-3 font-bold text-on-surface-variant text-center w-32">Số lượng</th>
-                            <th className="p-3 font-bold text-on-surface-variant text-right w-36">Giá bán (đ)</th>
-                            <th className="p-3 font-bold text-on-surface-variant text-right w-28">Giá nhập gốc</th>
-                            <th className="p-3 font-bold text-on-surface-variant text-right w-32">Thành tiền</th>
+                            <th className="p-3 font-bold text-on-surface-variant whitespace-nowrap">Sản phẩm</th>
+                            <th className="p-3 font-bold text-on-surface-variant text-center w-24 whitespace-nowrap">Số lượng</th>
+                            <th className="p-3 font-bold text-on-surface-variant text-right w-28 whitespace-nowrap">Giá nhập gốc</th>
+                            <th className="p-3 font-bold text-on-surface-variant text-right w-28 whitespace-nowrap">Giá gợi ý AI</th>
+                            <th className="p-3 font-bold text-on-surface-variant text-right w-32 whitespace-nowrap">Giá bán thực tế (đ)</th>
+                            <th className="p-3 font-bold text-on-surface-variant text-right w-28 whitespace-nowrap">Thành tiền</th>
                             <th className="p-3 font-bold text-on-surface-variant text-center w-12"></th>
                           </tr>
                         </thead>
@@ -1997,13 +1998,13 @@ export const ManageInventoryPage = () => {
                             const name = pInfo?.productName || 'Sản phẩm';
                             const sku = pInfo?.sku || 'N/A';
                             const unit = pInfo?.unit || 'cái';
-                            const costPrice = pInfo?.price || 0;
+                            const costPrice = pInfo?.price || pInfo?.salePrice || 0;
                             const isLoss = item.unitCost > 0 && item.unitCost < costPrice;
 
                             return (
                               <tr key={idx} className="hover:bg-surface-container-low/20 transition-colors align-middle">
                                 {/* Product info */}
-                                <td className="p-3 min-w-[200px]">
+                                <td className="p-3 min-w-[180px]">
                                   <div className="flex items-center gap-2.5">
                                     <div className="w-8 h-8 bg-surface-container-low rounded overflow-hidden border border-outline-variant flex items-center justify-center shrink-0">
                                       {pInfo?.imageUrl ? (
@@ -2047,9 +2048,19 @@ export const ManageInventoryPage = () => {
                                   </div>
                                 </td>
 
-                                {/* Unit Cost input with margin alert */}
+                                {/* Static Cost Price (Giá nhập gốc) */}
+                                <td className="p-3 text-right font-medium text-on-surface-variant whitespace-nowrap">
+                                  {formatVND(costPrice)}
+                                </td>
+
+                                {/* AI Suggested Price */}
+                                <td className="p-3 text-right font-bold text-secondary font-mono whitespace-nowrap">
+                                  {formatVND(pInfo?.suggestedPrice || Math.round(costPrice * 0.95))}
+                                </td>
+
+                                {/* Unit Cost input (Giá bán thực tế) */}
                                 <td className="p-3 text-right">
-                                  <div className="relative inline-block w-full">
+                                  <div className="flex flex-col items-end justify-center w-full">
                                     <input
                                       type="number"
                                       min="0"
@@ -2057,10 +2068,10 @@ export const ManageInventoryPage = () => {
                                       required
                                       value={item.unitCost}
                                       onChange={(e) => updateImportItemRow(idx, 'unitCost', parseFloat(e.target.value) || 0)}
-                                      className="w-full bg-surface-container-low border border-outline rounded-lg py-1.5 px-2 text-right font-bold text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all shadow-sm"
+                                      className="w-24 bg-surface-container-low border border-outline rounded-lg py-1 px-2 text-right font-bold text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all shadow-sm"
                                     />
                                     {isLoss && costPrice > 0 && (
-                                      <div className="text-[10px] text-error font-medium flex items-center justify-end gap-1 mt-1 leading-tight animate-pulse">
+                                      <div className="text-[10px] text-error font-medium flex items-center justify-end gap-1 mt-1 leading-tight whitespace-nowrap animate-pulse">
                                         <AlertTriangle size={10} className="shrink-0" />
                                         Thấp hơn giá nhập ({formatVND(costPrice)})
                                       </div>
@@ -2068,14 +2079,9 @@ export const ManageInventoryPage = () => {
                                   </div>
                                 </td>
 
-                                {/* Static Cost Price */}
-                                <td className="p-3 text-right font-medium text-on-surface-variant">
-                                  {formatVND(costPrice)}
-                                </td>
-
-                                {/* Row Subtotal */}
-                                <td className="p-3 text-right font-black text-primary text-sm">
-                                  {formatVND(item.quantity * item.unitCost)}
+                                {/* Row Subtotal (Quantity * Cost Price) */}
+                                <td className="p-3 text-right font-black text-primary text-sm whitespace-nowrap">
+                                  {formatVND(item.quantity * costPrice)}
                                 </td>
 
                                 {/* Delete Action */}

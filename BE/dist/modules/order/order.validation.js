@@ -15,6 +15,11 @@ exports.listOrdersSchema = zod_1.z.object({
     query: zod_1.z.object({
         branchId: objectId.optional(),
         status: orderStatus.optional(),
+        page: zod_1.z.string().regex(/^\d+$/).optional(),
+        limit: zod_1.z.string().regex(/^\d+$/).optional(),
+        keyword: zod_1.z.string().max(100).optional(),
+        startDate: zod_1.z.string().optional(),
+        endDate: zod_1.z.string().optional(),
     }),
 });
 exports.updateOrderStatusSchema = zod_1.z.object({

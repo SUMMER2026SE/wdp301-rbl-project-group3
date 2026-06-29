@@ -1,9 +1,0 @@
-{
-	"id": "aKy8F5f4VqeZRgm",
-	"json": "{\"id\":\"aKy8F5f4VqeZRgm\",\"url\":\"https://winmart.vn/products/nutifood-sua-chua-an-co-duong-100g--s10005466?storeGroupCode=1998&storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/products/nutifood-sua-chua-an-co-duong-100g--s10005466?storeCode=1535&storeGroupCode=1998\",\"uniqueKey\":\"https://winmart.vn/products/nutifood-sua-chua-an-co-duong-100g--s10005466?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-06-26T17:23:43.054Z\"}",
-	"method": "GET",
-	"orderNo": null,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/products/nutifood-sua-chua-an-co-duong-100g--s10005466?storeCode=1535&storeGroupCode=1998",
-	"url": "https://winmart.vn/products/nutifood-sua-chua-an-co-duong-100g--s10005466?storeGroupCode=1998&storeCode=1535"
-}

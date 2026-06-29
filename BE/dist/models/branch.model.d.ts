@@ -8,6 +8,9 @@ export interface IBranch extends Document {
     phone?: string;
     managerId?: Types.ObjectId;
     status: BranchStatus;
+    openingTime?: string;
+    closingTime?: string;
+    activeDays?: string[];
     createdAt: Date;
     updatedAt: Date;
 }

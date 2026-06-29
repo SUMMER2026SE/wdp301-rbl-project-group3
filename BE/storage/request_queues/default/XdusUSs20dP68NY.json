@@ -1,9 +1,0 @@
-{
-	"id": "XdusUSs20dP68NY",
-	"json": "{\"id\":\"XdusUSs20dP68NY\",\"url\":\"https://winmart.vn/products/ferrero-socola-rocher-37.5g--s10602083?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/ferrero-socola-rocher-37.5g--s10602083?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"crawlDepth\":2,\"enqueueStrategy\":\"same-hostname\"}}}",
-	"method": "GET",
-	"orderNo": 1782494336776,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/products/ferrero-socola-rocher-37.5g--s10602083?storeCode=1535&storeGroupCode=1998",
-	"url": "https://winmart.vn/products/ferrero-socola-rocher-37.5g--s10602083?storeGroupCode=1998&storeCode=1535"
-}

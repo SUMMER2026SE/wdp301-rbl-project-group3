@@ -7,14 +7,21 @@ const response_util_1 = require("../../utils/response.util");
 class OrderController {
     constructor() {
         this.getAll = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
-            const orders = await order_service_1.orderService.getOrders({
+            const page = Math.max(1, parseInt(req.query['page']) || 1);
+            const limit = Math.min(100, Math.max(1, parseInt(req.query['limit']) || 10));
+            const result = await order_service_1.orderService.getOrders({
                 branchId: req.query.branchId,
                 status: req.query.status,
+                keyword: req.query.keyword,
+                startDate: req.query.startDate,
+                endDate: req.query.endDate,
+                page,
+                limit,
             }, {
                 userId: req.user.userId,
                 role: req.user.role,
             });
-            (0, response_util_1.sendSuccess)(res, { orders }, 'Orders retrieved');
+            (0, response_util_1.sendSuccess)(res, result, 'Orders retrieved');
         });
         this.getById = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
             const order = await order_service_1.orderService.getOrderById(String(req.params.id), {

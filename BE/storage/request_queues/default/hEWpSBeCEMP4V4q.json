@@ -1,9 +1,0 @@
-{
-	"id": "hEWpSBeCEMP4V4q",
-	"json": "{\"id\":\"hEWpSBeCEMP4V4q\",\"url\":\"https://winmart.vn/uu-dai-hoi-vien--c51?storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/uu-dai-hoi-vien--c51?storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/uu-dai-hoi-vien--c51?storeCode=1535\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-06-26T17:18:19.810Z\"}",
-	"method": "GET",
-	"orderNo": null,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/uu-dai-hoi-vien--c51?storeCode=1535",
-	"url": "https://winmart.vn/uu-dai-hoi-vien--c51?storeCode=1535"
-}

@@ -1,9 +1,0 @@
-{
-	"id": "Y6uSBi6jD1n0BMm",
-	"json": "{\"id\":\"Y6uSBi6jD1n0BMm\",\"url\":\"https://winmart.vn/products/heineken-bia-silver-lon-cao-330ml--s10620864?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/heineken-bia-silver-lon-cao-330ml--s10620864?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
-	"method": "GET",
-	"orderNo": 1782494341509,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/products/heineken-bia-silver-lon-cao-330ml--s10620864?storeCode=1535&storeGroupCode=1998",
-	"url": "https://winmart.vn/products/heineken-bia-silver-lon-cao-330ml--s10620864?storeGroupCode=1998&storeCode=1535"
-}
