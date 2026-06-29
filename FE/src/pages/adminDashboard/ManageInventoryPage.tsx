@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   Package,
   Plus,
@@ -84,18 +84,6 @@ export const ManageInventoryPage = () => {
   // Optimized Stock-In autocomplete & historical lookup states
   const [activeProducts, setActiveProducts] = useState<Product[]>([])
   const [importBranchInventory, setImportBranchInventory] = useState<Inventory[]>([])
-
-  // Manual Stock Creation states
-  const [isManualStockModalOpen, setIsManualStockModalOpen] = useState(false)
-  const [manualStockBranchId, setManualStockBranchId] = useState('')
-  const [manualStockProductId, setManualStockProductId] = useState('')
-  const [manualStockQuantity, setManualStockQuantity] = useState(0)
-  const [manualStockAvgCost, setManualStockAvgCost] = useState(0)
-  const [manualStockThreshold, setManualStockThreshold] = useState(10)
-  const [manualStockSearchQuery, setManualStockSearchQuery] = useState('')
-  const [manualStockError, setManualStockError] = useState<string | null>(null)
-  const [manualStockLoading, setManualStockLoading] = useState(false)
-  const [manualStockSuccess, setManualStockSuccess] = useState(false)
 
   // Manual Stock Editing states
   const [isEditStockModalOpen, setIsEditStockModalOpen] = useState(false)
@@ -193,14 +181,12 @@ export const ManageInventoryPage = () => {
       if (userBranchId) {
         setSelectedBranchId(userBranchId)
         setImportBranchId(userBranchId)
-        setManualStockBranchId(userBranchId)
       }
     } else {
       // For Admin, default to first active branch when branches load and none is selected yet
       if (branches.length > 0 && !selectedBranchId) {
         setSelectedBranchId(branches[0]._id)
         setImportBranchId(branches[0]._id)
-        setManualStockBranchId(branches[0]._id)
       }
     }
   }, [authLoading, isManagerOrStaff, userBranchId, branches])
@@ -371,10 +357,10 @@ export const ManageInventoryPage = () => {
     fetchImportBranchInventory()
   }, [importBranchId, isImportModalOpen])
 
-  // Fetch all active products quietly for autocomplete when either modal opens
+  // Fetch all active products quietly for autocomplete when the modal opens
   useEffect(() => {
     const fetchActiveProducts = async () => {
-      if (!isImportModalOpen && !isManualStockModalOpen) return
+      if (!isImportModalOpen) return
       try {
         const response = await productService.getProducts({ limit: 1000, status: 'active' })
         if (response.success) {
@@ -385,31 +371,7 @@ export const ManageInventoryPage = () => {
       }
     }
     fetchActiveProducts()
-  }, [isImportModalOpen, isManualStockModalOpen])
-
-
-  // Autocomplete search suggestions for manual stock creation modal
-  const manualStockSearchSuggestions = useMemo(() => {
-    if (!manualStockSearchQuery.trim()) return []
-    const query = manualStockSearchQuery.toLowerCase()
-    return activeProducts.filter((p) => {
-      const isProductActive = p.status === 'active' || p.status === true
-      if (!isProductActive) return false
-
-      // Filter out products already present in the branch inventory to avoid duplicates
-      const existsInBranch = inventoryList.some(
-        inv => {
-          const invProdId = typeof inv.productId === 'object' ? inv.productId?._id : inv.productId
-          return invProdId === p._id
-        }
-      )
-      if (existsInBranch) return false
-
-      const nameMatch = (p.productName || p.name || '').toLowerCase().includes(query)
-      const skuMatch = (p.sku || '').toLowerCase().includes(query)
-      return nameMatch || skuMatch
-    })
-  }, [manualStockSearchQuery, activeProducts, inventoryList])
+  }, [isImportModalOpen])
 
   // Auto-refresh for stock tab
   useEffect(() => {
@@ -591,63 +553,7 @@ export const ManageInventoryPage = () => {
     setImportItems([])
   }
 
-  // Submit manual stock initialization
-  const handleManualStockSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!manualStockBranchId) {
-      setManualStockError('❌ Vui lòng chọn chi nhánh.')
-      return
-    }
-    if (!manualStockProductId) {
-      setManualStockError('❌ Vui lòng tìm và chọn sản phẩm.')
-      return
-    }
-    if (manualStockQuantity < 0) {
-      setManualStockError('❌ Số lượng tồn kho không được âm.')
-      return
-    }
-    if (manualStockAvgCost < 0) {
-      setManualStockError('❌ Giá vốn trung bình không được âm.')
-      return
-    }
-    if (manualStockThreshold < 0) {
-      setManualStockError('❌ Định mức cảnh báo không được âm.')
-      return
-    }
 
-    try {
-      setManualStockLoading(true)
-      setManualStockError(null)
-      const res = await inventoryService.createInventory({
-        branchId: manualStockBranchId,
-        productId: manualStockProductId,
-        quantity: Math.floor(manualStockQuantity),
-        averageCost: manualStockAvgCost,
-        lowStockThreshold: Math.floor(manualStockThreshold),
-      })
-
-      if (res.success) {
-        setManualStockSuccess(true)
-        setTimeout(() => {
-          setManualStockSuccess(false)
-          setIsManualStockModalOpen(false)
-          setManualStockProductId('')
-          setManualStockSearchQuery('')
-          setManualStockQuantity(0)
-          setManualStockAvgCost(0)
-          setManualStockThreshold(10)
-          fetchInventory() // Refresh stock list
-        }, 1500)
-      } else {
-        setManualStockError('❌ ' + (res.message || 'Không thể khởi tạo tồn kho sản phẩm.'))
-      }
-    } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || 'Lỗi hệ thống khi khởi tạo tồn kho.'
-      setManualStockError('❌ ' + msg)
-    } finally {
-      setManualStockLoading(false)
-    }
-  }
 
   // Handle edit click
   const handleEditStockClick = (item: Inventory) => {
@@ -1103,24 +1009,7 @@ export const ManageInventoryPage = () => {
                 Xuất Excel
               </button>
 
-              <button
-                onClick={() => {
-                  setManualStockError(null)
-                  setManualStockSuccess(false)
-                  setManualStockBranchId(selectedBranchId)
-                  setManualStockProductId('')
-                  setManualStockSearchQuery('')
-                  setManualStockQuantity(0)
-                  setManualStockAvgCost(0)
-                  setManualStockThreshold(10)
-                  setIsManualStockModalOpen(true)
-                }}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white transition-all hover:bg-opacity-90 active:scale-95 shadow-md hover:shadow-lg"
-                type="button"
-              >
-                <PlusCircle size={16} />
-                Khởi tạo tồn kho
-              </button>
+
             </>
           )}
           {activeTab === 'import' && (
@@ -2399,210 +2288,7 @@ export const ManageInventoryPage = () => {
         </div>
       )}
 
-      {/* ── MANUAL STOCK CREATION MODAL ── */}
-      {isManualStockModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-lg bg-surface rounded-2xl border border-outline-variant shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-outline-variant bg-surface-container-low px-6 py-4">
-              <h2 className="text-lg font-black text-on-surface flex items-center gap-2">
-                <PlusCircle size={20} className="text-primary" />
-                Khởi tạo tồn kho thủ công
-              </h2>
-              <button
-                type="button"
-                onClick={() => setIsManualStockModalOpen(false)}
-                className="rounded-full p-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
 
-            {/* Modal Body */}
-            <form onSubmit={handleManualStockSubmit} className="p-6 space-y-4">
-              {manualStockError && (
-                <div className="flex items-center gap-3 p-4 bg-error-container text-on-error-container rounded-xl border border-error/20">
-                  <AlertCircle size={20} className="shrink-0" />
-                  <p className="text-sm font-semibold">{manualStockError}</p>
-                </div>
-              )}
-
-              {manualStockSuccess && (
-                <div className="flex items-center gap-3 p-4 bg-success-container text-on-success-container rounded-xl border border-success/20">
-                  <Check size={20} className="shrink-0" />
-                  <p className="text-sm font-semibold">Khởi tạo tồn kho sản phẩm thành công!</p>
-                </div>
-              )}
-
-              {/* Chi nhánh */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
-                  Chi nhánh nhận tồn kho
-                </label>
-                <select
-                  value={manualStockBranchId}
-                  onChange={(e) => setManualStockBranchId(e.target.value)}
-                  className="w-full bg-surface-container-low border-none rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary text-sm font-semibold transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                  disabled={isManagerOrStaff}
-                >
-                  {branches.map((b) => (
-                    <option key={b._id} value={b._id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Tìm & Chọn sản phẩm */}
-              <div className="space-y-1.5 relative">
-                <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
-                  Chọn sản phẩm khởi tạo <span className="text-error">*</span>
-                </label>
-                {manualStockProductId ? (
-                  (() => {
-                    const selectedProd = activeProducts.find(p => p._id === manualStockProductId)
-                    return (
-                      <div className="flex items-center gap-3 p-3 bg-surface-container-low rounded-xl border border-outline-variant/60">
-                        <div className="w-10 h-10 bg-surface rounded-lg overflow-hidden border border-outline-variant flex items-center justify-center shrink-0">
-                          {selectedProd?.imageUrl ? (
-                            <img src={selectedProd.imageUrl} alt={selectedProd.productName} className="w-full h-full object-cover" />
-                          ) : (
-                            <Package size={18} className="text-on-surface-variant opacity-60" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-on-surface truncate">{selectedProd?.productName || selectedProd?.name}</p>
-                          <p className="text-xs text-on-surface-variant font-mono">{selectedProd?.sku} | Đơn vị: {selectedProd?.unit || 'cái'}</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setManualStockProductId('')
-                            setManualStockSearchQuery('')
-                          }}
-                          className="rounded-lg p-2 text-error hover:bg-error-container/20 transition-colors text-xs font-bold"
-                        >
-                          Thay đổi
-                        </button>
-                      </div>
-                    )
-                  })()
-                ) : (
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={manualStockSearchQuery}
-                      onChange={(e) => setManualStockSearchQuery(e.target.value)}
-                      placeholder="Tìm theo tên hoặc SKU sản phẩm gốc..."
-                      className="w-full bg-surface-container-low border border-outline-variant/60 rounded-xl py-3 px-4 pl-11 focus:ring-2 focus:ring-primary focus:border-primary text-sm transition-all shadow-sm"
-                    />
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant opacity-70" size={16} />
-                    {manualStockSearchQuery && (
-                      <button
-                        type="button"
-                        onClick={() => setManualStockSearchQuery('')}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface p-1 rounded-full hover:bg-surface-container-high transition-colors"
-                      >
-                        <X size={14} />
-                      </button>
-                    )}
-
-                    {/* Suggestions list */}
-                    {manualStockSearchSuggestions.length > 0 && (
-                      <div className="absolute left-0 right-0 top-full mt-1 bg-surface border border-outline-variant rounded-xl shadow-2xl max-h-60 overflow-y-auto z-50 divide-y divide-outline-variant/60 animate-in fade-in slide-in-from-top-2 duration-150">
-                        {manualStockSearchSuggestions.map((p) => (
-                          <button
-                            key={p._id}
-                            type="button"
-                            onClick={() => {
-                              setManualStockProductId(p._id)
-                              setManualStockSearchQuery('')
-                            }}
-                            className="w-full text-left p-3 hover:bg-surface-container-low transition-colors flex items-center gap-3"
-                          >
-                            <div className="w-8 h-8 bg-surface-container-low rounded overflow-hidden border border-outline-variant flex items-center justify-center shrink-0">
-                              {p.imageUrl ? (
-                                <img src={p.imageUrl} alt={p.productName} className="w-full h-full object-cover" />
-                              ) : (
-                                <Package size={14} className="text-on-surface-variant opacity-65" />
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-bold text-on-surface truncate">{p.productName || p.name}</p>
-                              <p className="text-xs text-on-surface-variant font-mono">{p.sku} | Đơn vị: {p.unit || 'cái'}</p>
-                            </div>
-                            <div className="text-right shrink-0">
-                              <p className="text-xs font-semibold text-on-surface-variant">Giá bán</p>
-                              <p className="text-sm font-bold text-primary">{formatVND(p.price || 0)}</p>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    {manualStockSearchQuery.trim() && manualStockSearchSuggestions.length === 0 && (
-                      <div className="absolute left-0 right-0 top-full mt-1 bg-surface border border-outline-variant rounded-xl shadow-2xl p-4 text-center z-50 text-xs font-medium text-on-surface-variant bg-surface-container-low">
-                        Không tìm thấy sản phẩm chưa có tồn kho tại chi nhánh này.
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Thông số tồn kho */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Định mức cảnh báo */}
-                <div className="space-y-1.5">
-                  <label htmlFor="manual-threshold" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
-                    Cảnh báo tồn ít <span className="text-error">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    id="manual-threshold"
-                    min="0"
-                    step="1"
-                    required
-                    value={manualStockThreshold}
-                    onChange={(e) => setManualStockThreshold(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="w-full bg-surface-container-low border border-outline-variant/60 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary text-sm font-semibold transition-all"
-                  />
-                </div>
-
-                {/* Gợi ý quy trình */}
-                <div className="bg-surface-container-low p-3 rounded-xl border border-outline-variant/60 flex flex-col justify-center text-xs text-on-surface-variant font-medium">
-                  <p>💡 **Lưu ý:** Số lượng tồn kho và giá vốn ban đầu sẽ được khởi tạo mặc định bằng **0**.</p>
-                  <p className="mt-1">Để thêm hàng thực tế, hãy thực hiện **Nhập kho** ở tab Lịch sử nhập kho.</p>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-outline-variant">
-                <button
-                  type="button"
-                  onClick={() => setIsManualStockModalOpen(false)}
-                  disabled={manualStockLoading}
-                  className="rounded-xl px-5 py-3 text-sm font-bold text-on-surface-variant hover:bg-surface-container-low transition-colors disabled:opacity-50"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  disabled={manualStockLoading || !manualStockProductId}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white transition-all hover:bg-opacity-90 active:scale-95 disabled:opacity-50"
-                >
-                  {manualStockLoading ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin" />
-                      Đang xử lý...
-                    </>
-                  ) : (
-                    'Khởi tạo tồn kho'
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* ── EDIT STOCK MODAL ── */}
       {isEditStockModalOpen && (

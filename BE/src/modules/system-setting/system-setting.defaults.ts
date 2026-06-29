@@ -82,15 +82,6 @@ export const DEFAULT_SYSTEM_SETTINGS: DefaultSetting[] = [
     isPublic: true,
   },
   {
-    key: 'low_stock_threshold',
-    label: 'Low stock threshold',
-    group: 'inventory',
-    value: 10,
-    valueType: 'number',
-    description: 'Quantity at which low-stock alerts are triggered',
-    isPublic: false,
-  },
-  {
     key: 'vat_rate',
     label: 'VAT rate',
     group: 'payment',
