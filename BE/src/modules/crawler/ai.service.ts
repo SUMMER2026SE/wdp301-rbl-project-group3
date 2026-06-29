@@ -8,9 +8,7 @@ if (env.geminiApiKey) {
 
 export interface ParsedProduct {
   name: string;
-  sku: string;
-  salePrice: number;
-  suggestedPrice?: number;
+  suggestedPrice: number;
   unit: string;
   description: string;
   categoryName?: string;
@@ -29,9 +27,7 @@ Dưới đây là một đoạn văn bản thô được cào từ một trang w
 Hãy trích xuất thông tin sản phẩm và định dạng lại dưới dạng JSON theo đúng schema sau:
 {
   "name": "Tên sản phẩm (chuỗi)",
-  "sku": "Mã SKU (chuỗi viết hoa không dấu, độ dài 5-15 ký tự, tự tạo dựa trên tên nếu không có sẵn)",
-  "salePrice": "Giá bán khuyến mãi hoặc giá bán hiện tại cào từ Winmart (số nguyên, không chứa ký tự)",
-  "suggestedPrice": "Giá gợi ý bán lẻ tối ưu cho siêu thị của chúng ta (số nguyên, đề xuất thấp hơn khoảng 2-5% so với Winmart salePrice để cạnh tranh giá)",
+  "suggestedPrice": "Giá bán khuyến mãi hoặc giá bán hiện tại cào từ Winmart (số nguyên, không chứa ký tự)",
   "unit": "Đơn vị tính, ví dụ: kg, g, lốc, hộp, gói, cái (chuỗi)",
   "description": "Đoạn mô tả ngắn gọn về sản phẩm (chuỗi)",
   "categoryName": "Tên danh mục phù hợp nhất với sản phẩm này (chuỗi)"
@@ -60,7 +56,7 @@ ${rawText.substring(0, 20000)}
       text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
 
       const parsed: ParsedProduct = JSON.parse(text);
-      if (!parsed.name || parsed.salePrice === undefined || parsed.salePrice === null) {
+      if (!parsed.name || parsed.suggestedPrice === undefined || parsed.suggestedPrice === null) {
          throw new Error("Missing required fields in AI response. Parsed: " + JSON.stringify(parsed));
       }
       return parsed;
