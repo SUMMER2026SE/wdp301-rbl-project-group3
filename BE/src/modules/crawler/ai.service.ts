@@ -8,6 +8,7 @@ if (env.geminiApiKey) {
 
 export interface ParsedProduct {
   name: string;
+  brand?: string;
   suggestedPrice: number;
   unit: string;
   description: string;
@@ -27,6 +28,7 @@ Dưới đây là một đoạn văn bản thô được cào từ một trang w
 Hãy trích xuất thông tin sản phẩm và định dạng lại dưới dạng JSON theo đúng schema sau:
 {
   "name": "Tên sản phẩm (chuỗi)",
+  "brand": "Thương hiệu sản phẩm (chuỗi, có thể bỏ trống nếu không tìm thấy)",
   "suggestedPrice": "Giá bán khuyến mãi hoặc giá bán hiện tại cào từ Winmart (số nguyên, không chứa ký tự)",
   "unit": "Đơn vị tính, ví dụ: kg, g, lốc, hộp, gói, cái (chuỗi)",
   "description": "Đoạn mô tả ngắn gọn về sản phẩm (chuỗi)",

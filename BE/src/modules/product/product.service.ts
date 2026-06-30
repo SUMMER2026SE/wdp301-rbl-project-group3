@@ -2,6 +2,8 @@ import { IProduct } from '../../models/product.model';
 import { AppError } from '../../middlewares/errorHandler.middleware';
 import { cloudinary } from '../../config/cloudinary.config';
 import { productRepository } from './product.repository';
+import { generateUniqueSku } from '../../utils/sku.util';
+import { normalizeString } from '../../utils/string.util';
 
 export interface ListProductsQuery {
   page: number;
@@ -74,18 +76,7 @@ export class ProductService {
   async createProduct(data: Partial<IProduct>, file?: ProductFile): Promise<IProduct> {
     let sku = data.sku ? String(data.sku).toUpperCase().trim() : '';
     if (!sku) {
-      let isUnique = false;
-      let attempts = 0;
-      while (!isUnique && attempts < 10) {
-        const stamp = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(2, 10);
-        const random = Math.floor(1000 + Math.random() * 9000);
-        sku = `SP-${stamp}-${random}`;
-        const existing = await productRepository.findBySku(sku);
-        if (!existing) {
-          isUnique = true;
-        }
-        attempts++;
-      }
+      sku = await generateUniqueSku();
     } else {
       const existing = await productRepository.findBySku(sku);
       if (existing) throw new AppError('Product SKU already exists', 409);
@@ -103,6 +94,9 @@ export class ProductService {
       costPrice: data.costPrice ?? 0,
       salePrice: data.salePrice ?? 0,
       imageUrl,
+      normalizedName: data.name ? normalizeString(data.name) : undefined,
+      normalizedBrand: data.brand ? normalizeString(data.brand) : undefined,
+      normalizedUnit: normalizeString(data.unit || 'item'),
     });
   }
 
@@ -120,6 +114,16 @@ export class ProductService {
     await this.getProductById(id);
 
     const updateData: Partial<IProduct> = { ...data };
+
+    if (updateData.name !== undefined) {
+      updateData.normalizedName = normalizeString(updateData.name);
+    }
+    if (updateData.brand !== undefined) {
+      updateData.normalizedBrand = normalizeString(updateData.brand);
+    }
+    if (updateData.unit !== undefined) {
+      updateData.normalizedUnit = normalizeString(updateData.unit);
+    }
 
     if (updateData.sku) {
       const sku = String(updateData.sku).toUpperCase();
