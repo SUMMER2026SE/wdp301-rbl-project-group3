@@ -4,6 +4,8 @@ import { aiService } from './ai.service';
 import { crawlerImageService } from './image.service';
 import { Product } from '../../models/product.model';
 import { Category } from '../../models/category.model';
+import { generateUniqueSku } from '../../utils/sku.util';
+import { normalizeString } from '../../utils/string.util';
 
 export class CrawlerService {
   private isRunning = false;
@@ -103,9 +105,21 @@ export class CrawlerService {
               }
 
               let finalImageUrl: string | undefined = undefined;
-              const generatedSku = 'WM' + Date.now().toString() + Math.floor(Math.random() * 1000).toString();
-              const existingProduct = await Product.findOne({ name: parsedData.name });
-              const productSku = existingProduct ? existingProduct.sku : generatedSku;
+              
+              const normalizedName = normalizeString(parsedData.name);
+              const normalizedBrand = parsedData.brand ? normalizeString(parsedData.brand) : undefined;
+              const normalizedUnit = normalizeString(parsedData.unit || 'item');
+
+              const existingProduct = await Product.findOne({ 
+                normalizedName, 
+                normalizedBrand, 
+                normalizedUnit 
+              });
+              
+              let productSku = existingProduct?.sku;
+              if (!productSku) {
+                productSku = await generateUniqueSku();
+              }
 
               if (mainImageUrl) {
                 const uploaded = await crawlerImageService.uploadFromUrl(mainImageUrl, productSku);
@@ -116,13 +130,20 @@ export class CrawlerService {
               if (existingProduct) {
                 existingProduct.suggestedPrice = parsedData.suggestedPrice;
                 existingProduct.description = parsedData.description || existingProduct.description;
+                if (parsedData.brand) existingProduct.brand = parsedData.brand;
                 if (categoryId) existingProduct.categoryId = categoryId;
                 if (finalImageUrl) existingProduct.imageUrl = finalImageUrl;
+                
+                existingProduct.normalizedName = normalizedName;
+                existingProduct.normalizedBrand = normalizedBrand;
+                existingProduct.normalizedUnit = normalizedUnit;
+
                 await existingProduct.save();
                 log.info(`Updated product: ${existingProduct.name}`);
               } else {
                 await Product.create({
                   name: parsedData.name,
+                  brand: parsedData.brand,
                   sku: productSku,
                   salePrice: 0,
                   suggestedPrice: parsedData.suggestedPrice,
@@ -131,6 +152,9 @@ export class CrawlerService {
                   categoryId: categoryId,
                   imageUrl: finalImageUrl,
                   status: 'active',
+                  normalizedName,
+                  normalizedBrand,
+                  normalizedUnit,
                 });
                 log.info(`Created new product: ${parsedData.name}`);
               }
