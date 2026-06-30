@@ -230,6 +230,7 @@ export interface ImportReceiptItem {
   quantity: number
   unitCost: number
   subtotal: number
+  verified?: boolean
 }
 
 export interface ImportReceipt {
@@ -240,9 +241,14 @@ export interface ImportReceipt {
   note?: string
   items: ImportReceiptItem[]
   totalCost: number
-  createdBy: { _id: string; fullName: string; email: string } | string
+  createdBy: { _id: string; fullName: string; email: string }
   createdAt: string
   updatedAt?: string
+  status: 'active' | 'adjusting' | 'cancelled'
+  verificationStatus?: 'pending' | 'verified' | 'partially_verified'
+  verifiedBy?: { _id: string; fullName: string; email: string }
+  verifiedAt?: string
+  verificationNote?: string
 }
 
 export interface CreateImportReceiptInput {

@@ -7,6 +7,7 @@ export interface IImportReceiptItem {
   subtotal: number;
   appliedInventoryQuantity?: number;
   appliedAverageCost?: number;
+  verified?: boolean;
 }
 
 export interface IImportReceipt extends Document {
@@ -23,6 +24,10 @@ export interface IImportReceipt extends Document {
   mutationLockedAt?: Date;
   cancelledBy?: Types.ObjectId;
   cancelledAt?: Date;
+  verificationStatus?: 'pending' | 'verified' | 'partially_verified';
+  verifiedBy?: Types.ObjectId;
+  verifiedAt?: Date;
+  verificationNote?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -35,6 +40,7 @@ const ImportReceiptItemSchema = new Schema<IImportReceiptItem>(
     subtotal: { type: Number, required: true, min: 0 },
     appliedInventoryQuantity: { type: Number, min: 0 },
     appliedAverageCost: { type: Number, min: 0 },
+    verified: { type: Boolean, default: false },
   },
   { _id: false }
 );
@@ -57,6 +63,14 @@ const ImportReceiptSchema = new Schema<IImportReceipt>(
     mutationLockedAt: { type: Date },
     cancelledBy: { type: Schema.Types.ObjectId, ref: 'User' },
     cancelledAt: { type: Date },
+    verificationStatus: {
+      type: String,
+      enum: ['pending', 'verified', 'partially_verified'],
+      default: 'pending',
+    },
+    verifiedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    verifiedAt: { type: Date },
+    verificationNote: { type: String, trim: true },
   },
   {
     timestamps: true,

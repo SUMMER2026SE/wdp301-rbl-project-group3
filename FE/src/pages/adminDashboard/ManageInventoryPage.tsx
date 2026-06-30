@@ -23,7 +23,9 @@ import {
   Calendar,
   Minus,
   Play,
-  Square
+  Square,
+  Clock,
+  UserCheck
 } from 'lucide-react'
 import apiClient from '@/services/api';
 import { inventoryService } from '@services/inventoryService'
@@ -84,6 +86,13 @@ export const ManageInventoryPage = () => {
   // Optimized Stock-In autocomplete & historical lookup states
   const [activeProducts, setActiveProducts] = useState<Product[]>([])
   const [importBranchInventory, setImportBranchInventory] = useState<Inventory[]>([])
+
+  // Verification states
+  const [viewingReceipt, setViewingReceipt] = useState<ImportReceipt | null>(null)
+  const [verifiedProductIds, setVerifiedProductIds] = useState<string[]>([])
+  const [verificationNote, setVerificationNote] = useState('')
+  const [verifyLoading, setVerifyLoading] = useState(false)
+  const [verifyError, setVerifyError] = useState<string | null>(null)
 
   // Manual Stock Editing states
   const [isEditStockModalOpen, setIsEditStockModalOpen] = useState(false)
@@ -608,6 +617,68 @@ export const ManageInventoryPage = () => {
       setEditStockError('❌ ' + msg)
     } finally {
       setEditStockLoading(false)
+    }
+  }
+
+  // Open receipt detail and prepare verification checklist
+  const handleOpenReceiptDetail = (rec: ImportReceipt) => {
+    setViewingReceipt(rec)
+    setVerificationNote(rec.verificationNote || '')
+    setVerifyError(null)
+
+    if (rec.verificationStatus === 'pending' || !rec.verificationStatus) {
+      // Default to checking all items
+      setVerifiedProductIds(rec.items.map((it) => {
+        const prodId = typeof it.productId === 'object' ? it.productId._id : (it.productId as any)
+        return prodId
+      }))
+    } else {
+      // Show verified items based on receipt state
+      const verifiedIds = rec.items
+        .filter((it) => it.verified)
+        .map((it) => {
+          const prodId = typeof it.productId === 'object' ? it.productId._id : (it.productId as any)
+          return prodId
+        })
+      setVerifiedProductIds(verifiedIds)
+    }
+  }
+
+  // Toggle checklist checkbox
+  const handleToggleProductVerified = (prodId: string) => {
+    setVerifiedProductIds((prev) => {
+      if (prev.includes(prodId)) {
+        return prev.filter((id) => id !== prodId)
+      } else {
+        return [...prev, prodId]
+      }
+    })
+  }
+
+  // Submit checklist verification
+  const handleVerifySubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!viewingReceipt) return
+
+    try {
+      setVerifyLoading(true)
+      setVerifyError(null)
+      const res = await inventoryService.verifyImportReceipt(viewingReceipt._id, {
+        verifiedProductIds,
+        note: verificationNote,
+      })
+
+      if (res.success && res.data) {
+        setViewingReceipt(res.data)
+        // Refresh receipts list
+        fetchReceipts()
+      } else {
+        setVerifyError(res.message || 'Không thể xác nhận kiểm hàng.')
+      }
+    } catch (err: any) {
+      setVerifyError(err.response?.data?.message || err.message || 'Đã xảy ra lỗi khi gửi xác nhận.')
+    } finally {
+      setVerifyLoading(false)
     }
   }
 
@@ -1510,13 +1581,15 @@ export const ManageInventoryPage = () => {
                       <th className="p-4 font-bold text-on-surface-variant text-right">Tổng giá trị</th>
                       <th className="p-4 font-bold text-on-surface-variant">Người tạo</th>
                       <th className="p-4 font-bold text-on-surface-variant">Ngày nhập</th>
-                      <th className="p-4 font-bold text-on-surface-variant">Chi tiết sản phẩm</th>
+                      <th className="p-4 font-bold text-on-surface-variant text-center">Trạng thái kiểm</th>
+                      <th className="p-4 font-bold text-on-surface-variant text-center">Hành động</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-outline-variant/60">
                     {receiptsStats.filtered.map((rec) => {
                       const branchName = typeof rec.branchId === 'object' ? rec.branchId.name : 'N/A'
                       const creatorName = typeof rec.createdBy === 'object' ? rec.createdBy.fullName : 'System'
+                      const vStatus = rec.verificationStatus || 'pending'
                       return (
                         <tr key={rec._id} className="hover:bg-surface-container-low/20 transition-colors">
                           <td className="p-4 font-mono font-bold text-primary">
@@ -1537,19 +1610,35 @@ export const ManageInventoryPage = () => {
                           <td className="p-4 text-on-surface-variant">
                             {new Date(rec.createdAt).toLocaleString()}
                           </td>
-                          <td className="p-4 max-w-xs">
-                            <div className="space-y-1 text-xs">
-                              {rec.items.map((it, idx) => (
-                                <div key={idx} className="flex justify-between gap-2 text-[11px] text-on-surface-variant">
-                                  <span className="truncate font-semibold max-w-[150px]">
-                                    {it.productId?.productName || 'Sản phẩm'}
-                                  </span>
-                                  <span>
-                                    x{it.quantity} ({formatVND(it.unitCost)})
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
+                          <td className="p-4 text-center">
+                            {vStatus === 'pending' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                <Clock size={12} />
+                                Chờ kiểm hàng
+                              </span>
+                            )}
+                            {vStatus === 'verified' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <Check size={12} />
+                                Đã nhận đủ
+                              </span>
+                            )}
+                            {vStatus === 'partially_verified' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                <AlertTriangle size={12} />
+                                Nhận thiếu
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-4 text-center">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenReceiptDetail(rec)}
+                              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 transition-colors"
+                            >
+                              <Layers size={14} />
+                              Xem &amp; Kiểm hàng
+                            </button>
                           </td>
                         </tr>
                       )
@@ -2279,7 +2368,7 @@ export const ManageInventoryPage = () => {
               {/* Sản phẩm info */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
-                  Sản phẩm & Chi nhánh
+                  Sản phẩm &amp; Chi nhánh
                 </label>
                 <div className="flex items-center gap-3 p-3 bg-surface-container-low rounded-xl border border-outline-variant/60">
                   <div className="w-10 h-10 bg-surface rounded-lg overflow-hidden border border-outline-variant flex items-center justify-center shrink-0">
@@ -2383,6 +2472,204 @@ export const ManageInventoryPage = () => {
           </div>
         </div>
       )}
+
+      {/* ── IMPORT RECEIPT DETAIL & VERIFICATION CHECKLIST MODAL ── */}
+      {viewingReceipt && (() => {
+        const branchName = typeof viewingReceipt.branchId === 'object' ? viewingReceipt.branchId.name : 'Chi nhánh'
+        const creatorName = typeof viewingReceipt.createdBy === 'object' ? viewingReceipt.createdBy.fullName : 'System'
+        const vStatus = viewingReceipt.verificationStatus || 'pending'
+        const isPending = vStatus === 'pending'
+        
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="w-full max-w-2xl bg-surface rounded-2xl border border-outline-variant shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+              
+              {/* Modal Header */}
+              <div className="flex items-center justify-between border-b border-outline-variant bg-surface-container-low px-6 py-4">
+                <h2 className="text-lg font-black text-on-surface flex items-center gap-2">
+                  <UserCheck size={20} className="text-primary" />
+                  Chi tiết &amp; Kiểm hàng Phiếu #{viewingReceipt.code}
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setViewingReceipt(null)}
+                  className="rounded-full p-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <form onSubmit={handleVerifySubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+                {verifyError && (
+                  <div className="flex items-center gap-3 p-4 bg-error-container text-on-error-container rounded-xl border border-error/20">
+                    <AlertCircle size={20} className="shrink-0" />
+                    <p className="text-sm font-semibold">{verifyError}</p>
+                  </div>
+                )}
+
+                {/* Info summary */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-surface-container-low p-4 rounded-xl border border-outline-variant/60">
+                  <div className="space-y-1 text-xs">
+                    <p className="text-on-surface-variant uppercase font-bold tracking-wider">Thông tin chung</p>
+                    <p className="text-sm text-on-surface font-semibold">Chi nhánh: <span className="text-primary">{branchName}</span></p>
+                    <p className="text-sm text-on-surface font-semibold">Nhà cung cấp: <span>{viewingReceipt.supplierName || 'N/A'}</span></p>
+                    <p className="text-sm text-on-surface font-semibold">Ngày tạo: <span>{new Date(viewingReceipt.createdAt).toLocaleString()}</span></p>
+                  </div>
+                  <div className="space-y-1 text-xs">
+                    <p className="text-on-surface-variant uppercase font-bold tracking-wider">Người tạo &amp; Tổng cộng</p>
+                    <p className="text-sm text-on-surface font-semibold">Người tạo: <span className="font-bold text-on-surface">{creatorName}</span></p>
+                    <p className="text-sm text-on-surface font-semibold">Tổng giá trị: <span className="text-primary font-black">{formatVND(viewingReceipt.totalCost)}</span></p>
+                    <p className="text-sm text-on-surface font-semibold">
+                      Trạng thái: 
+                      <span className={`ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                        viewingReceipt.status === 'active' ? 'bg-emerald-100 text-emerald-800' :
+                        viewingReceipt.status === 'cancelled' ? 'bg-rose-100 text-rose-800' :
+                        'bg-amber-100 text-amber-800'
+                      }`}>
+                        {viewingReceipt.status}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Audit verification report details if verified */}
+                {!isPending && (
+                  <div className="p-4 bg-emerald-50/50 border border-emerald-200/60 rounded-xl space-y-2">
+                    <p className="text-xs font-black uppercase tracking-wide text-emerald-800 flex items-center gap-1.5">
+                      <Check size={14} />
+                      Báo cáo kiểm hàng (Đã xử lý)
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-emerald-950 font-medium">
+                      <p>Người kiểm kho: <strong className="text-on-surface">{viewingReceipt.verifiedBy?.fullName || 'Nhân viên'}</strong></p>
+                      <p>Thời gian kiểm: <span className="text-on-surface">{viewingReceipt.verifiedAt ? new Date(viewingReceipt.verifiedAt).toLocaleString() : 'N/A'}</span></p>
+                    </div>
+                    {viewingReceipt.verificationNote && (
+                      <p className="text-xs text-on-surface-variant mt-1.5 italic bg-surface/50 p-2.5 rounded-lg border border-outline-variant/40">
+                        &ldquo;{viewingReceipt.verificationNote}&rdquo;
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Product items table / checklist */}
+                <div className="space-y-2">
+                  <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                    {isPending ? 'Checklist Kiểm hàng (Tích chọn sản phẩm nhận đủ)' : 'Kết quả đối soát sản phẩm'}
+                  </p>
+                  
+                  <div className="border border-outline-variant rounded-xl overflow-hidden divide-y divide-outline-variant/60">
+                    {viewingReceipt.items.map((it) => {
+                      const prod = it.productId
+                      const prodId = typeof prod === 'object' ? prod._id : (prod as any)
+                      const isTicked = verifiedProductIds.includes(prodId)
+                      const isItemVerified = !isPending ? it.verified : isTicked
+
+                      return (
+                        <div key={prodId} className={`flex items-center gap-4 p-3 transition-colors ${
+                          isItemVerified ? 'bg-emerald-50/15' : 'bg-rose-50/10'
+                        }`}>
+                          
+                          {/* Image */}
+                          <div className="w-10 h-10 bg-surface rounded overflow-hidden border border-outline-variant flex items-center justify-center shrink-0">
+                            {prod?.imageUrl ? (
+                              <img src={prod.imageUrl} alt={prod.productName} className="w-full h-full object-cover" />
+                            ) : (
+                              <Package size={18} className="text-on-surface-variant opacity-60" />
+                            )}
+                          </div>
+
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-on-surface truncate">{prod?.productName || 'Sản phẩm'}</p>
+                            <p className="text-xs text-on-surface-variant font-mono">
+                              SKU: {prod?.sku} | Đơn vị: {prod?.unit || 'cái'}
+                            </p>
+                          </div>
+
+                          {/* Quantity & price info */}
+                          <div className="text-right shrink-0">
+                            <p className="text-xs font-bold text-on-surface">SL nhập: {it.quantity}</p>
+                            <p className="text-[11px] text-on-surface-variant">Đơn giá: {formatVND(it.unitCost)}</p>
+                          </div>
+
+                          {/* Checkbox or verification badge */}
+                          <div className="shrink-0 pl-2">
+                            {isPending ? (
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={isTicked}
+                                  onChange={() => handleToggleProductVerified(prodId)}
+                                  className="w-5 h-5 rounded-lg border-outline text-primary focus:ring-primary focus:ring-offset-0"
+                                />
+                                <span className="text-xs font-bold text-on-surface-variant select-none">Đủ</span>
+                              </label>
+                            ) : (
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
+                                it.verified ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                              }`}>
+                                {it.verified ? 'Nhận đủ' : 'Thiếu/Hỏng'}
+                              </span>
+                            )}
+                          </div>
+
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Verification Note input for pending */}
+                {isPending && (
+                  <div className="space-y-1.5">
+                    <label htmlFor="verify-note" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                      Ghi chú kiểm kho
+                    </label>
+                    <textarea
+                      id="verify-note"
+                      rows={2}
+                      value={verificationNote}
+                      onChange={(e) => setVerificationNote(e.target.value)}
+                      placeholder="Ví dụ: Đã nhận đủ hàng, không có hư hỏng / Thiếu 2 thùng Coca do va đập..."
+                      className="w-full bg-surface-container-low border border-outline-variant/60 rounded-xl py-2 px-3 text-sm focus:ring-2 focus:ring-primary outline-none transition-all"
+                    />
+                  </div>
+                )}
+
+                {/* Modal Actions */}
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-outline-variant">
+                  <button
+                    type="button"
+                    onClick={() => setViewingReceipt(null)}
+                    className="rounded-xl px-5 py-3 text-sm font-bold text-on-surface-variant hover:bg-surface-container-low transition-colors"
+                  >
+                    Đóng
+                  </button>
+                  {isPending && (
+                    <button
+                      type="submit"
+                      disabled={verifyLoading}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white transition-all hover:bg-opacity-90 active:scale-95 disabled:opacity-50"
+                    >
+                      {verifyLoading ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin" />
+                          Đang gửi...
+                        </>
+                      ) : (
+                        'Xác nhận &amp; Gửi báo cáo'
+                      )}
+                    </button>
+                  )}
+                </div>
+
+              </form>
+
+            </div>
+          </div>
+        )
+      })()}
 
       {/* CRAWLER STOP CONFIRM MODAL */}
       {showCrawlerStopConfirm && (

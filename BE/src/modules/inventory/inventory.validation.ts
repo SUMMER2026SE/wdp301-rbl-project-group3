@@ -97,4 +97,14 @@ export const updateInventorySchema = z.object({
   }),
 });
 
+export const verifyImportReceiptSchema = z.object({
+  params: z.object({
+    id: objectId,
+  }),
+  body: z.object({
+    verifiedProductIds: z.array(objectId),
+    note: z.string().max(500).optional(),
+  }),
+});
+
 export { validate };

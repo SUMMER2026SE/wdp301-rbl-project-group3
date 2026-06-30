@@ -99,4 +99,16 @@ export const inventoryService = {
     const response = await apiClient.delete(`/api/inventory/${id}`)
     return response.data
   },
+
+  // Verify an import receipt (Staff checklist submission)
+  verifyImportReceipt: async (
+    id: string,
+    data: {
+      verifiedProductIds: string[]
+      note?: string
+    }
+  ): Promise<ApiResponse<ImportReceipt>> => {
+    const response = await apiClient.post(`/api/inventory/import-receipts/${id}/verify`, data)
+    return response.data
+  },
 }
