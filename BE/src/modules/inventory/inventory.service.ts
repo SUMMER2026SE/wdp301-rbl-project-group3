@@ -153,7 +153,7 @@ export class InventoryService {
 
       if (isVerified) {
         await this.ensureReceiptStockUnchanged(lockedReceipt);
-        const verifiedItems = lockedReceipt.items.filter(it => it.verified);
+        const verifiedItems = lockedReceipt.items.filter(it => it.verifiedQuantity && it.verifiedQuantity > 0);
         snapshots = await this.captureInventorySnapshots(
           verifiedItems.map((item) => ({
             branchId: currentBranchId,
@@ -236,7 +236,7 @@ export class InventoryService {
       
       if (isVerified) {
         await this.ensureReceiptStockUnchanged(lockedReceipt);
-        const verifiedItems = lockedReceipt.items.filter(it => it.verified);
+        const verifiedItems = lockedReceipt.items.filter(it => it.verifiedQuantity && it.verifiedQuantity > 0);
         snapshots = await this.captureInventorySnapshots(
           verifiedItems.map((item) => ({ branchId, productId: item.productId.toString() }))
         );
@@ -310,7 +310,8 @@ export class InventoryService {
     updatedBy: string
   ): Promise<void> {
     for (const item of items) {
-      if (!item.verified) continue;
+      const quantityToRemove = item.verifiedQuantity || 0;
+      if (quantityToRemove <= 0) continue;
 
       const replacementLastImportCost =
         await inventoryRepository.findLatestActiveImportCost(
@@ -321,7 +322,7 @@ export class InventoryService {
       const updated = await inventoryRepository.reverseImportedStock({
         branchId,
         productId: item.productId.toString(),
-        quantityToRemove: item.quantity,
+        quantityToRemove,
         unitCost: item.unitCost,
         updatedBy,
         replacementLastImportCost,
@@ -435,7 +436,7 @@ export class InventoryService {
     const branchId = receipt.branchId.toString();
 
     for (const item of receipt.items) {
-      if (!item.verified) continue;
+      if (!item.verifiedQuantity || item.verifiedQuantity <= 0) continue;
 
       if (
         item.appliedInventoryQuantity === undefined ||
@@ -545,7 +546,7 @@ export class InventoryService {
   async verifyImportReceipt(
     id: string,
     data: {
-      verifiedProductIds: string[];
+      verifiedItems: { productId: string; verifiedQuantity: number }[];
       note?: string;
       verifiedBy: string;
       actor: InventoryActor;
@@ -564,26 +565,49 @@ export class InventoryService {
       throw new AppError('Cannot verify a cancelled import receipt', 400);
     }
 
-    // Update verified flag for items
-    const updatedItems = receipt.items.map((item) => {
-      const verified = data.verifiedProductIds.includes(item.productId.toString());
-      return {
+    const branchId = receipt.branchId.toString();
+    const updatedItems = [];
+
+    for (const item of receipt.items) {
+      const match = data.verifiedItems.find(
+        (vi) => vi.productId === item.productId.toString()
+      );
+      const rawVQty = match ? match.verifiedQuantity : 0;
+      const verifiedQuantity = Math.max(0, Math.min(item.quantity, rawVQty));
+      const verified = verifiedQuantity === item.quantity;
+
+      let appliedQty = item.appliedInventoryQuantity;
+      let appliedAvgCost = item.appliedAverageCost;
+
+      if (verifiedQuantity > 0) {
+        const inventory = await inventoryRepository.upsertStock({
+          branchId,
+          productId: item.productId.toString(),
+          quantityToAdd: verifiedQuantity,
+          unitCost: item.unitCost,
+          updatedBy: data.verifiedBy,
+        });
+        appliedQty = inventory.quantity;
+        appliedAvgCost = inventory.averageCost;
+      }
+
+      updatedItems.push({
         productId: item.productId,
         quantity: item.quantity,
         unitCost: item.unitCost,
         subtotal: item.subtotal,
-        appliedInventoryQuantity: item.appliedInventoryQuantity,
-        appliedAverageCost: item.appliedAverageCost,
+        appliedInventoryQuantity: appliedQty,
+        appliedAverageCost: appliedAvgCost,
         verified,
-      };
-    });
+        verifiedQuantity,
+      });
+    }
 
-    // Compute status
     const allVerified = updatedItems.every((item) => item.verified);
     const verificationStatus = allVerified ? 'verified' : 'partially_verified';
 
     const result = await inventoryRepository.saveImportReceiptVerification(id, {
-      items: updatedItems,
+      items: updatedItems as any,
       verificationStatus,
       verifiedBy: data.verifiedBy,
       verifiedAt: new Date(),

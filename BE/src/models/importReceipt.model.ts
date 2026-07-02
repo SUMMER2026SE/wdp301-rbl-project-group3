@@ -8,6 +8,7 @@ export interface IImportReceiptItem {
   appliedInventoryQuantity?: number;
   appliedAverageCost?: number;
   verified?: boolean;
+  verifiedQuantity?: number;
 }
 
 export interface IImportReceipt extends Document {
@@ -41,6 +42,7 @@ const ImportReceiptItemSchema = new Schema<IImportReceiptItem>(
     appliedInventoryQuantity: { type: Number, min: 0 },
     appliedAverageCost: { type: Number, min: 0 },
     verified: { type: Boolean, default: false },
+    verifiedQuantity: { type: Number, default: 0 },
   },
   { _id: false }
 );

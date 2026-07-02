@@ -102,7 +102,12 @@ export const verifyImportReceiptSchema = z.object({
     id: objectId,
   }),
   body: z.object({
-    verifiedProductIds: z.array(objectId),
+    verifiedItems: z.array(
+      z.object({
+        productId: objectId,
+        verifiedQuantity: z.number().int().min(0),
+      })
+    ),
     note: z.string().max(500).optional(),
   }),
 });

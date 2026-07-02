@@ -89,7 +89,7 @@ export const ManageInventoryPage = () => {
 
   // Verification states
   const [viewingReceipt, setViewingReceipt] = useState<ImportReceipt | null>(null)
-  const [verifiedProductIds, setVerifiedProductIds] = useState<string[]>([])
+  const [verifiedQuantities, setVerifiedQuantities] = useState<Record<string, number>>({})
   const [verificationNote, setVerificationNote] = useState('')
   const [verifyLoading, setVerifyLoading] = useState(false)
   const [verifyError, setVerifyError] = useState<string | null>(null)
@@ -626,31 +626,33 @@ export const ManageInventoryPage = () => {
     setVerificationNote(rec.verificationNote || '')
     setVerifyError(null)
 
-    if (rec.verificationStatus === 'pending' || !rec.verificationStatus) {
-      // Default to checking all items
-      setVerifiedProductIds(rec.items.map((it) => {
-        const prodId = typeof it.productId === 'object' ? it.productId._id : (it.productId as any)
-        return prodId
-      }))
-    } else {
-      // Show verified items based on receipt state
-      const verifiedIds = rec.items
-        .filter((it) => it.verified)
-        .map((it) => {
-          const prodId = typeof it.productId === 'object' ? it.productId._id : (it.productId as any)
-          return prodId
-        })
-      setVerifiedProductIds(verifiedIds)
-    }
+    const initialQuantities: Record<string, number> = {}
+    rec.items.forEach((it) => {
+      const prodId = typeof it.productId === 'object' ? it.productId._id : (it.productId as any)
+      if (rec.verificationStatus === 'pending' || !rec.verificationStatus) {
+        initialQuantities[prodId] = it.quantity
+      } else {
+        initialQuantities[prodId] = it.verifiedQuantity || 0
+      }
+    })
+    setVerifiedQuantities(initialQuantities)
   }
 
-  // Toggle checklist checkbox
-  const handleToggleProductVerified = (prodId: string) => {
-    setVerifiedProductIds((prev) => {
-      if (prev.includes(prodId)) {
-        return prev.filter((id) => id !== prodId)
-      } else {
-        return [...prev, prodId]
+  // Set quantity input directly
+  const handleSetProductVerifiedQuantity = (prodId: string, qty: number) => {
+    setVerifiedQuantities((prev) => ({
+      ...prev,
+      [prodId]: qty
+    }))
+  }
+
+  // Toggle "received in full" checkbox
+  const handleToggleProductVerified = (prodId: string, expectedQty: number) => {
+    setVerifiedQuantities((prev) => {
+      const current = prev[prodId] ?? 0
+      return {
+        ...prev,
+        [prodId]: current === expectedQty ? 0 : expectedQty
       }
     })
   }
@@ -663,8 +665,14 @@ export const ManageInventoryPage = () => {
     try {
       setVerifyLoading(true)
       setVerifyError(null)
+
+      const verifiedItems = Object.entries(verifiedQuantities).map(([productId, verifiedQuantity]) => ({
+        productId,
+        verifiedQuantity,
+      }))
+
       const res = await inventoryService.verifyImportReceipt(viewingReceipt._id, {
-        verifiedProductIds,
+        verifiedItems,
         note: verificationNote,
       })
 
@@ -2562,7 +2570,8 @@ export const ManageInventoryPage = () => {
                     {viewingReceipt.items.map((it) => {
                       const prod = it.productId
                       const prodId = typeof prod === 'object' ? prod._id : (prod as any)
-                      const isTicked = verifiedProductIds.includes(prodId)
+                      const actualQty = verifiedQuantities[prodId] ?? 0
+                      const isTicked = actualQty === it.quantity
                       const isItemVerified = !isPending ? it.verified : isTicked
 
                       return (
@@ -2589,28 +2598,60 @@ export const ManageInventoryPage = () => {
 
                           {/* Quantity & price info */}
                           <div className="text-right shrink-0">
-                            <p className="text-xs font-bold text-on-surface">SL nhập: {it.quantity}</p>
-                            <p className="text-[11px] text-on-surface-variant">Đơn giá: {formatVND(it.unitCost)}</p>
+                            {!isPending ? (
+                              <p className="text-xs font-bold text-on-surface">SL nhập: {it.quantity}</p>
+                            ) : (
+                              <p className="text-xs text-on-surface-variant">Đơn giá: {formatVND(it.unitCost)}</p>
+                            )}
+                            {!isPending && (
+                              <p className="text-[11px] text-on-surface-variant">Đơn giá: {formatVND(it.unitCost)}</p>
+                            )}
                           </div>
 
                           {/* Checkbox or verification badge */}
-                          <div className="shrink-0 pl-2">
+                          <div className="flex items-center gap-3 shrink-0 pl-2">
                             {isPending ? (
-                              <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={isTicked}
-                                  onChange={() => handleToggleProductVerified(prodId)}
-                                  className="w-5 h-5 rounded-lg border-outline text-primary focus:ring-primary focus:ring-offset-0"
-                                />
-                                <span className="text-xs font-bold text-on-surface-variant select-none">Đủ</span>
-                              </label>
+                              <>
+                                {/* Number input */}
+                                <div className="flex items-center gap-1 bg-surface-container-low border border-outline-variant/60 rounded-xl px-2.5 py-1">
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    max={it.quantity}
+                                    value={actualQty}
+                                    onChange={(e) => handleSetProductVerifiedQuantity(prodId, Math.min(it.quantity, Math.max(0, parseInt(e.target.value) || 0)))}
+                                    className="w-10 bg-transparent text-center font-black text-sm text-primary outline-none"
+                                  />
+                                  <span className="text-xs text-on-surface-variant font-bold opacity-60">/ {it.quantity}</span>
+                                </div>
+
+                                {/* Checkbox */}
+                                <label className="flex items-center gap-1.5 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={isTicked}
+                                    onChange={() => handleToggleProductVerified(prodId, it.quantity)}
+                                    className="w-4 h-4 rounded border-outline text-primary focus:ring-primary focus:ring-offset-0"
+                                  />
+                                  <span className="text-xs font-bold text-on-surface-variant select-none">Nhận đủ</span>
+                                </label>
+                              </>
                             ) : (
-                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
-                                it.verified ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
-                              }`}>
-                                {it.verified ? 'Nhận đủ' : 'Thiếu/Hỏng'}
-                              </span>
+                              <div className="flex flex-col items-end gap-1">
+                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
+                                  it.verified ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                                }`}>
+                                  {it.verified ? 'Nhận đủ' : 'Thiếu/Hỏng'}
+                                </span>
+                                <span className="text-xs font-bold text-on-surface-variant">
+                                  Thực nhận: <span className={it.verified ? 'text-emerald-600' : 'text-rose-600'}>{it.verifiedQuantity || 0}</span> / {it.quantity}
+                                </span>
+                                {!it.verified && (
+                                  <span className="text-[10px] font-bold text-error">
+                                    (Thiếu {it.quantity - (it.verifiedQuantity || 0)})
+                                  </span>
+                                )}
+                              </div>
                             )}
                           </div>
 

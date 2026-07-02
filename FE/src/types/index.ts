@@ -231,6 +231,7 @@ export interface ImportReceiptItem {
   unitCost: number
   subtotal: number
   verified?: boolean
+  verifiedQuantity?: number
 }
 
 export interface ImportReceipt {

@@ -121,7 +121,7 @@ export class InventoryController {
     const receipt = await inventoryService.verifyImportReceipt(
       String(req.params.id),
       {
-        verifiedProductIds: req.body.verifiedProductIds,
+        verifiedItems: req.body.verifiedItems,
         note: req.body.note,
         verifiedBy: req.user!.userId,
         actor: {

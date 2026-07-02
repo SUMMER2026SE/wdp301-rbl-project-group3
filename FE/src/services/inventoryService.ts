@@ -104,7 +104,7 @@ export const inventoryService = {
   verifyImportReceipt: async (
     id: string,
     data: {
-      verifiedProductIds: string[]
+      verifiedItems: { productId: string; verifiedQuantity: number }[]
       note?: string
     }
   ): Promise<ApiResponse<ImportReceipt>> => {
