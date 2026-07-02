@@ -1645,7 +1645,7 @@ export const ManageInventoryPage = () => {
                               className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 transition-colors"
                             >
                               <Layers size={14} />
-                              Xem &amp; Kiểm hàng
+                              Xem & Kiểm hàng
                             </button>
                           </td>
                         </tr>
@@ -2376,7 +2376,7 @@ export const ManageInventoryPage = () => {
               {/* Sản phẩm info */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
-                  Sản phẩm &amp; Chi nhánh
+                  Sản phẩm & Chi nhánh
                 </label>
                 <div className="flex items-center gap-3 p-3 bg-surface-container-low rounded-xl border border-outline-variant/60">
                   <div className="w-10 h-10 bg-surface rounded-lg overflow-hidden border border-outline-variant flex items-center justify-center shrink-0">
@@ -2496,7 +2496,7 @@ export const ManageInventoryPage = () => {
               <div className="flex items-center justify-between border-b border-outline-variant bg-surface-container-low px-6 py-4">
                 <h2 className="text-lg font-black text-on-surface flex items-center gap-2">
                   <UserCheck size={20} className="text-primary" />
-                  Chi tiết &amp; Kiểm hàng Phiếu #{viewingReceipt.code}
+                  Chi tiết & Kiểm hàng Phiếu #{viewingReceipt.code}
                 </h2>
                 <button
                   type="button"
@@ -2525,7 +2525,7 @@ export const ManageInventoryPage = () => {
                     <p className="text-sm text-on-surface font-semibold">Ngày tạo: <span>{new Date(viewingReceipt.createdAt).toLocaleString()}</span></p>
                   </div>
                   <div className="space-y-1 text-xs">
-                    <p className="text-on-surface-variant uppercase font-bold tracking-wider">Người tạo &amp; Tổng cộng</p>
+                    <p className="text-on-surface-variant uppercase font-bold tracking-wider">Người tạo & Tổng cộng</p>
                     <p className="text-sm text-on-surface font-semibold">Người tạo: <span className="font-bold text-on-surface">{creatorName}</span></p>
                     <p className="text-sm text-on-surface font-semibold">Tổng giá trị: <span className="text-primary font-black">{formatVND(viewingReceipt.totalCost)}</span></p>
                     <p className="text-sm text-on-surface font-semibold">
@@ -2699,7 +2699,7 @@ export const ManageInventoryPage = () => {
                           Đang gửi...
                         </>
                       ) : (
-                        'Xác nhận &amp; Gửi báo cáo'
+                        'Xác nhận & Gửi báo cáo'
                       )}
                     </button>
                   )}
@@ -2767,7 +2767,7 @@ export const ManageInventoryPage = () => {
                 {/* Sản phẩm info */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
-                    Sản phẩm &amp; Chi nhánh
+                    Sản phẩm & Chi nhánh
                   </label>
                   <div className="flex items-center gap-3 p-3 bg-surface-container-low rounded-xl border border-outline-variant/60">
                     <div className="w-10 h-10 bg-surface rounded-lg overflow-hidden border border-outline-variant flex items-center justify-center shrink-0">
