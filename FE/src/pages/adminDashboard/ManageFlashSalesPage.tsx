@@ -72,6 +72,24 @@ export const ManageFlashSalesPage = () => {
   const isStaff = user?.role === 'staff'
   const isBranchManager = user?.role === 'branch_manager'
 
+  const getFlashSaleDisplayStatus = (fs: FlashSale) => {
+    if (fs.status === 'draft') return { label: 'Bản nháp', className: 'bg-slate-100 text-slate-800' }
+    if (fs.status === 'inactive') return { label: 'Đã tắt', className: 'bg-red-100 text-red-800' }
+    if (fs.status === 'expired') return { label: 'Đã kết thúc', className: 'bg-amber-100 text-amber-800' }
+
+    const now = new Date()
+    const start = new Date(fs.startDate)
+    const end = new Date(fs.endDate)
+
+    if (now > end) {
+      return { label: 'Đã kết thúc', className: 'bg-amber-100 text-amber-800' }
+    }
+    if (now < start) {
+      return { label: 'Sắp diễn ra', className: 'bg-blue-100 text-blue-800' }
+    }
+    return { label: 'Đang chạy', className: 'bg-emerald-100 text-emerald-800' }
+  }
+
   // Load data helper
   const loadFlashSales = async () => {
     setIsLoading(true)
@@ -490,9 +508,6 @@ export const ManageFlashSalesPage = () => {
                 </tr>
               ) : (
                 filteredFlashSales.map((fs) => {
-                  const isActive = fs.status === 'active'
-                  const isDraft = fs.status === 'draft'
-
                   return (
                     <tr key={fs.id || fs._id} className="hover:bg-surface-container-low/30 transition-colors">
                       <td className="px-6 py-4">
@@ -538,15 +553,14 @@ export const ManageFlashSalesPage = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                          isActive
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : isDraft
-                            ? 'bg-slate-100 text-slate-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {fs.status === 'active' ? 'Đang chạy' : fs.status === 'draft' ? 'Nháp' : 'Đã tắt'}
-                        </span>
+                        {(() => {
+                          const display = getFlashSaleDisplayStatus(fs)
+                          return (
+                            <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold ${display.className}`}>
+                              {display.label}
+                            </span>
+                          )
+                        })()}
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-2">
