@@ -16,6 +16,7 @@ import invoiceRoutes from '../modules/invoice/invoice.routes';
 import returnRoutes from '../modules/return/return.routes';
 import flashSaleRoutes from '../modules/flash-sale/flash-sale.routes';
 import bannerRoutes from '../modules/banner/banner.routes';
+import shiftRoutes from '../modules/shift/shift.routes';
 import {
   adminSystemSettingRoutes,
   publicSystemSettingRoutes,
@@ -41,6 +42,7 @@ router.use('/invoices', invoiceRoutes);
 router.use('/returns', returnRoutes);
 router.use('/flash-sales', flashSaleRoutes);
 router.use('/banners', bannerRoutes);
+router.use('/shifts', shiftRoutes);
 router.use('/settings', publicSystemSettingRoutes);
 router.use('/admin/settings', adminSystemSettingRoutes);
 router.use('/crawler', crawlerRoutes);
