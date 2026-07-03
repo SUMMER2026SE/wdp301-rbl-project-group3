@@ -31,11 +31,18 @@ export const ManageShiftsPage = () => {
   // Tabs state
   // Staff: 'my-shifts' (Weekly registration grid)
   // Manager/Admin: 'review' (Approve shifts), 'templates' (Shift templates), 'overview' (Weekly calendar overview for all staff)
-  const [activeTab, setActiveTab] = useState<string>(isStaff ? 'my-shifts' : 'review')
+  const [activeTab, setActiveTab] = useState<string>('my-shifts')
 
   // Common data states
   const [branches, setBranches] = useState<Branch[]>([])
-  const [selectedBranchId, setSelectedBranchId] = useState<string>(user?.branchId || '')
+  const [selectedBranchId, setSelectedBranchId] = useState<string>('')
+
+  useEffect(() => {
+    if (user) {
+      setActiveTab(user.role === 'staff' ? 'my-shifts' : 'review')
+      setSelectedBranchId(user.branchId || '')
+    }
+  }, [user])
   const [templates, setTemplates] = useState<ShiftTemplate[]>([])
   const [registrations, setRegistrations] = useState<ShiftRegistration[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
@@ -756,7 +763,7 @@ export const ManageShiftsPage = () => {
       )}
 
       {/* ── TAB: APPROVE / REVIEW SHIFTS (MANAGER/ADMIN) ── */}
-      {activeTab === 'review' && (
+      {activeTab === 'review' && (isBranchManager || isAdmin) && (
         <div className="space-y-4">
           {/* Controls Bar for review */}
           <div className="flex flex-col gap-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm md:flex-row md:items-center md:justify-between">
@@ -936,7 +943,7 @@ export const ManageShiftsPage = () => {
       )}
 
       {/* ── TAB: WEEKLY OVERVIEW (ALL STAFF DIRECTORY CALENDAR) ── */}
-      {activeTab === 'overview' && (
+      {activeTab === 'overview' && (isBranchManager || isAdmin) && (
         <div className="space-y-4">
           <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm p-4">
             <h3 className="text-base font-black text-primary mb-4 flex items-center gap-2">
@@ -989,7 +996,7 @@ export const ManageShiftsPage = () => {
       )}
 
       {/* ── TAB: SHIFT TEMPLATES MANAGEMENT (MANAGER/ADMIN) ── */}
-      {activeTab === 'templates' && (
+      {activeTab === 'templates' && (isBranchManager || isAdmin) && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-base font-black text-primary flex items-center gap-2">
