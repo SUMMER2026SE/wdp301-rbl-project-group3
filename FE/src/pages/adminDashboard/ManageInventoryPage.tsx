@@ -25,7 +25,7 @@ import {
   Square,
   Bot,
   Minus,
-  Sparkles
+  Sparkles,
   Clock,
   UserCheck
 } from 'lucide-react'
