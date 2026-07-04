@@ -22,6 +22,7 @@ import {
   publicSystemSettingRoutes,
 } from '../modules/system-setting/system-setting.routes';
 import crawlerRoutes from '../modules/crawler/crawler.routes';
+import competitorProductRoutes from '../modules/competitor-product/competitor-product.routes';
 
 const router = Router();
 
@@ -46,5 +47,6 @@ router.use('/shifts', shiftRoutes);
 router.use('/settings', publicSystemSettingRoutes);
 router.use('/admin/settings', adminSystemSettingRoutes);
 router.use('/crawler', crawlerRoutes);
+router.use('/competitor-products', competitorProductRoutes);
 
 export default router;

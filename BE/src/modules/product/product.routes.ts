@@ -15,6 +15,7 @@ const router = Router();
 const backOfficeRoles = ['admin', 'branch_manager', 'staff'] as const;
 
 router.get('/', validate(listProductsSchema), productController.list);
+router.post('/suggest-price', authenticate, authorize(...backOfficeRoles), productController.suggestPrice);
 router.get('/:id', validate(productIdParamSchema), productController.getById);
 
 router.post(

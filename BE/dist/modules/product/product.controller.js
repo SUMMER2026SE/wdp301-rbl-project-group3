@@ -5,6 +5,7 @@ const product_service_1 = require("./product.service");
 const asyncHandler_1 = require("../../utils/asyncHandler");
 const response_util_1 = require("../../utils/response.util");
 const product_validation_1 = require("./product.validation");
+const pricing_service_1 = require("./pricing.service");
 class ProductController {
     constructor() {
         this.list = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
@@ -15,6 +16,10 @@ class ProductController {
             });
             const result = await product_service_1.productService.listProducts(query);
             (0, response_util_1.sendSuccess)(res, result, 'Products retrieved');
+        });
+        this.suggestPrice = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
+            const result = await pricing_service_1.pricingService.suggestPrice(req.body);
+            (0, response_util_1.sendSuccess)(res, result, 'Suggested price generated');
         });
         this.getById = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
             const product = await product_service_1.productService.getProductById(String(req.params.id));

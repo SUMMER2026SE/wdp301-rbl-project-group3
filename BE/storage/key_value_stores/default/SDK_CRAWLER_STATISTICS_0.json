@@ -1,25 +1,57 @@
 {
-  "requestsFinished": 0,
+  "requestsFinished": 94,
   "requestsFailed": 0,
   "requestsRetries": 0,
   "requestsFailedPerMinute": 0,
-  "requestsFinishedPerMinute": 0,
-  "requestMinDurationMillis": null,
-  "requestMaxDurationMillis": 0,
+  "requestsFinishedPerMinute": 9,
+  "requestMinDurationMillis": 876,
+  "requestMaxDurationMillis": 50434,
   "requestTotalFailedDurationMillis": 0,
-  "requestTotalFinishedDurationMillis": 0,
-  "crawlerStartedAt": "2026-06-28T13:24:06.971Z",
-  "crawlerFinishedAt": "2026-06-28T13:24:07.597Z",
-  "statsPersistedAt": "2026-06-28T13:24:07.597Z",
-  "crawlerRuntimeMillis": 804,
-  "crawlerLastStartTimestamp": 1782653046793,
-  "requestRetryHistogram": [],
+  "requestTotalFinishedDurationMillis": 339360,
+  "crawlerStartedAt": "2026-07-02T20:08:47.683Z",
+  "crawlerFinishedAt": "2026-07-02T20:18:48.282Z",
+  "statsPersistedAt": "2026-07-02T20:18:48.282Z",
+  "crawlerRuntimeMillis": 600943,
+  "crawlerLastStartTimestamp": 1783022927339,
+  "requestRetryHistogram": [
+    94
+  ],
   "statsId": 0,
   "requestAvgFailedDurationMillis": null,
-  "requestAvgFinishedDurationMillis": null,
-  "requestTotalDurationMillis": 0,
-  "requestsTotal": 0,
-  "requestsWithStatusCode": {},
+  "requestAvgFinishedDurationMillis": 3610,
+  "requestTotalDurationMillis": 339360,
+  "requestsTotal": 94,
+  "requestsWithStatusCode": {
+    "200": 95
+  },
   "errors": {},
-  "retryErrors": {}
+  "retryErrors": {
+    "C:\\Users\\ADMIN\\Desktop\\wdp301-rbl-project-group3\\BE\\node_modules\\@apify\\src\\index.ts:89:74": {
+      "missing error code": {
+        "Error": {
+          "requestHandler timed out after 60 seconds.": {
+            "count": 1
+          }
+        }
+      }
+    },
+    "C:\\Users\\ADMIN\\Desktop\\wdp301-rbl-project-group3\\BE\\node_modules\\@crawlee\\playwright\\internals\\utils\\playwright-utils.js:165:17": {
+      "missing error code": {
+        "Error": {
+          "page.goto: net::ERR_NETWORK_IO_SUSPENDED at _": {
+            "count": 4
+          }
+        }
+      }
+    },
+    "C:\\Users\\ADMIN\\Desktop\\wdp301-rbl-project-group3\\BE\\node_modules\\@crawlee\\browser-pool\\browser-pool.js:413:19": {
+      "missing error code": {
+        "Error": {
+          "browserController.newPage() failed: _": {
+            "count": 2
+          }
+        }
+      }
+    }
+  }
 }

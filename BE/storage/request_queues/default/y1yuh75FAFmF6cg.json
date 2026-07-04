@@ -1,0 +1,9 @@
+{
+	"id": "y1yuh75FAFmF6cg",
+	"json": "{\"id\":\"y1yuh75FAFmF6cg\",\"url\":\"https://winmart.vn/products/hoa-doanh-ca-vien-goi-200g--s10602574?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/hoa-doanh-ca-vien-goi-200g--s10602574?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"crawlDepth\":2,\"enqueueStrategy\":\"same-hostname\"}}}",
+	"method": "GET",
+	"orderNo": 1783023044295,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/products/hoa-doanh-ca-vien-goi-200g--s10602574?storeCode=1535&storeGroupCode=1998",
+	"url": "https://winmart.vn/products/hoa-doanh-ca-vien-goi-200g--s10602574?storeGroupCode=1998&storeCode=1535"
+}

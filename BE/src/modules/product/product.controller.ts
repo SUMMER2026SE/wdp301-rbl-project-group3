@@ -3,6 +3,7 @@ import { productService } from './product.service';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { sendSuccess } from '../../utils/response.util';
 import { listProductsSchema } from './product.validation';
+import { pricingService } from './pricing.service';
 
 export class ProductController {
   list = asyncHandler(async (req: Request, res: Response) => {
@@ -14,6 +15,11 @@ export class ProductController {
 
     const result = await productService.listProducts(query);
     sendSuccess(res, result, 'Products retrieved');
+  });
+
+  suggestPrice = asyncHandler(async (req: Request, res: Response) => {
+    const result = await pricingService.suggestPrice(req.body);
+    sendSuccess(res, result, 'Suggested price generated');
   });
 
   getById = asyncHandler(async (req: Request, res: Response) => {

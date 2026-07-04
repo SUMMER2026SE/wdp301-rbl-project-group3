@@ -5,6 +5,7 @@ export interface ICategory extends Document {
     name: string;
     code: string;
     description?: string;
+    minMargin?: number;
     status: CategoryStatus;
     createdAt: Date;
     updatedAt: Date;

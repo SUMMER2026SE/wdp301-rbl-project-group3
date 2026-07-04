@@ -97,7 +97,6 @@ export class ProductRepository {
         ...product,
         price: actualPrice,  // Giá hiển thị cho khách
         salePrice: actualPrice,
-        suggestedPrice: product.suggestedPrice || Math.round(actualPrice * 0.95),
       });
     }
 

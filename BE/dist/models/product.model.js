@@ -40,19 +40,23 @@ const ProductSchema = new mongoose_1.Schema({
     sku: { type: String, required: true, unique: true, uppercase: true, trim: true },
     description: { type: String, trim: true },
     categoryId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Category' },
+    brand: { type: String, trim: true },
     unit: { type: String, required: true, trim: true, default: 'item' },
-    salePrice: { type: Number, required: true, min: 0, default: 0 },
+    costPrice: { type: Number, required: false, min: 0, default: 0 },
+    salePrice: { type: Number, required: false, min: 0, default: 0 },
     imageUrl: { type: String },
     status: {
         type: String,
         enum: ['active', 'inactive'],
         default: 'active',
     },
+    normalizedName: { type: String, index: true },
+    normalizedBrand: { type: String, index: true },
+    normalizedUnit: { type: String, index: true },
 }, {
     timestamps: true,
     versionKey: false,
 });
-ProductSchema.index({ sku: 1 });
 ProductSchema.index({ name: 'text' });
 ProductSchema.index({ status: 1 });
 exports.Product = mongoose_1.default.model('Product', ProductSchema);
