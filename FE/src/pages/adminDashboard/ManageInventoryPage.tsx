@@ -25,7 +25,7 @@ import {
   Square,
   Bot,
   Minus,
-  Sparkles
+  Sparkles,
   Clock,
   UserCheck
 } from 'lucide-react'
@@ -2932,11 +2932,11 @@ export const ManageInventoryPage = () => {
         const creatorName = typeof viewingReceipt.createdBy === 'object' ? viewingReceipt.createdBy.fullName : 'System'
         const vStatus = viewingReceipt.verificationStatus || 'pending'
         const isPending = vStatus === 'pending'
-        
+
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="w-full max-w-2xl bg-surface rounded-2xl border border-outline-variant shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-              
+
               {/* Modal Header */}
               <div className="flex items-center justify-between border-b border-outline-variant bg-surface-container-low px-6 py-4">
                 <h2 className="text-lg font-black text-on-surface flex items-center gap-2">
@@ -2974,12 +2974,11 @@ export const ManageInventoryPage = () => {
                     <p className="text-sm text-on-surface font-semibold">Người tạo: <span className="font-bold text-on-surface">{creatorName}</span></p>
                     <p className="text-sm text-on-surface font-semibold">Tổng giá trị: <span className="text-primary font-black">{formatVND(viewingReceipt.totalCost)}</span></p>
                     <p className="text-sm text-on-surface font-semibold">
-                      Trạng thái: 
-                      <span className={`ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                        viewingReceipt.status === 'active' ? 'bg-emerald-100 text-emerald-800' :
-                        viewingReceipt.status === 'cancelled' ? 'bg-rose-100 text-rose-800' :
-                        'bg-amber-100 text-amber-800'
-                      }`}>
+                      Trạng thái:
+                      <span className={`ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${viewingReceipt.status === 'active' ? 'bg-emerald-100 text-emerald-800' :
+                          viewingReceipt.status === 'cancelled' ? 'bg-rose-100 text-rose-800' :
+                            'bg-amber-100 text-amber-800'
+                        }`}>
                         {viewingReceipt.status}
                       </span>
                     </p>
@@ -3010,7 +3009,7 @@ export const ManageInventoryPage = () => {
                   <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
                     {isPending ? 'Checklist Kiểm hàng (Tích chọn sản phẩm nhận đủ)' : 'Kết quả đối soát sản phẩm'}
                   </p>
-                  
+
                   <div className="border border-outline-variant rounded-xl overflow-hidden divide-y divide-outline-variant/60">
                     {viewingReceipt.items.map((it) => {
                       const prod = it.productId
@@ -3020,10 +3019,9 @@ export const ManageInventoryPage = () => {
                       const isItemVerified = !isPending ? it.verified : isTicked
 
                       return (
-                        <div key={prodId} className={`flex items-center gap-4 p-3 transition-colors ${
-                          isItemVerified ? 'bg-emerald-50/15' : 'bg-rose-50/10'
-                        }`}>
-                          
+                        <div key={prodId} className={`flex items-center gap-4 p-3 transition-colors ${isItemVerified ? 'bg-emerald-50/15' : 'bg-rose-50/10'
+                          }`}>
+
                           {/* Image */}
                           <div className="w-10 h-10 bg-surface rounded overflow-hidden border border-outline-variant flex items-center justify-center shrink-0">
                             {prod?.imageUrl ? (
@@ -3083,9 +3081,8 @@ export const ManageInventoryPage = () => {
                               </>
                             ) : (
                               <div className="flex flex-col items-end gap-1">
-                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
-                                  it.verified ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
-                                }`}>
+                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${it.verified ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                                  }`}>
                                   {it.verified ? 'Nhận đủ' : 'Thiếu/Hỏng'}
                                 </span>
                                 <span className="text-xs font-bold text-on-surface-variant">
