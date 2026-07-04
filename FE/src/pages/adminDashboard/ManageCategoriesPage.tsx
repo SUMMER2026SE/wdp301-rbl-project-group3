@@ -49,6 +49,7 @@ export const ManageCategoriesPage = () => {
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
   const [description, setDescription] = useState('')
+  const [minMargin, setMinMargin] = useState<number>(0)
   const [status, setStatus] = useState<'active' | 'inactive'>('active')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -106,6 +107,7 @@ export const ManageCategoriesPage = () => {
     setName('')
     setCode('')
     setDescription('')
+    setMinMargin(0)
     setStatus('active')
     setFormError(null)
     setModalOpen(true)
@@ -118,6 +120,7 @@ export const ManageCategoriesPage = () => {
     setName(category.name)
     setCode(category.code)
     setDescription(category.description || '')
+    setMinMargin(category.minMargin || 0)
     setStatus(category.status)
     setFormError(null)
     setModalOpen(true)
@@ -146,6 +149,7 @@ export const ManageCategoriesPage = () => {
         name: name.trim(),
         code: code.trim().toUpperCase(),
         description: description.trim() || undefined,
+        minMargin,
         status,
       }
 
@@ -299,6 +303,7 @@ export const ManageCategoriesPage = () => {
                   <th className="p-4 font-bold text-on-surface-variant w-40">Mã danh mục</th>
                   <th className="p-4 font-bold text-on-surface-variant w-56">Tên danh mục</th>
                   <th className="p-4 font-bold text-on-surface-variant">Mô tả</th>
+                  <th className="p-4 font-bold text-on-surface-variant text-center w-32">Min Margin</th>
                   <th className="p-4 font-bold text-on-surface-variant text-center w-36">Trạng thái</th>
                   <th className="p-4 font-bold text-on-surface-variant w-44">Ngày tạo</th>
                   {isAdmin && <th className="p-4 font-bold text-on-surface-variant text-center w-32">Hành động</th>}
@@ -328,6 +333,11 @@ export const ManageCategoriesPage = () => {
                       {/* Description */}
                       <td className="p-4 text-on-surface-variant font-medium max-w-xs truncate" title={cat.description}>
                         {cat.description || <span className="italic opacity-30 text-xs">Không có mô tả</span>}
+                      </td>
+                      
+                      {/* Min Margin */}
+                      <td className="p-4 text-center font-bold text-tertiary">
+                        {cat.minMargin ? `${cat.minMargin}%` : '0%'}
                       </td>
                       
                       {/* Status */}
@@ -478,6 +488,22 @@ export const ManageCategoriesPage = () => {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   className="w-full bg-surface border border-outline rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none"
+                />
+              </div>
+
+              {/* Min Margin */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-on-surface-variant">
+                  Biên lợi nhuận tối thiểu (%)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  placeholder="Ví dụ: 10, 20"
+                  value={minMargin}
+                  onChange={(e) => setMinMargin(Number(e.target.value))}
+                  className="w-full bg-surface border border-outline rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                 />
               </div>
 

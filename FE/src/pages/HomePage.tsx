@@ -211,9 +211,9 @@ const FlashSaleCard = ({
 }) => {
   const title = product.productName || product.name
   const price = formatVND(flashSalePrice)
-  const originalPrice = formatVND(product.salePrice || product.price || 0)
+  const originalPrice = formatVND(product.salePrice || 0)
   
-  const originalVal = product.salePrice || product.price || 0
+  const originalVal = product.salePrice || 0
   const discountPercent = originalVal > 0 
     ? Math.round(((originalVal - flashSalePrice) / originalVal) * 100)
     : 20
@@ -261,7 +261,7 @@ const FlashSaleCard = ({
 
 const RecommendedCard = ({ product, onAddToCart }: { product: any; onAddToCart?: () => void }) => {
   const title = product.productName || product.name
-  const price = formatVND(product.salePrice || product.price || 0)
+  const price = formatVND(product.salePrice || 0)
   const unit = product.unit || 'unit'
   const image = product.imageUrl || productImageMap[title] || '/assets/winmart/tomatoes.png'
   const rating = '4.8'
