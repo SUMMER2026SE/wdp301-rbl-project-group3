@@ -73,22 +73,13 @@ exports.DEFAULT_SYSTEM_SETTINGS = [
         isPublic: true,
     },
     {
-        key: 'low_stock_threshold',
-        label: 'Low stock threshold',
-        group: 'inventory',
-        value: 10,
-        valueType: 'number',
-        description: 'Quantity at which low-stock alerts are triggered',
-        isPublic: false,
-    },
-    {
         key: 'vat_rate',
         label: 'VAT rate',
         group: 'payment',
         value: 10,
         valueType: 'number',
         description: 'VAT percentage applied to orders',
-        isPublic: false,
+        isPublic: true,
     },
     // ── Loyalty / Membership thresholds ──────────────────────────────────────
     {

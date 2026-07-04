@@ -23,10 +23,11 @@ export declare const listProductsSchema: z.ZodObject<{
 export declare const createProductSchema: z.ZodObject<{
     body: z.ZodObject<{
         name: z.ZodString;
-        sku: z.ZodString;
+        sku: z.ZodPreprocess<z.ZodOptional<z.ZodString>>;
         description: z.ZodPreprocess<z.ZodOptional<z.ZodString>>;
         categoryId: z.ZodPreprocess<z.ZodOptional<z.ZodString>>;
         unit: z.ZodPreprocess<z.ZodOptional<z.ZodString>>;
+        costPrice: z.ZodOptional<z.ZodCoercedNumber<unknown>>;
         salePrice: z.ZodOptional<z.ZodCoercedNumber<unknown>>;
         status: z.ZodOptional<z.ZodEnum<{
             active: "active";
@@ -40,10 +41,11 @@ export declare const updateProductSchema: z.ZodObject<{
     }, z.core.$strip>;
     body: z.ZodObject<{
         name: z.ZodOptional<z.ZodString>;
-        sku: z.ZodOptional<z.ZodString>;
+        sku: z.ZodPreprocess<z.ZodOptional<z.ZodString>>;
         description: z.ZodPreprocess<z.ZodOptional<z.ZodString>>;
         categoryId: z.ZodPreprocess<z.ZodOptional<z.ZodString>>;
         unit: z.ZodPreprocess<z.ZodOptional<z.ZodString>>;
+        costPrice: z.ZodOptional<z.ZodCoercedNumber<unknown>>;
         salePrice: z.ZodOptional<z.ZodCoercedNumber<unknown>>;
         status: z.ZodOptional<z.ZodEnum<{
             active: "active";

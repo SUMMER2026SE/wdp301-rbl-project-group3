@@ -34,10 +34,11 @@ exports.listProductsSchema = zod_1.z
 exports.createProductSchema = zod_1.z.object({
     body: zod_1.z.object({
         name: zod_1.z.string().min(2).max(150),
-        sku: zod_1.z.string().min(2).max(50),
+        sku: emptyToUndefined(zod_1.z.string().min(2).max(50).optional()),
         description: emptyToUndefined(zod_1.z.string().max(1000).optional()),
         categoryId: emptyToUndefined(objectId.optional()),
         unit: emptyToUndefined(zod_1.z.string().min(1).max(30).optional()),
+        costPrice: zod_1.z.coerce.number().min(0).optional(),
         salePrice: zod_1.z.coerce.number().min(0).optional(),
         status: zod_1.z.enum(['active', 'inactive']).optional(),
     }),
@@ -48,10 +49,11 @@ exports.updateProductSchema = zod_1.z.object({
     }),
     body: zod_1.z.object({
         name: zod_1.z.string().min(2).max(150).optional(),
-        sku: zod_1.z.string().min(2).max(50).optional(),
+        sku: emptyToUndefined(zod_1.z.string().min(2).max(50).optional()),
         description: emptyToUndefined(zod_1.z.string().max(1000).optional()),
         categoryId: emptyToUndefined(objectId.optional()),
         unit: emptyToUndefined(zod_1.z.string().min(1).max(30).optional()),
+        costPrice: zod_1.z.coerce.number().min(0).optional(),
         salePrice: zod_1.z.coerce.number().min(0).optional(),
         status: zod_1.z.enum(['active', 'inactive']).optional(),
     }),

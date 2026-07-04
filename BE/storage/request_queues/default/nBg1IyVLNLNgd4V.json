@@ -1,0 +1,9 @@
+{
+	"id": "nBg1IyVLNLNgd4V",
+	"json": "{\"id\":\"nBg1IyVLNLNgd4V\",\"url\":\"https://winmart.vn/products/richy-banh-gao-vi-ngot-135g--s10143259?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/richy-banh-gao-vi-ngot-135g--s10143259?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":1,\"errorMessages\":[\"Error: browserController.newPage() failed: QTARqn7ifXUfKdaHg9J3_\\nCause:browserController.newPage() timed out..\\n    at BrowserPool._createPageForBrowser (C:\\\\Users\\\\ADMIN\\\\Desktop\\\\wdp301-rbl-project-group3\\\\BE\\\\node_modules\\\\@crawlee\\\\browser-pool\\\\browser-pool.js:413:19)\\n    at runNextTicks (node:internal/process/task_queues:65:5)\\n    at processTimers (node:internal/timers:520:9)\\n    at C:\\\\Users\\\\ADMIN\\\\Desktop\\\\wdp301-rbl-project-group3\\\\BE\\\\node_modules\\\\@crawlee\\\\browser-pool\\\\browser-pool.js:303:20\"],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":5}}}",
+	"method": "GET",
+	"orderNo": 1783023707971,
+	"retryCount": 1,
+	"uniqueKey": "https://winmart.vn/products/richy-banh-gao-vi-ngot-135g--s10143259?storeCode=1535&storeGroupCode=1998",
+	"url": "https://winmart.vn/products/richy-banh-gao-vi-ngot-135g--s10143259?storeGroupCode=1998&storeCode=1535"
+}
