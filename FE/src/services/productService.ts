@@ -11,7 +11,7 @@ export const productService = {
     const normalized: Product[] = rawList.map((p: any) => ({
       ...p,
       productName: p.productName || p.name || 'Unnamed Product',
-      price: p.salePrice ?? p.price ?? 0, // ✅ Ưu tiên salePrice trước!
+      salePrice: p.salePrice ?? 0,
     }))
     return {
       success: raw.success,
@@ -59,7 +59,7 @@ export const productService = {
       raw.data.product = {
         ...p,
         productName: p.productName || p.name || 'Unnamed Product',
-        price: p.salePrice ?? p.price ?? 0, // ✅ Ưu tiên salePrice trước!
+        salePrice: p.salePrice ?? 0,
       }
     }
     return raw
@@ -106,16 +106,21 @@ export const productService = {
       raw.data.product = {
         ...p,
         productName: p.productName || p.name || 'Unnamed Product',
-        price: p.salePrice ?? p.price ?? 0, // ✅ Ưu tiên salePrice trước!
+        salePrice: p.salePrice ?? 0,
       }
     }
     return raw
   },
 
   // Delete/Deactivate a product
-  deleteProduct: async (id: string): Promise<ApiResponse<Product>> => {
+  deleteProduct: async (id: string): Promise<ApiResponse<null>> => {
     const response = await apiClient.delete(`/api/products/${id}`)
     return response.data
   },
-}
 
+  // Gợi ý giá bán bằng AI
+  suggestPrice: async (payload: { costPrice: number; categoryId: string; name?: string; sku?: string; competitorPrice?: number }) => {
+    const response = await apiClient.post('/api/products/suggest-price', payload)
+    return response.data
+  }
+}

@@ -19,7 +19,7 @@ export const inventoryService = {
         item.productId = {
           ...item.productId,
           productName: item.productId.productName || item.productId.name || 'Unnamed Product',
-          price: item.productId.price ?? item.productId.salePrice ?? 0,
+          salePrice: item.productId.salePrice ?? 0,
         }
       }
       return item
@@ -47,7 +47,7 @@ export const inventoryService = {
             item.productId = {
               ...item.productId,
               productName: item.productId.productName || item.productId.name || 'Unnamed Product',
-              price: item.productId.price ?? item.productId.salePrice ?? 0,
+              salePrice: item.productId.salePrice ?? 0,
             }
           }
           return item

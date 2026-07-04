@@ -773,7 +773,7 @@ export const ManageFlashSalesPage = () => {
                       <option value="">-- Chọn sản phẩm --</option>
                       {products.map((p) => (
                         <option key={p._id} value={p._id}>
-                          {p.productName || p.name} ({formatVND(p.salePrice || p.price || 0)})
+                          {p.productName || p.name} ({formatVND(p.salePrice || 0)})
                         </option>
                       ))}
                     </select>
@@ -831,7 +831,7 @@ export const ManageFlashSalesPage = () => {
                       <tbody className="divide-y divide-outline-variant">
                         {formData.products.map((p) => {
                           const pInfo = getProductInfo(p.productId)
-                          const originalPriceVal = pInfo?.salePrice || pInfo?.price || 0
+                          const originalPriceVal = pInfo?.salePrice || 0
 
                           return (
                             <tr key={p.productId} className="hover:bg-surface-container-low/20">

@@ -21,9 +21,11 @@ import {
   Download,
   Filter,
   Calendar,
-  Minus,
   Play,
   Square,
+  Bot,
+  Minus,
+  Sparkles
   Clock,
   UserCheck
 } from 'lucide-react'
@@ -32,8 +34,9 @@ import { inventoryService } from '@services/inventoryService'
 import { branchService } from '@services/branchService'
 import { productService } from '@services/productService'
 import { categoryService } from '@services/categoryService'
+import { competitorProductService } from '@services/competitorProductService'
 import { useAuth } from '@hooks/useAuth'
-import type { Inventory, ImportReceipt, Branch, Product, Category } from '@/types'
+import type { Inventory, ImportReceipt, Branch, Product, Category, CompetitorProduct } from '@/types'
 
 const formatVND = (num: number) => {
   return new Intl.NumberFormat('vi-VN', {
@@ -48,7 +51,7 @@ export const ManageInventoryPage = () => {
   const userBranchId = user?.branchId || ''
   const isAdmin = user?.role === 'admin'
 
-  const [activeTab, setActiveTab] = useState<'stock' | 'import' | 'catalog'>('stock')
+  const [activeTab, setActiveTab] = useState<'stock' | 'import' | 'catalog' | 'crawled'>('stock')
 
   // Master data
   const [branches, setBranches] = useState<Branch[]>([])
@@ -146,12 +149,25 @@ export const ManageInventoryPage = () => {
     categoryId: '',
     status: 'active' as 'active' | 'inactive'
   })
-
-
+  const [isSuggestingPrice, setIsSuggestingPrice] = useState(false)
+  const [suggestReason, setSuggestReason] = useState('')
 
   // Crawler states
   const [isCrawling, setIsCrawling] = useState(false);
   const [showCrawlerStopConfirm, setShowCrawlerStopConfirm] = useState(false);
+
+  // Tab 4: Crawled Products states
+  const [crawledProducts, setCrawledProducts] = useState<CompetitorProduct[]>([])
+  const [crawledLoading, setCrawledLoading] = useState(false)
+  const [crawledError, setCrawledError] = useState<string | null>(null)
+  const [crawledKeyword, setCrawledKeyword] = useState('')
+  const [crawledPage, setCrawledPage] = useState(1)
+  const [crawledTotalPages, setCrawledTotalPages] = useState(1)
+  const [crawledTotalItems, setCrawledTotalItems] = useState(0)
+
+  const [crawledSelectedIds, setCrawledSelectedIds] = useState<string[]>([])
+  const [crawledImporting, setCrawledImporting] = useState(false)
+  const [crawledImportSuccessMsg, setCrawledImportSuccessMsg] = useState<string | null>(null)
 
   // Fetch branches and categories on mount
   useEffect(() => {
@@ -250,6 +266,95 @@ export const ManageInventoryPage = () => {
       console.error('Crawler stop error', err);
     }
   };
+
+  // --- Crawled Products Logic ---
+  const fetchCrawledProducts = async (currentPage = crawledPage, searchKeyword = crawledKeyword) => {
+    setCrawledLoading(true)
+    setCrawledError(null)
+    try {
+      const res = await competitorProductService.getCompetitorProducts({
+        page: currentPage,
+        limit: 10,
+        keyword: searchKeyword || undefined,
+      })
+      if (res.success) {
+        setCrawledProducts(res.data)
+        if (res.pagination) {
+          setCrawledTotalPages(res.pagination.totalPages || 1)
+          setCrawledTotalItems(res.pagination.total || 0)
+        }
+      } else {
+        setCrawledError(res.message || 'Không thể lấy danh sách sản phẩm cào.')
+      }
+    } catch (err: any) {
+      console.error(err)
+      setCrawledError(err.response?.data?.message || 'Có lỗi xảy ra khi lấy danh sách sản phẩm.')
+    } finally {
+      setCrawledLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (activeTab === 'crawled') {
+      fetchCrawledProducts(crawledPage, crawledKeyword)
+    }
+  }, [activeTab])
+
+  // Reset page to 1 when search query changes
+  useEffect(() => {
+    setCrawledPage(1)
+  }, [crawledKeyword])
+
+  const handleCrawledPageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= crawledTotalPages) {
+      setCrawledPage(newPage)
+      fetchCrawledProducts(newPage, crawledKeyword)
+    }
+  }
+
+  const toggleCrawledSelect = (id: string) => {
+    setCrawledSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    )
+  }
+
+  const toggleCrawledSelectAll = () => {
+    const currentPageIds = crawledProducts.map(p => p._id)
+    const allSelected = currentPageIds.every(id => crawledSelectedIds.includes(id))
+
+    if (allSelected) {
+      setCrawledSelectedIds(prev => prev.filter(id => !currentPageIds.includes(id)))
+    } else {
+      setCrawledSelectedIds(prev => {
+        const uniqueIds = new Set([...prev, ...currentPageIds])
+        return Array.from(uniqueIds)
+      })
+    }
+  }
+
+  const handleCrawledImport = async () => {
+    if (crawledSelectedIds.length === 0) return
+    setCrawledImporting(true)
+    setCrawledImportSuccessMsg(null)
+    setCrawledError(null)
+    try {
+      const res = await competitorProductService.importToCatalog(crawledSelectedIds)
+      if (res.success) {
+        setCrawledImportSuccessMsg(`Đã đưa thành công ${res.data?.importedCount} sản phẩm vào danh mục hệ thống.`);
+        setCrawledSelectedIds([]) // Clear selection
+        // Automatically hide success message after 5 seconds
+        setTimeout(() => setCrawledImportSuccessMsg(null), 5000)
+      } else {
+        setCrawledError(res.message || 'Có lỗi xảy ra khi import sản phẩm.')
+      }
+    } catch (err: any) {
+      console.error(err)
+      setCrawledError(err.response?.data?.message || 'Có lỗi xảy ra khi import sản phẩm.')
+    } finally {
+      setCrawledImporting(false)
+    }
+  }
+  // --- End Crawled Products Logic ---
 
   // Fetch products (all active/inactive) for catalog and receipts
   const fetchProducts = async () => {
@@ -497,7 +602,7 @@ export const ManageInventoryPage = () => {
         item.productId?.unit || 'item',
         item.quantity,
         item.averageCost ?? 0,
-        item.productId?.price ?? item.productId?.salePrice ?? 0,
+        item.productId?.salePrice ?? 0,
         isLow ? 'Cảnh báo hết' : 'Đủ hàng'
       ]
     })
@@ -534,7 +639,7 @@ export const ManageInventoryPage = () => {
         }
       )
       // Suggest cost sequence: lastImportCost -> averageCost -> price -> salePrice -> 0
-      const suggestedCost = historicalItem?.lastImportCost ?? historicalItem?.averageCost ?? product.price ?? product.salePrice ?? 0
+      const suggestedCost = historicalItem?.lastImportCost ?? historicalItem?.averageCost ?? product.salePrice ?? 0
 
       setImportItems([...importItems, { productId: product._id, quantity: 1, unitCost: suggestedCost }])
     }
@@ -809,13 +914,14 @@ export const ManageInventoryPage = () => {
 
   // Click edit button
   const handleEditClick = (product: Product) => {
+    setSuggestReason('')
     setEditingProduct(product)
     const catId = product.categoryId ? (typeof product.categoryId === 'object' ? (product.categoryId as any)._id : String(product.categoryId)) : ''
     setProductForm({
       name: product.productName || product.name || '',
       sku: product.sku || '',
       costPrice: product.costPrice ?? 0,
-      salePrice: product.price ?? product.salePrice ?? 0,
+      salePrice: product.salePrice ?? 0,
       unit: product.unit || 'item',
       description: product.description || '',
       imageUrl: product.imageUrl || '',
@@ -830,6 +936,7 @@ export const ManageInventoryPage = () => {
 
   // Close product modal
   const handleCloseProductModal = () => {
+    setSuggestReason('')
     setIsProductModalOpen(false)
     setEditingProduct(null)
     setImageFile(null)
@@ -1104,17 +1211,10 @@ export const ManageInventoryPage = () => {
           )}
           {activeTab === 'catalog' && (
             <div className="flex gap-2">
-              <button
-                onClick={handleToggleCrawler}
-                className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold text-white transition-all shadow-md hover:shadow-lg active:scale-95 ${isCrawling ? 'bg-error hover:bg-error/90' : 'bg-primary hover:bg-primary/90'
-                  }`}
-                type="button"
-              >
-                {isCrawling ? <Square size={18} /> : <Play size={18} />}
-                {isCrawling ? 'Dừng cào dữ liệu' : 'Bật cào dữ liệu'}
-              </button>
+
               <button
                 onClick={() => {
+                  setSuggestReason('')
                   setEditingProduct(null)
                   setImageFile(null)
                   setProductForm({
@@ -1274,16 +1374,28 @@ export const ManageInventoryPage = () => {
           Lịch sử Nhập kho
         </button>
         {isAdmin && (
-          <button
-            onClick={() => setActiveTab('catalog')}
-            className={`pb-3 border-b-2 transition-all flex items-center gap-2 ${activeTab === 'catalog'
-              ? 'border-primary text-primary font-black'
-              : 'border-transparent text-on-surface-variant hover:text-on-surface'
-              }`}
-          >
-            <Layers size={18} />
-            Danh mục Sản phẩm gốc
-          </button>
+          <>
+            <button
+              onClick={() => setActiveTab('catalog')}
+              className={`pb-3 border-b-2 transition-all flex items-center gap-2 ${activeTab === 'catalog'
+                ? 'border-primary text-primary font-black'
+                : 'border-transparent text-on-surface-variant hover:text-on-surface'
+                }`}
+            >
+              <Layers size={18} />
+              Danh mục Sản phẩm gốc
+            </button>
+            <button
+              onClick={() => setActiveTab('crawled')}
+              className={`pb-3 border-b-2 transition-all flex items-center gap-2 ${activeTab === 'crawled'
+                ? 'border-primary text-primary font-black'
+                : 'border-transparent text-on-surface-variant hover:text-on-surface'
+                }`}
+            >
+              <Bot size={18} />
+              Danh mục Sản phẩm cào
+            </button>
+          </>
         )}
       </div>
 
@@ -1369,8 +1481,8 @@ export const ManageInventoryPage = () => {
                       <th className="p-4 font-bold text-on-surface-variant">Tên Sản phẩm</th>
                       <th className="p-4 font-bold text-on-surface-variant">Đơn vị</th>
                       <th className="p-4 font-bold text-on-surface-variant text-right">Số lượng tồn</th>
-                      <th className="p-4 font-bold text-on-surface-variant text-right">Giá bán trung bình</th>
-                      <th className="p-4 font-bold text-on-surface-variant text-right">Giá nhập gốc</th>
+                      <th className="p-4 font-bold text-on-surface-variant text-right">Giá vốn trung bình</th>
+                      <th className="p-4 font-bold text-on-surface-variant text-right">Giá bán</th>
                       <th className="p-4 font-bold text-on-surface-variant text-center">Trạng thái kho</th>
                       <th className="p-4 font-bold text-on-surface-variant text-center">Hành động</th>
                     </tr>
@@ -1408,8 +1520,8 @@ export const ManageInventoryPage = () => {
                           <td className="p-4 text-right font-semibold text-on-surface-variant">
                             {formatVND(item.averageCost ?? 0)}
                           </td>
-                          <td className="p-4 text-right font-semibold text-on-surface-variant">
-                            {formatVND(item.productId?.price ?? item.productId?.salePrice ?? 0)}
+                          <td className="p-4 text-right font-bold text-primary">
+                            {formatVND(item.productId?.salePrice ?? 0)}
                           </td>
                           <td className="p-4 text-center">
                             <span
@@ -1708,7 +1820,8 @@ export const ManageInventoryPage = () => {
                       <th className="p-4 font-bold text-on-surface-variant">Tên Sản phẩm</th>
                       <th className="p-4 font-bold text-on-surface-variant">Danh mục</th>
                       <th className="p-4 font-bold text-on-surface-variant">Đơn vị</th>
-                      <th className="p-4 font-bold text-on-surface-variant text-right">Giá nhập gốc</th>
+                      <th className="p-4 font-bold text-on-surface-variant text-right">Giá nhập</th>
+                      <th className="p-4 font-bold text-on-surface-variant text-right">Giá bán</th>
                       <th className="p-4 font-bold text-on-surface-variant text-center">Trạng thái bán</th>
                       <th className="p-4 font-bold text-on-surface-variant">Mô tả chi tiết</th>
                       <th className="p-4 font-bold text-on-surface-variant text-center">Hành động</th>
@@ -1749,8 +1862,11 @@ export const ManageInventoryPage = () => {
                           <td className="p-4 text-on-surface-variant">
                             {product.unit || 'item'}
                           </td>
+                          <td className="p-4 text-right font-medium text-on-surface-variant">
+                            {formatVND(product.costPrice ?? 0)}
+                          </td>
                           <td className="p-4 text-right font-black text-primary">
-                            {formatVND(product.price ?? 0)}
+                            {formatVND(product.salePrice ?? 0)}
                           </td>
                           <td className="p-4 text-center">
                             <span
@@ -1820,6 +1936,269 @@ export const ManageInventoryPage = () => {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── TAB 4: CRAWLED PRODUCTS ── */}
+      {activeTab === 'crawled' && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          {/* Header & Crawler Controls */}
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant shadow-sm">
+            <div>
+              <h2 className="text-lg font-bold tracking-tight text-on-surface flex items-center gap-2">
+                <Bot className="h-5 w-5 text-primary" />
+                Sản phẩm đối thủ (Winmart)
+              </h2>
+              <p className="text-on-surface-variant text-sm mt-1">
+                Quản lý danh sách sản phẩm thô cào được từ đối thủ Winmart và đưa vào danh mục hệ thống.
+              </p>
+            </div>
+
+            {/* Crawler Status Box */}
+            <div className="flex items-center gap-3 rounded-xl border border-outline-variant bg-surface-container-low p-3 shadow-sm">
+              <div className="flex items-center gap-2">
+                <span className={`relative flex h-3.5 w-3.5`}>
+                  {isCrawling && (
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  )}
+                  <span className={`relative inline-flex rounded-full h-3.5 w-3.5 ${isCrawling ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
+                </span>
+                <span className="text-sm font-semibold text-on-surface">
+                  Bot Cào: {isCrawling ? 'Đang hoạt động' : 'Tắt'}
+                </span>
+              </div>
+
+              <div className="h-4 w-px bg-outline-variant" />
+
+              {isCrawling ? (
+                <button
+                  onClick={() => setShowCrawlerStopConfirm(true)}
+                  className="flex items-center gap-1.5 rounded-lg bg-error-container px-3 py-1.5 text-xs font-semibold text-on-error-container transition hover:bg-error-container/80"
+                >
+                  <Square className="h-3 w-3 fill-error" />
+                  Dừng cào
+                </button>
+              ) : (
+                <button
+                  onClick={handleToggleCrawler}
+                  className="flex items-center gap-1.5 rounded-lg bg-success-container px-3 py-1.5 text-xs font-semibold text-on-success-container transition hover:bg-success-container/80"
+                >
+                  <Play className="h-3 w-3 fill-success" />
+                  Cào thủ công
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Main Alert Message */}
+          {crawledImportSuccessMsg && (
+            <div className="flex items-center gap-3 rounded-xl bg-success-container border border-success/20 p-4 text-on-success-container shadow-sm transition-all duration-300">
+              <Check className="h-5 w-5 text-success flex-shrink-0" />
+              <span className="text-sm font-medium">{crawledImportSuccessMsg}</span>
+            </div>
+          )}
+
+          {crawledError && (
+            <div className="flex items-center gap-3 rounded-xl bg-error-container border border-error/20 p-4 text-on-error-container shadow-sm">
+              <AlertCircle className="h-5 w-5 text-error flex-shrink-0" />
+              <span className="text-sm font-medium">{crawledError}</span>
+            </div>
+          )}
+
+          {/* Table Container card */}
+          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm">
+            {/* Filters and search header */}
+            <div className="flex flex-col gap-4 border-b border-outline-variant p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="relative max-w-sm flex-1">
+                <span className="absolute inset-y-0 left-3 flex items-center text-on-surface-variant">
+                  <Search className="h-4 w-4" />
+                </span>
+                <input
+                  type="text"
+                  placeholder="Tìm theo tên, SKU hoặc thương hiệu..."
+                  value={crawledKeyword}
+                  onChange={(e) => setCrawledKeyword(e.target.value)}
+                  className="w-full rounded-xl border-none bg-surface-container-low pl-9 pr-4 py-2 text-sm text-on-surface placeholder:text-on-surface-variant outline-none transition focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => fetchCrawledProducts(crawledPage, crawledKeyword)}
+                  disabled={crawledLoading}
+                  className="flex items-center gap-1.5 rounded-xl border border-outline bg-surface hover:bg-surface-container-high px-4 py-2 text-sm font-bold text-on-surface transition disabled:opacity-50"
+                >
+                  <RefreshCw className={`h-4 w-4 ${crawledLoading ? 'animate-spin' : ''}`} />
+                  Làm mới
+                </button>
+
+                {crawledSelectedIds.length > 0 && (
+                  <button
+                    onClick={handleCrawledImport}
+                    disabled={crawledImporting}
+                    className="flex items-center gap-1.5 rounded-xl bg-primary hover:bg-opacity-90 active:scale-95 px-4 py-2 text-sm font-bold text-white shadow transition disabled:opacity-50"
+                  >
+                    {crawledImporting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Plus className="h-4 w-4" />
+                    )}
+                    Đưa vào hệ thống ({crawledSelectedIds.length})
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Table Content */}
+            <div className="overflow-x-auto">
+              {crawledLoading ? (
+                <div className="flex flex-col items-center justify-center py-20">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" />
+                  <p className="text-sm text-on-surface-variant font-medium">Đang tải dữ liệu...</p>
+                </div>
+              ) : crawledProducts.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-on-surface-variant border-dashed border-outline-variant border-t">
+                  <Bot className="h-12 w-12 text-on-surface-variant opacity-40 mb-3" />
+                  <h3 className="text-lg font-bold text-on-surface">Không tìm thấy sản phẩm cào nào</h3>
+                  <p className="mt-2 text-sm">Hãy đảm bảo đã bật Bot Cào hoặc cào thủ công để lấy dữ liệu.</p>
+                </div>
+              ) : (
+                <table className="w-full text-left border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b border-outline-variant bg-surface-container-low/50 font-bold text-on-surface-variant">
+                      <th className="p-4 w-12 text-center">
+                        <input
+                          type="checkbox"
+                          checked={crawledProducts.length > 0 && crawledProducts.every(p => crawledSelectedIds.includes(p._id))}
+                          onChange={toggleCrawledSelectAll}
+                          className="rounded border-outline-variant text-primary outline-none transition focus:ring-primary cursor-pointer w-4 h-4"
+                        />
+                      </th>
+                      <th className="p-4">Ảnh</th>
+                      <th className="p-4">SKU Đối thủ</th>
+                      <th className="p-4">Tên sản phẩm</th>
+                      <th className="p-4">Thương hiệu</th>
+                      <th className="p-4">Đơn vị</th>
+                      <th className="p-4 text-right">Giá đối thủ</th>
+                      <th className="p-4">Hành động</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-outline-variant/60">
+                    {crawledProducts.map((p) => {
+                      const isSelected = crawledSelectedIds.includes(p._id)
+                      return (
+                        <tr
+                          key={p._id}
+                          className={`hover:bg-surface-container-low/20 transition cursor-pointer ${isSelected ? 'bg-primary/5 hover:bg-primary/10' : ''
+                            }`}
+                          onClick={() => toggleCrawledSelect(p._id)}
+                        >
+                          <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleCrawledSelect(p._id)}
+                              className="rounded border-outline-variant text-primary outline-none transition focus:ring-primary cursor-pointer w-4 h-4"
+                            />
+                          </td>
+                          <td className="p-4">
+                            <div className="w-10 h-10 bg-surface-container-low rounded-lg overflow-hidden border border-outline-variant flex items-center justify-center">
+                              {p.imageUrl ? (
+                                <img
+                                  src={p.imageUrl}
+                                  alt={p.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <Package size={18} className="text-on-surface-variant opacity-60" />
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-4 font-mono font-bold text-on-surface">
+                            {p.sku}
+                          </td>
+                          <td className="p-4 font-bold text-on-surface max-w-xs">
+                            <div className="truncate" title={p.name}>{p.name}</div>
+                            {p.description && (
+                              <div className="text-xs text-on-surface-variant font-normal truncate max-w-[200px]" title={p.description}>
+                                {p.description}
+                              </div>
+                            )}
+                          </td>
+                          <td className="p-4 text-on-surface-variant font-medium">
+                            {p.brand || '---'}
+                          </td>
+                          <td className="p-4 text-on-surface-variant">
+                            {p.unit}
+                          </td>
+                          <td className="p-4 text-right font-black text-emerald-600">
+                            {formatVND(p.price)}
+                          </td>
+                          <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={async () => {
+                                setCrawledImporting(true)
+                                setCrawledImportSuccessMsg(null)
+                                setCrawledError(null)
+                                try {
+                                  const res = await competitorProductService.importToCatalog([p._id])
+                                  if (res.success) {
+                                    setCrawledImportSuccessMsg(`Đã đưa thành công "${p.name}" vào danh mục hệ thống.`);
+                                    setTimeout(() => setCrawledImportSuccessMsg(null), 5000)
+                                  } else {
+                                    setCrawledError(res.message || 'Có lỗi xảy ra.')
+                                  }
+                                } catch (err: any) {
+                                  console.error(err)
+                                  setCrawledError(err.response?.data?.message || 'Có lỗi xảy ra.')
+                                } finally {
+                                  setCrawledImporting(false)
+                                }
+                              }}
+                              disabled={crawledImporting}
+                              className="text-primary hover:text-primary-hover hover:underline text-xs font-bold transition flex items-center gap-1"
+                            >
+                              Đưa vào hệ thống
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            {/* Pagination Controls */}
+            {!crawledLoading && crawledProducts.length > 0 && (
+              <div className="flex items-center justify-between border-t border-outline-variant bg-surface-container-low/30 px-6 py-4">
+                <div className="text-xs font-semibold text-on-surface-variant">
+                  Hiển thị <span className="font-bold text-on-surface">{crawledProducts.length}</span> trên {crawledTotalItems}
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="text-xs font-semibold text-on-surface-variant mr-2">
+                    Trang <span className="font-bold text-on-surface">{crawledPage}</span> / {crawledTotalPages}
+                  </div>
+                  <button
+                    type="button"
+                    disabled={crawledPage <= 1}
+                    onClick={() => handleCrawledPageChange(crawledPage - 1)}
+                    className="inline-flex items-center justify-center rounded-xl border border-outline px-4 py-2 text-xs font-bold text-on-surface bg-surface hover:bg-surface-container-high active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
+                  >
+                    Trang trước
+                  </button>
+                  <button
+                    type="button"
+                    disabled={crawledPage >= crawledTotalPages}
+                    onClick={() => handleCrawledPageChange(crawledPage + 1)}
+                    className="inline-flex items-center justify-center rounded-xl border border-outline px-4 py-2 text-xs font-bold text-on-surface bg-surface hover:bg-surface-container-high active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
+                  >
+                    Trang sau
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -1918,7 +2297,7 @@ export const ManageInventoryPage = () => {
                   <option value="">-- Chọn sản phẩm từ danh sách --</option>
                   {activeProducts.map((p) => (
                     <option key={p._id} value={p._id}>
-                      {p.productName || p.name} ({p.sku}) - {p.unit || 'cái'} - {formatVND(p.price || 0)}
+                      {p.productName || p.name} ({p.sku}) - {p.unit || 'cái'} - {formatVND(p.salePrice || 0)}
                     </option>
                   ))}
                 </select>
@@ -1958,7 +2337,6 @@ export const ManageInventoryPage = () => {
                             <th className="p-3 font-bold text-on-surface-variant whitespace-nowrap">Sản phẩm</th>
                             <th className="p-3 font-bold text-on-surface-variant text-center w-24 whitespace-nowrap">Số lượng</th>
                             <th className="p-3 font-bold text-on-surface-variant text-right w-28 whitespace-nowrap">Giá nhập gốc</th>
-                            <th className="p-3 font-bold text-on-surface-variant text-right w-28 whitespace-nowrap">Giá gợi ý AI</th>
                             <th className="p-3 font-bold text-on-surface-variant text-right w-32 whitespace-nowrap">Giá bán thực tế (đ)</th>
                             <th className="p-3 font-bold text-on-surface-variant text-right w-28 whitespace-nowrap">Thành tiền</th>
                             <th className="p-3 font-bold text-on-surface-variant text-center w-12"></th>
@@ -1970,7 +2348,7 @@ export const ManageInventoryPage = () => {
                             const name = pInfo?.productName || 'Sản phẩm';
                             const sku = pInfo?.sku || 'N/A';
                             const unit = pInfo?.unit || 'cái';
-                            const costPrice = pInfo?.price || pInfo?.salePrice || 0;
+                            const costPrice = pInfo?.costPrice || 0;
                             const isLoss = item.unitCost > 0 && item.unitCost < costPrice;
 
                             return (
@@ -2023,11 +2401,6 @@ export const ManageInventoryPage = () => {
                                 {/* Static Cost Price (Giá nhập gốc) */}
                                 <td className="p-3 text-right font-medium text-on-surface-variant whitespace-nowrap">
                                   {formatVND(costPrice)}
-                                </td>
-
-                                {/* AI Suggested Price */}
-                                <td className="p-3 text-right font-bold text-secondary font-mono whitespace-nowrap">
-                                  {formatVND(pInfo?.suggestedPrice || Math.round(costPrice * 0.95))}
                                 </td>
 
                                 {/* Unit Cost input (Giá bán thực tế) */}
@@ -2198,7 +2571,79 @@ export const ManageInventoryPage = () => {
                 </div>
               </div>
 
-              {/* Price inputs removed: cost/selling prices are set per-branch during import/inventory setup */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Giá nhập cơ sở */}
+                <div className="space-y-1.5">
+                  <label htmlFor="prod-costPrice" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                    Giá nhập cơ sở
+                  </label>
+                  <input
+                    type="number"
+                    id="prod-costPrice"
+                    min="0"
+                    value={productForm.costPrice || ''}
+                    onChange={(e) => setProductForm({ ...productForm, costPrice: Number(e.target.value) })}
+                    placeholder="VD: 10000"
+                    className="w-full bg-surface-container-low border-none rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary text-sm transition-all"
+                  />
+                </div>
+
+                {/* Giá bán chung */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="prod-salePrice" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                      Giá bán chung
+                    </label>
+                    <button
+                      type="button"
+                      disabled={isSuggestingPrice || !productForm.costPrice || !productForm.categoryId}
+                      onClick={async () => {
+                        setIsSuggestingPrice(true);
+                        setSuggestReason('');
+                        try {
+                          const payload = {
+                            costPrice: productForm.costPrice,
+                            categoryId: productForm.categoryId,
+                            name: productForm.name,
+                            sku: productForm.sku,
+                          };
+                          const res = await productService.suggestPrice(payload);
+                          if (res.success && res.data) {
+                            setProductForm(prev => ({ ...prev, salePrice: res.data.suggestedPrice }));
+                            setSuggestReason(`🪄 ${res.data.reason} (Độ tin cậy: ${res.data.confidence}%, Giá sàn: ${formatVND(res.data.floorPrice)})`);
+                          }
+                        } catch (err: any) {
+                          setSuggestReason('⚠️ Lỗi: ' + (err.response?.data?.message || err.message || 'Không thể gợi ý giá.'));
+                        } finally {
+                          setIsSuggestingPrice(false);
+                        }
+                      }}
+                      className="text-xs font-bold text-primary hover:bg-primary-container px-2 py-1 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                      title="Chỉ khả dụng khi đã điền Giá vốn và chọn Danh mục"
+                    >
+                      {isSuggestingPrice ? (
+                        <><RefreshCw size={12} className="animate-spin" /> Đang tính...</>
+                      ) : (
+                        <><Sparkles size={12} /> Gợi ý giá bằng AI</>
+                      )}
+                    </button>
+                  </div>
+                  <input
+                    type="number"
+                    id="prod-salePrice"
+                    min="0"
+                    value={productForm.salePrice || ''}
+                    onChange={(e) => setProductForm({ ...productForm, salePrice: Number(e.target.value) })}
+                    placeholder="VD: 15000"
+                    className="w-full bg-surface-container-low border-none rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary text-sm transition-all"
+                  />
+                  {suggestReason && (
+                    <p className={`text-xs mt-1 font-medium ${suggestReason.startsWith('⚠️') ? 'text-error' : 'text-emerald-600'}`}>
+                      {suggestReason}
+                    </p>
+                  )}
+                </div>
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Đơn vị tính */}
