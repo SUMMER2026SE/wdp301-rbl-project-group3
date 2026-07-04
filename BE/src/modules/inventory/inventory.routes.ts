@@ -8,6 +8,7 @@ import {
   listImportReceiptsSchema,
   listInventorySchema,
   updateImportReceiptSchema,
+  verifyImportReceiptSchema,
   createInventorySchema,
   updateInventorySchema,
   inventoryIdParamSchema,
@@ -43,6 +44,11 @@ router.delete(
   '/import-receipts/:id',
   validate(importReceiptIdParamSchema),
   inventoryController.cancelImportReceipt
+);
+router.post(
+  '/import-receipts/:id/verify',
+  validate(verifyImportReceiptSchema),
+  inventoryController.verifyImportReceipt
 );
 
 export default router;
