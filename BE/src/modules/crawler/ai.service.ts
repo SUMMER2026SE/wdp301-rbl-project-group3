@@ -8,15 +8,16 @@ if (env.geminiApiKey) {
 
 export interface ParsedProduct {
   name: string;
+  sku: string;
   brand?: string;
-  suggestedPrice: number;
+  price: number;
   unit: string;
   description: string;
   categoryName?: string;
 }
 
 export class AiService {
-  async parseProductData(rawText: string): Promise<ParsedProduct | null> {
+  async parseProductData(rawText: string, retryCount = 0): Promise<ParsedProduct | null> {
     if (!ai) {
       console.warn('Gemini API key is missing. Skipping AI parsing.');
       return null;
@@ -28,8 +29,9 @@ Dưới đây là một đoạn văn bản thô được cào từ một trang w
 Hãy trích xuất thông tin sản phẩm và định dạng lại dưới dạng JSON theo đúng schema sau:
 {
   "name": "Tên sản phẩm (chuỗi)",
+  "sku": "Mã SKU hoặc mã sản phẩm trích xuất từ dữ liệu Winmart (ví dụ: 10141374) (chuỗi, bắt buộc)",
   "brand": "Thương hiệu sản phẩm (chuỗi, có thể bỏ trống nếu không tìm thấy)",
-  "suggestedPrice": "Giá bán khuyến mãi hoặc giá bán hiện tại cào từ Winmart (số nguyên, không chứa ký tự)",
+  "price": "Giá bán khuyến mãi hoặc giá bán hiện tại cào từ Winmart (số nguyên, không chứa ký tự)",
   "unit": "Đơn vị tính, ví dụ: kg, g, lốc, hộp, gói, cái (chuỗi)",
   "description": "Đoạn mô tả ngắn gọn về sản phẩm (chuỗi)",
   "categoryName": "Tên danh mục phù hợp nhất với sản phẩm này (chuỗi)"
@@ -58,16 +60,39 @@ ${rawText.substring(0, 20000)}
       text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
 
       const parsed: ParsedProduct = JSON.parse(text);
-      if (!parsed.name || parsed.suggestedPrice === undefined || parsed.suggestedPrice === null) {
+      if (!parsed.name || !parsed.sku || parsed.price === undefined || parsed.price === null) {
          throw new Error("Missing required fields in AI response. Parsed: " + JSON.stringify(parsed));
       }
       return parsed;
-    } catch (error) {
-      console.error('AI Parsing Error:', error);
-      // Bạn có thể comment dòng dưới lại nếu log quá dài
-      // console.log('Raw text that failed:', rawText);
-      return null;
+    } catch (error: any) {
+      console.error(`AI Parsing Error (Retry ${retryCount}):`, error?.message || error);
+      
+      // Nếu là lỗi 429 (Rate Limit) và chưa quá số lần thử
+      if (error?.status === 429 && retryCount < 2) {
+        console.log('Hit rate limit (429). Waiting 30s before retrying...');
+        await new Promise(resolve => setTimeout(resolve, 30000));
+        return this.parseProductData(rawText, retryCount + 1);
+      }
+      throw new Error('Failed to parse product data using AI');
     }
+  }
+
+  async analyze(prompt: string, apiKey?: string): Promise<string> {
+    const aiInstance = apiKey ? new GoogleGenAI({ apiKey }) : ai;
+    if (!aiInstance) {
+      throw new Error('Gemini API key is missing. Cannot perform analysis.');
+    }
+
+    const response = await aiInstance.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        temperature: 0.2, // Chút sáng tạo để ra reason
+        responseMimeType: 'application/json',
+      },
+    });
+
+    return response.text || '';
   }
 }
 

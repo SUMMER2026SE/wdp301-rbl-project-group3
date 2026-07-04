@@ -50,17 +50,6 @@ async function buildCartResponse(cart: any, branchId?: string): Promise<CartResp
         const product = item.productId;
         let price = product?.salePrice ?? 0;
         
-        // If branchId is provided, get price from Inventory.lastImportCost
-        if (branchId && Types.ObjectId.isValid(branchId)) {
-            const inventory = await Inventory.findOne({
-                productId: product._id,
-                branchId: branchId,
-            }).exec();
-            
-            if (inventory && inventory.lastImportCost) {
-                price = inventory.lastImportCost;
-            }
-        }
         
         // Apply flash sale price override if applicable
         if (activeFlashSale) {

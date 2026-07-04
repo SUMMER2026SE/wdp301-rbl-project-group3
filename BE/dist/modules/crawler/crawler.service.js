@@ -5,8 +5,8 @@ const crawlee_1 = require("crawlee");
 const crawler_config_1 = require("./crawler.config");
 const ai_service_1 = require("./ai.service");
 const image_service_1 = require("./image.service");
-const product_model_1 = require("../../models/product.model");
-const category_model_1 = require("../../models/category.model");
+const competitor_product_model_1 = require("../../models/competitor-product.model");
+const string_util_1 = require("../../utils/string.util");
 class CrawlerService {
     constructor() {
         this.isRunning = false;
@@ -66,57 +66,59 @@ class CrawlerService {
                         // Cào toàn bộ text trên trang
                         const rawText = await page.locator('body').innerText();
                         // Cào hình ảnh chính (tìm ảnh to nhất hoặc có class đặc thù, tạm lấy img đầu tiên trong khung chính)
-                        // Lưu ý: Có thể cần điều chỉnh selector hình ảnh tuỳ thuộc DOM Winmart
                         const imageUrls = await page.$$eval('img', (imgs) => imgs.map((img) => img.src).filter((src) => src.includes('http') && !src.includes('logo')));
                         const mainImageUrl = imageUrls.length > 0 ? imageUrls[0] : '';
                         log.info(`Extracted raw text, sending to AI...`);
                         // Gửi qua AI xử lý
-                        // Thêm độ trễ 4.5s để tránh vượt quá 15 requests/phút của API Gemini (Free Tier)
-                        await new Promise(resolve => setTimeout(resolve, 4500));
+                        // Thêm độ trễ 12s để tránh vượt quá giới hạn 15 requests/phút của API Gemini (Free Tier)
+                        await new Promise(resolve => setTimeout(resolve, 12000));
                         const parsedData = await ai_service_1.aiService.parseProductData(rawText);
                         if (parsedData) {
-                            log.info(`AI Parsed: ${parsedData.name}`);
-                            // Xử lý Category
-                            let categoryId = undefined;
-                            if (parsedData.categoryName) {
-                                // Tìm danh mục gần giống nhất
-                                const category = await category_model_1.Category.findOne({
-                                    name: { $regex: new RegExp(parsedData.categoryName, 'i') },
-                                });
-                                if (category) {
-                                    categoryId = category._id;
-                                }
-                            }
+                            log.info(`AI Parsed: ${parsedData.name} (SKU: ${parsedData.sku})`);
                             let finalImageUrl = undefined;
+                            const normalizedName = (0, string_util_1.normalizeString)(parsedData.name);
+                            const normalizedBrand = parsedData.brand ? (0, string_util_1.normalizeString)(parsedData.brand) : undefined;
+                            const normalizedUnit = (0, string_util_1.normalizeString)(parsedData.unit || 'item');
+                            // Check duplication by competitor SKU
+                            const existingProduct = await competitor_product_model_1.CompetitorProduct.findOne({
+                                sku: parsedData.sku
+                            });
                             if (mainImageUrl) {
                                 const uploaded = await image_service_1.crawlerImageService.uploadFromUrl(mainImageUrl, parsedData.sku);
                                 if (uploaded)
                                     finalImageUrl = uploaded;
                             }
                             // Lưu vào Database
-                            const existingProduct = await product_model_1.Product.findOne({ sku: parsedData.sku });
                             if (existingProduct) {
-                                existingProduct.salePrice = parsedData.salePrice;
+                                existingProduct.price = parsedData.price;
                                 existingProduct.description = parsedData.description || existingProduct.description;
-                                if (categoryId)
-                                    existingProduct.categoryId = categoryId;
+                                if (parsedData.brand)
+                                    existingProduct.brand = parsedData.brand;
                                 if (finalImageUrl)
                                     existingProduct.imageUrl = finalImageUrl;
+                                existingProduct.sourceUrl = request.url;
+                                existingProduct.normalizedName = normalizedName;
+                                existingProduct.normalizedBrand = normalizedBrand;
+                                existingProduct.normalizedUnit = normalizedUnit;
                                 await existingProduct.save();
-                                log.info(`Updated product: ${parsedData.sku}`);
+                                log.info(`Updated competitor product: ${existingProduct.name}`);
                             }
                             else {
-                                await product_model_1.Product.create({
+                                await competitor_product_model_1.CompetitorProduct.create({
                                     name: parsedData.name,
+                                    brand: parsedData.brand,
                                     sku: parsedData.sku,
-                                    salePrice: parsedData.salePrice,
+                                    price: parsedData.price,
                                     unit: parsedData.unit,
                                     description: parsedData.description,
-                                    categoryId: categoryId,
                                     imageUrl: finalImageUrl,
-                                    status: 'active',
+                                    source: 'Winmart',
+                                    sourceUrl: request.url,
+                                    normalizedName,
+                                    normalizedBrand,
+                                    normalizedUnit,
                                 });
-                                log.info(`Created new product: ${parsedData.sku}`);
+                                log.info(`Created new competitor product: ${parsedData.name}`);
                             }
                             // Lưu log vào file cục bộ (Dataset của Crawlee) để tiện kiểm tra
                             await crawlee_1.Dataset.pushData({

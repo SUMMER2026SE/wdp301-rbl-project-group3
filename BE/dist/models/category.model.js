@@ -39,6 +39,7 @@ const CategorySchema = new mongoose_1.Schema({
     name: { type: String, required: true, trim: true },
     code: { type: String, required: true, unique: true, uppercase: true, trim: true },
     description: { type: String, trim: true },
+    minMargin: { type: Number, default: 0, min: 0, max: 100 },
     status: {
         type: String,
         enum: ['active', 'inactive'],
