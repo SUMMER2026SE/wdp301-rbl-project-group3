@@ -49,8 +49,9 @@ export const ManageShiftsPage = () => {
 
   // Selection states & Pagination
   const [filterEmployeeId, setFilterEmployeeId] = useState<string>('all')
-  const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [filterStatus, setFilterStatus] = useState<string>('pending')
   const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [isRegsLoading, setIsRegsLoading] = useState<boolean>(false)
   const [successMsg, setSuccessMsg] = useState<string>('')
   const [errorMsg, setErrorMsg] = useState<string>('')
 
@@ -83,6 +84,24 @@ export const ManageShiftsPage = () => {
   const [reviewStatus, setReviewStatus] = useState<'approved' | 'rejected'>('approved')
   const [reviewManagerNote, setReviewManagerNote] = useState<string>('')
   const [isSubmittingReview, setIsSubmittingReview] = useState<boolean>(false)
+
+  // Debug State
+  const [debugErrors, setDebugErrors] = useState<string[]>([])
+
+  useEffect(() => {
+    const handleGlobalError = (event: ErrorEvent) => {
+      setDebugErrors(prev => [...prev, `Error: ${event.message} at ${event.filename}:${event.lineno}`])
+    }
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      setDebugErrors(prev => [...prev, `Promise Rejection: ${String(event.reason?.message || event.reason)}`])
+    }
+    window.addEventListener('error', handleGlobalError)
+    window.addEventListener('unhandledrejection', handleUnhandledRejection)
+    return () => {
+      window.removeEventListener('error', handleGlobalError)
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection)
+    }
+  }, [])
 
   // Quick message helper
   const triggerSuccess = (msg: string) => {
@@ -128,6 +147,8 @@ export const ManageShiftsPage = () => {
     return `${year}-${month}-${day}`
   }
 
+  const mondayDateStr = formatDateString(mondayDate)
+
   const formatDisplayDate = (d: Date): string => {
     const dayStr = String(d.getDate()).padStart(2, '0')
     const monthStr = String(d.getMonth() + 1).padStart(2, '0')
@@ -158,6 +179,7 @@ export const ManageShiftsPage = () => {
 
   // --- API CALLERS ---
   const loadBranches = async () => {
+    if (isStaff) return
     try {
       const res = await branchService.getBranches()
       if (res.success && res.data) {
@@ -169,6 +191,7 @@ export const ManageShiftsPage = () => {
   }
 
   const loadEmployees = async () => {
+    if (isStaff) return
     if (!selectedBranchId) return
     try {
       const res = await employeeService.listEmployees({
@@ -201,7 +224,7 @@ export const ManageShiftsPage = () => {
 
   const loadRegistrations = async () => {
     if (!selectedBranchId) return
-    setIsLoading(true)
+    setIsRegsLoading(true)
     try {
       // For weekly views, restrict start & end range to load less data
       const startDate = formatDateString(mondayDate)
@@ -231,7 +254,7 @@ export const ManageShiftsPage = () => {
     } catch (err: any) {
       console.error('Failed to load registrations:', err)
     } finally {
-      setIsLoading(false)
+      setIsRegsLoading(false)
     }
   }
 
@@ -250,7 +273,7 @@ export const ManageShiftsPage = () => {
     if (selectedBranchId) {
       loadRegistrations()
     }
-  }, [selectedBranchId, mondayDate, filterEmployeeId, filterStatus, activeTab])
+  }, [selectedBranchId, mondayDateStr, filterEmployeeId, filterStatus, activeTab])
 
   // --- SUBMISSIONS ---
   // Registration Form
@@ -477,6 +500,19 @@ export const ManageShiftsPage = () => {
         </div>
       )}
 
+      {/* ── DEBUG PANEL ── */}
+      <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 text-xs font-mono space-y-1">
+        <p className="font-bold text-sm text-blue-500">Debug Info:</p>
+        <p>• activeTab: "{activeTab}"</p>
+        <p>• isLoading: {isLoading ? "TRUE" : "FALSE"}</p>
+        <p>• isRegsLoading: {isRegsLoading ? "TRUE" : "FALSE"}</p>
+        <p>• selectedBranchId: "{selectedBranchId}"</p>
+        <p>• registrations count: {registrations.length}</p>
+        {debugErrors.map((err, i) => (
+          <p key={i} className="text-error font-bold">• {err}</p>
+        ))}
+      </div>
+
       {/* ── TAB BAR CONTROLS ── */}
       <div className="flex flex-col gap-4 border-b border-outline-variant bg-surface-container-lowest p-2 rounded-xl shadow-sm md:flex-row md:items-center md:justify-between">
         <div className="flex flex-wrap gap-1">
@@ -613,152 +649,179 @@ export const ManageShiftsPage = () => {
           </div>
 
           {/* Grid Layout (Monday to Sunday) */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-7">
-            {weekDates.map((dateItem, idx) => {
-              const dateStr = formatDateString(dateItem)
-              const displayDate = formatDisplayDate(dateItem)
-              const dayName = getDayName(idx)
+          {(() => {
+            const todayStr = formatDateString(new Date())
+            const activeDates = weekDates.filter(d => {
+              const dateStr = formatDateString(d)
+              const isPast = dateStr < todayStr
+              return !isPast
+            })
 
-              // Check if day is today
-              const isToday = formatDateString(new Date()) === dateStr
-              // Check if date is in the past
-              const isPast = new Date(dateStr) < new Date(formatDateString(new Date()))
-
+            if (activeDates.length === 0) {
               return (
-                <div
-                  key={dateStr}
-                  className={`flex flex-col rounded-xl border p-3 shadow-sm transition-all ${
-                    isToday
-                      ? 'border-primary bg-primary-container/20 ring-2 ring-primary/20'
-                      : 'border-outline-variant bg-surface-container-lowest'
-                  }`}
-                >
-                  {/* Day Header */}
-                  <div className="border-b border-outline-variant/60 pb-2 mb-2 flex justify-between items-center">
-                    <div>
-                      <h4 className="text-sm font-black text-on-surface">{dayName}</h4>
-                      <p className="text-[11px] font-bold text-on-surface-variant">{displayDate}</p>
-                    </div>
-                    {isToday && (
-                      <span className="rounded bg-primary px-1.5 py-0.5 text-[9px] font-black uppercase text-white tracking-wider animate-pulse">
-                        Hôm nay
-                      </span>
-                    )}
-                  </div>
-
-                  {/* List of slots/shifts */}
-                  <div className="flex-1 space-y-2">
-                    {templates.length === 0 ? (
-                      <p className="text-[11px] text-on-surface-variant italic text-center py-4">
-                        Chưa có ca mẫu
-                      </p>
-                    ) : (
-                      templates.map((tpl) => {
-                        // Find if registered for this template on this date
-                        const reg = registrations.find(
-                          (r) =>
-                            r.date.substring(0, 10) === dateStr &&
-                            r.shiftTemplateId === tpl._id
-                        )
-
-                        return (
-                          <div
-                            key={tpl._id}
-                            className={`rounded-lg border p-2.5 text-xs transition-colors flex flex-col justify-between gap-2 ${
-                              reg?.status === 'approved'
-                                ? 'bg-success-container/10 border-success/30'
-                                : reg?.status === 'pending'
-                                ? 'bg-amber-100/30 border-amber-500/30'
-                                : reg?.status === 'rejected'
-                                ? 'bg-error-container/15 border-error/20'
-                                : 'bg-surface-container-low/40 border-outline-variant hover:bg-surface-container-low'
-                            }`}
-                          >
-                            {/* Shift info */}
-                            <div>
-                              <div className="flex items-center justify-between font-bold">
-                                <span className="text-on-surface truncate pr-1" title={tpl.name}>
-                                  {tpl.name}
-                                </span>
-                                <span className="text-[10px] text-primary shrink-0">8h/ca</span>
-                              </div>
-                              <div className="mt-1 flex items-center gap-1 text-[10px] text-on-surface-variant font-semibold">
-                                <Clock size={11} className="text-on-surface-variant" />
-                                <span>
-                                  {tpl.startTime} - {tpl.endTime}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Status or Register action */}
-                            <div className="pt-1.5 border-t border-dashed border-outline-variant">
-                              {reg ? (
-                                <div className="space-y-1.5">
-                                  <div className="flex items-center justify-between">
-                                    <span
-                                      className={`inline-flex rounded px-1.5 py-0.5 text-[9px] font-black uppercase ${
-                                        reg.status === 'approved'
-                                          ? 'bg-success text-white'
-                                          : reg.status === 'pending'
-                                          ? 'bg-amber-500 text-white'
-                                          : 'bg-error text-white'
-                                      }`}
-                                    >
-                                      {reg.status === 'approved'
-                                        ? 'Đã duyệt'
-                                        : reg.status === 'pending'
-                                        ? 'Chờ duyệt'
-                                        : 'Từ chối'}
-                                    </span>
-
-                                    {/* Cancel for pending */}
-                                    {reg.status === 'pending' && (
-                                      <button
-                                        onClick={() => handleCancelRegistration(reg._id)}
-                                        className="text-error hover:underline text-[10px] font-bold"
-                                        title="Hủy đăng ký"
-                                        type="button"
-                                      >
-                                        Hủy
-                                      </button>
-                                    )}
-                                  </div>
-
-                                  {reg.note && (
-                                    <p className="text-[9px] text-on-surface-variant italic truncate mt-0.5" title={reg.note}>
-                                      Họ: "{reg.note}"
-                                    </p>
-                                  )}
-                                  {reg.managerNote && (
-                                    <p className="text-[9px] text-error font-semibold leading-tight mt-0.5" title={reg.managerNote}>
-                                      Lý do: {reg.managerNote}
-                                    </p>
-                                  )}
-                                </div>
-                              ) : (
-                                <button
-                                  onClick={() => handleOpenRegisterModal(tpl, dateItem)}
-                                  disabled={isPast}
-                                  className={`w-full py-1 rounded text-center text-[10px] font-bold transition-all ${
-                                    isPast
-                                      ? 'bg-surface-container-high text-on-surface-variant/40 cursor-not-allowed'
-                                      : 'bg-primary text-white hover:bg-primary-dark hover:scale-[1.02]'
-                                  }`}
-                                  type="button"
-                                >
-                                  {isPast ? 'Đã qua' : 'Đăng ký'}
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        )
-                      })
-                    )}
-                  </div>
+                <div className="text-center py-12 bg-surface-container-lowest rounded-xl border border-outline-variant text-on-surface-variant font-medium">
+                  Tất cả các ngày trong tuần này đã qua. Bạn không thể đăng ký ca làm mới cho tuần này nữa.
                 </div>
               )
-            })}
-          </div>
+            }
+
+            const gridColsClass = 
+              activeDates.length === 7 ? 'md:grid-cols-7' :
+              activeDates.length === 6 ? 'md:grid-cols-6' :
+              activeDates.length === 5 ? 'md:grid-cols-5' :
+              activeDates.length === 4 ? 'md:grid-cols-4' :
+              activeDates.length === 3 ? 'md:grid-cols-3' :
+              activeDates.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-1'
+
+            return (
+              <div className={`grid grid-cols-1 gap-4 ${gridColsClass}`}>
+                {activeDates.map((dateItem) => {
+                  const dateStr = formatDateString(dateItem)
+                  const displayDate = formatDisplayDate(dateItem)
+                  const originalIdx = weekDates.findIndex(d => formatDateString(d) === dateStr)
+                  const dayName = getDayName(originalIdx !== -1 ? originalIdx : 0)
+
+                  // Check if day is today
+                  const isToday = todayStr === dateStr
+                  const isPast = dateStr < todayStr
+
+                  return (
+                    <div
+                      key={dateStr}
+                      className={`flex flex-col rounded-xl border p-3 shadow-sm transition-all ${
+                        isToday
+                          ? 'border-primary bg-primary-container/20 ring-2 ring-primary/20'
+                          : 'border-outline-variant bg-surface-container-lowest'
+                      }`}
+                    >
+                      {/* Day Header */}
+                      <div className="border-b border-outline-variant/60 pb-2 mb-2 flex justify-between items-center">
+                        <div>
+                          <h4 className="text-sm font-black text-on-surface">{dayName}</h4>
+                          <p className="text-[11px] font-bold text-on-surface-variant">{displayDate}</p>
+                        </div>
+                        {isToday && (
+                          <span className="rounded bg-primary px-1.5 py-0.5 text-[9px] font-black uppercase text-white tracking-wider animate-pulse">
+                            Hôm nay
+                          </span>
+                        )}
+                      </div>
+
+                      {/* List of slots/shifts */}
+                      <div className="flex-1 space-y-2">
+                        {templates.length === 0 ? (
+                          <p className="text-[11px] text-on-surface-variant italic text-center py-4">
+                            Chưa có ca mẫu
+                          </p>
+                        ) : (
+                          templates.map((tpl) => {
+                            // Find if registered for this template on this date
+                            const reg = registrations.find(
+                              (r) =>
+                                r.date.substring(0, 10) === dateStr &&
+                                r.shiftTemplateId === tpl._id
+                            )
+
+                            return (
+                              <div
+                                key={tpl._id}
+                                className={`rounded-lg border p-2.5 text-xs transition-colors flex flex-col justify-between gap-2 ${
+                                  reg?.status === 'approved'
+                                    ? 'bg-success-container/10 border-success/30'
+                                    : reg?.status === 'pending'
+                                    ? 'bg-amber-100/30 border-amber-500/30'
+                                    : reg?.status === 'rejected'
+                                    ? 'bg-error-container/15 border-error/20'
+                                    : 'bg-surface-container-low/40 border-outline-variant hover:bg-surface-container-low'
+                                }`}
+                              >
+                                {/* Shift info */}
+                                <div>
+                                  <div className="flex items-center justify-between font-bold">
+                                    <span className="text-on-surface truncate pr-1" title={tpl.name}>
+                                      {tpl.name}
+                                    </span>
+                                    <span className="text-[10px] text-primary shrink-0">8h/ca</span>
+                                  </div>
+                                  <div className="mt-1 flex items-center gap-1 text-[10px] text-on-surface-variant font-semibold">
+                                    <Clock size={11} className="text-on-surface-variant" />
+                                    <span>
+                                      {tpl.startTime} - {tpl.endTime}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Status or Register action */}
+                                <div className="pt-1.5 border-t border-dashed border-outline-variant">
+                                  {reg ? (
+                                    <div className="space-y-1.5">
+                                      <div className="flex items-center justify-between">
+                                        <span
+                                          className={`inline-flex rounded px-1.5 py-0.5 text-[9px] font-black uppercase ${
+                                            reg.status === 'approved'
+                                              ? 'bg-success text-white'
+                                              : reg.status === 'pending'
+                                              ? 'bg-amber-500 text-white'
+                                              : 'bg-error text-white'
+                                          }`}
+                                        >
+                                          {reg.status === 'approved'
+                                            ? 'Đã duyệt'
+                                            : reg.status === 'pending'
+                                            ? 'Chờ duyệt'
+                                            : 'Từ chối'}
+                                        </span>
+
+                                        {/* Cancel for pending */}
+                                        {reg.status === 'pending' && (
+                                          <button
+                                            onClick={() => handleCancelRegistration(reg._id)}
+                                            className="text-error hover:underline text-[10px] font-bold"
+                                            title="Hủy đăng ký"
+                                            type="button"
+                                          >
+                                            Hủy
+                                          </button>
+                                        )}
+                                      </div>
+
+                                      {reg.note && (
+                                        <p className="text-[9px] text-on-surface-variant italic truncate mt-0.5" title={reg.note}>
+                                          Họ: "{reg.note}"
+                                        </p>
+                                      )}
+                                      {reg.managerNote && (
+                                        <p className="text-[9px] text-error font-semibold leading-tight mt-0.5" title={reg.managerNote}>
+                                          Lý do: {reg.managerNote}
+                                        </p>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleOpenRegisterModal(tpl, dateItem)}
+                                      disabled={isPast}
+                                      className={`w-full py-1 rounded text-center text-[10px] font-bold transition-all ${
+                                        isPast
+                                          ? 'bg-surface-container-high text-on-surface-variant/40 cursor-not-allowed'
+                                          : 'bg-primary text-white hover:bg-primary-dark hover:scale-[1.02]'
+                                      }`}
+                                      type="button"
+                                    >
+                                      {isPast ? 'Đã qua' : 'Đăng ký'}
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            )
+                          })
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          })()}
         </div>
       )}
 
@@ -820,7 +883,7 @@ export const ManageShiftsPage = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant">
-                  {isLoading ? (
+                  {isRegsLoading ? (
                     <tr>
                       <td colSpan={6} className="px-6 py-12 text-center text-on-surface-variant">
                         <div className="flex flex-col items-center justify-center gap-2">
@@ -1314,7 +1377,7 @@ export const ManageShiftsPage = () => {
                   type="submit"
                   disabled={isSubmittingReview}
                   className={`rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow transition disabled:opacity-60 ${
-                    reviewStatus === 'approved' ? 'bg-success hover:bg-success-dark' : 'bg-error hover:bg-error-dark'
+                    reviewStatus === 'approved' ? 'bg-primary hover:bg-primary/90' : 'bg-error hover:bg-error/90'
                   }`}
                 >
                   {isSubmittingReview ? 'Đang xử lý...' : reviewStatus === 'approved' ? 'Đồng ý Duyệt' : 'Từ Chối Đơn'}

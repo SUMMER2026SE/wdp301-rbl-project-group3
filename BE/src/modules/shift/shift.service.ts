@@ -12,13 +12,19 @@ export interface ShiftActor {
 
 export class ShiftService {
   private getMidnightDate(dateStr: string): Date {
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      return new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
+    }
+
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) {
       throw new AppError('Invalid date format', 400);
     }
-    // Set to midnight UTC or Local to normalize
-    d.setHours(0, 0, 0, 0);
-    return d;
+    return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0));
   }
 
   // --- Shift Templates ---
@@ -121,6 +127,14 @@ export class ShiftService {
 
     const date = this.getMidnightDate(data.date);
 
+    // Validate past dates using GMT+7 string comparison
+    const todayStr = new Date(new Date().getTime() + 7 * 60 * 60 * 1000)
+      .toISOString()
+      .split('T')[0];
+    if (data.date < todayStr) {
+      throw new AppError('Cannot register for shifts in the past', 400);
+    }
+
     // Conflict check
     const existing = await shiftRepository.findConflictingRegistration(actor.userId, date, data.shiftTemplateId);
     if (existing) {
@@ -185,6 +199,17 @@ export class ShiftService {
       }
       if (registration.status !== 'pending') {
         throw new AppError('You can only cancel pending shift registrations', 400);
+      }
+      
+      // Validate past cancellation using GMT+7 string comparison
+      const todayStr = new Date(new Date().getTime() + 7 * 60 * 60 * 1000)
+        .toISOString()
+        .split('T')[0];
+      const regDateStr = new Date(registration.date.getTime() + 7 * 60 * 60 * 1000)
+        .toISOString()
+        .split('T')[0];
+      if (regDateStr < todayStr) {
+        throw new AppError('Cannot cancel shifts in the past', 400);
       }
     } else if (actor.role === 'branch_manager') {
       if (registration.branchId.toString() !== actor.branchId) {
