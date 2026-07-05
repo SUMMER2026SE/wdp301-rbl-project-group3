@@ -459,6 +459,16 @@ export const ManageInventoryPage = () => {
       return;
     }
 
+    // Validate if any price is below floor price
+    const belowFloorItems = toApply.filter(r => r.suggestedPrice > 0 && r.suggestedPrice < r.floorPrice);
+    if (belowFloorItems.length > 0) {
+      const names = belowFloorItems.map(r => r.productName).join(', ');
+      const confirmMsg = `Các sản phẩm sau có Giá đề xuất thấp hơn Giá sàn quy định (biên lợi nhuận tối thiểu): ${names}.\n\nBạn có chắc chắn vẫn muốn lưu mức giá này không?`;
+      if (!window.confirm(confirmMsg)) {
+        return;
+      }
+    }
+
     setBulkUpdateLoading(true);
     let successCount = 0;
     let failCount = 0;
@@ -3654,8 +3664,31 @@ export const ManageInventoryPage = () => {
                                 />
                               </td>
                               <td className="p-3 text-right font-mono text-on-surface-variant">{formatVND(result.currentPrice)}</td>
-                              <td className="p-3 text-right font-mono font-bold text-primary">
-                                {result.suggestedPrice > 0 ? formatVND(result.suggestedPrice) : '---'}
+                              <td className="p-3 text-right">
+                                {result.suggestedPrice > 0 ? (
+                                  <div className="flex flex-col items-end gap-1">
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={result.suggestedPrice || ''}
+                                      onChange={(e) => {
+                                        const val = Number(e.target.value);
+                                        setBulkSuggestResults(prev => prev.map(r => r.productId === result.productId ? { ...r, suggestedPrice: val } : r));
+                                      }}
+                                      placeholder="Giá gợi ý"
+                                      className={`bg-surface-container-low border rounded-lg py-1 px-2 focus:ring-1 text-xs font-mono w-24 font-bold text-right ${
+                                        result.suggestedPrice < result.floorPrice ? 'border-error text-error focus:ring-error' : 'border-primary/40 text-primary focus:ring-primary'
+                                      }`}
+                                    />
+                                    {result.floorPrice > 0 && (
+                                      <span className={`text-[10px] ${result.suggestedPrice < result.floorPrice ? 'text-error font-semibold' : 'text-on-surface-variant'}`}>
+                                        Sàn: {formatVND(result.floorPrice)}
+                                      </span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="font-mono text-on-surface-variant text-right block w-24">---</span>
+                                )}
                               </td>
                               <td className="p-3 text-center">
                                 {result.confidence > 0 ? (
