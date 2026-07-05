@@ -16,11 +16,13 @@ import invoiceRoutes from '../modules/invoice/invoice.routes';
 import returnRoutes from '../modules/return/return.routes';
 import flashSaleRoutes from '../modules/flash-sale/flash-sale.routes';
 import bannerRoutes from '../modules/banner/banner.routes';
+import shiftRoutes from '../modules/shift/shift.routes';
 import {
   adminSystemSettingRoutes,
   publicSystemSettingRoutes,
 } from '../modules/system-setting/system-setting.routes';
 import crawlerRoutes from '../modules/crawler/crawler.routes';
+import competitorProductRoutes from '../modules/competitor-product/competitor-product.routes';
 
 const router = Router();
 
@@ -41,8 +43,10 @@ router.use('/invoices', invoiceRoutes);
 router.use('/returns', returnRoutes);
 router.use('/flash-sales', flashSaleRoutes);
 router.use('/banners', bannerRoutes);
+router.use('/shifts', shiftRoutes);
 router.use('/settings', publicSystemSettingRoutes);
 router.use('/admin/settings', adminSystemSettingRoutes);
 router.use('/crawler', crawlerRoutes);
+router.use('/competitor-products', competitorProductRoutes);
 
 export default router;

@@ -99,6 +99,13 @@ export declare class InventoryRepository {
     acquireImportReceiptForMutation(id: string): Promise<IImportReceipt | null>;
     releaseImportReceiptMutation(id: string): Promise<void>;
     findImportReceiptDetail(id: string): Promise<IImportReceipt | null>;
+    saveImportReceiptVerification(id: string, data: {
+        items: IImportReceiptItem[];
+        verificationStatus: 'verified' | 'partially_verified';
+        verifiedBy: string;
+        verifiedAt: Date;
+        verificationNote?: string;
+    }): Promise<IImportReceipt | null>;
     updateImportReceipt(id: string, data: {
         branchId: string;
         supplierName?: string;

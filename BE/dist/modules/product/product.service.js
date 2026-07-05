@@ -4,6 +4,8 @@ exports.productService = exports.ProductService = void 0;
 const errorHandler_middleware_1 = require("../../middlewares/errorHandler.middleware");
 const cloudinary_config_1 = require("../../config/cloudinary.config");
 const product_repository_1 = require("./product.repository");
+const sku_util_1 = require("../../utils/sku.util");
+const string_util_1 = require("../../utils/string.util");
 class ProductService {
     uploadProductImage(buffer, publicId) {
         return new Promise((resolve, reject) => {
@@ -37,10 +39,15 @@ class ProductService {
         };
     }
     async createProduct(data, file) {
-        const sku = String(data.sku).toUpperCase();
-        const existing = await product_repository_1.productRepository.findBySku(sku);
-        if (existing)
-            throw new errorHandler_middleware_1.AppError('Product SKU already exists', 409);
+        let sku = data.sku ? String(data.sku).toUpperCase().trim() : '';
+        if (!sku) {
+            sku = await (0, sku_util_1.generateUniqueSku)();
+        }
+        else {
+            const existing = await product_repository_1.productRepository.findBySku(sku);
+            if (existing)
+                throw new errorHandler_middleware_1.AppError('Product SKU already exists', 409);
+        }
         let imageUrl;
         if (file) {
             imageUrl = await this.uploadProductImage(file.buffer, `sku_${sku}`);
@@ -49,8 +56,12 @@ class ProductService {
             ...data,
             sku,
             unit: data.unit || 'item',
+            costPrice: data.costPrice ?? 0,
             salePrice: data.salePrice ?? 0,
             imageUrl,
+            normalizedName: data.name ? (0, string_util_1.normalizeString)(data.name) : undefined,
+            normalizedBrand: data.brand ? (0, string_util_1.normalizeString)(data.brand) : undefined,
+            normalizedUnit: (0, string_util_1.normalizeString)(data.unit || 'item'),
         });
     }
     async getProductById(id) {
@@ -62,6 +73,15 @@ class ProductService {
     async updateProduct(id, data, file) {
         await this.getProductById(id);
         const updateData = { ...data };
+        if (updateData.name !== undefined) {
+            updateData.normalizedName = (0, string_util_1.normalizeString)(updateData.name);
+        }
+        if (updateData.brand !== undefined) {
+            updateData.normalizedBrand = (0, string_util_1.normalizeString)(updateData.brand);
+        }
+        if (updateData.unit !== undefined) {
+            updateData.normalizedUnit = (0, string_util_1.normalizeString)(updateData.unit);
+        }
         if (updateData.sku) {
             const sku = String(updateData.sku).toUpperCase();
             const existing = await product_repository_1.productRepository.findBySku(sku);

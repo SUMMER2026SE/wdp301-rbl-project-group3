@@ -1,5 +1,6 @@
 import { Types } from 'mongoose';
 import { Inventory, IInventory } from '../../models/inventory.model';
+import { Product } from '../../models/product.model';
 import { ImportReceipt, IImportReceipt, IImportReceiptItem } from '../../models/importReceipt.model';
 
 export class InventoryRepository {
@@ -295,7 +296,13 @@ export class InventoryRepository {
     existing.lastImportCost = params.unitCost;
     existing.updatedBy = new Types.ObjectId(params.updatedBy);
 
-    return existing.save();
+    const savedInventory = await existing.save();
+    
+    // Đề xuất A: Tự động đồng bộ Giá vốn (Cost Sync)
+    // Khi nhập kho, cập nhật costPrice của Product bằng averageCost để AI Pricing chính xác
+    await Product.findByIdAndUpdate(params.productId, { costPrice: savedInventory.averageCost });
+
+    return savedInventory;
   }
 
   async reverseImportedStock(params: {
@@ -360,6 +367,7 @@ export class InventoryRepository {
       .populate('createdBy', 'fullName email')
       .populate('updatedBy', 'fullName email')
       .populate('cancelledBy', 'fullName email')
+      .populate('verifiedBy', 'fullName email')
       .populate('items.productId', 'name sku unit')
       .sort({ createdAt: -1 })
       .exec();
@@ -407,8 +415,34 @@ export class InventoryRepository {
       .populate('createdBy', 'fullName email')
       .populate('updatedBy', 'fullName email')
       .populate('cancelledBy', 'fullName email')
+      .populate('verifiedBy', 'fullName email')
       .populate('items.productId', 'name sku unit salePrice imageUrl')
       .exec();
+  }
+
+  async saveImportReceiptVerification(
+    id: string,
+    data: {
+      items: IImportReceiptItem[];
+      verificationStatus: 'verified' | 'partially_verified';
+      verifiedBy: string;
+      verifiedAt: Date;
+      verificationNote?: string;
+    }
+  ): Promise<IImportReceipt | null> {
+    return ImportReceipt.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          items: data.items,
+          verificationStatus: data.verificationStatus,
+          verifiedBy: new Types.ObjectId(data.verifiedBy),
+          verifiedAt: data.verifiedAt,
+          verificationNote: data.verificationNote,
+        },
+      },
+      { new: true }
+    ).exec();
   }
 
   async updateImportReceipt(

@@ -104,15 +104,28 @@ export interface Product {
   name?: string
   categoryId: string
   costPrice?: number      // giá vốn nhập gốc
-  price: number           // alias của salePrice (legacy)
   salePrice?: number      // giá bán ra khách
-  suggestedPrice?: number // giá gợi ý từ AI
   sku?: string
   description?: string
   unit?: string
   imageUrl?: string
   barcode?: string
   status: boolean | string | 'active' | 'inactive'
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface CompetitorProduct {
+  _id: string
+  name: string
+  sku: string
+  price: number
+  description?: string
+  brand?: string
+  unit?: string
+  imageUrl?: string
+  source: string
+  sourceUrl?: string
   createdAt?: string
   updatedAt?: string
 }
@@ -201,7 +214,6 @@ export interface InventoryProduct {
   unit: string
   costPrice?: number
   salePrice: number
-  price?: number
   imageUrl?: string
 }
 
@@ -230,6 +242,8 @@ export interface ImportReceiptItem {
   quantity: number
   unitCost: number
   subtotal: number
+  verified?: boolean
+  verifiedQuantity?: number
 }
 
 export interface ImportReceipt {
@@ -240,9 +254,14 @@ export interface ImportReceipt {
   note?: string
   items: ImportReceiptItem[]
   totalCost: number
-  createdBy: { _id: string; fullName: string; email: string } | string
+  createdBy: { _id: string; fullName: string; email: string }
   createdAt: string
   updatedAt?: string
+  status: 'active' | 'adjusting' | 'cancelled'
+  verificationStatus?: 'pending' | 'verified' | 'partially_verified'
+  verifiedBy?: { _id: string; fullName: string; email: string }
+  verifiedAt?: string
+  verificationNote?: string
 }
 
 export interface CreateImportReceiptInput {
@@ -313,6 +332,7 @@ export interface Category {
   name: string
   code: string
   description?: string
+  minMargin?: number
   status: 'active' | 'inactive'
   createdAt: string
   updatedAt: string

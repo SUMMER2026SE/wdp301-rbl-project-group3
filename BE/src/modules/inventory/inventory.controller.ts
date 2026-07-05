@@ -116,6 +116,22 @@ export class InventoryController {
     );
     sendSuccess(res, null, 'Inventory item deleted successfully');
   });
+
+  verifyImportReceipt = asyncHandler(async (req: Request, res: Response) => {
+    const receipt = await inventoryService.verifyImportReceipt(
+      String(req.params.id),
+      {
+        verifiedItems: req.body.verifiedItems,
+        note: req.body.note,
+        verifiedBy: req.user!.userId,
+        actor: {
+          userId: req.user!.userId,
+          role: req.user!.role,
+        },
+      }
+    );
+    sendSuccess(res, { receipt }, 'Import receipt verified successfully');
+  });
 }
 
 export const inventoryController = new InventoryController();

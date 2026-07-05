@@ -19,7 +19,7 @@ export const inventoryService = {
         item.productId = {
           ...item.productId,
           productName: item.productId.productName || item.productId.name || 'Unnamed Product',
-          price: item.productId.price ?? item.productId.salePrice ?? 0,
+          salePrice: item.productId.salePrice ?? 0,
         }
       }
       return item
@@ -47,7 +47,7 @@ export const inventoryService = {
             item.productId = {
               ...item.productId,
               productName: item.productId.productName || item.productId.name || 'Unnamed Product',
-              price: item.productId.price ?? item.productId.salePrice ?? 0,
+              salePrice: item.productId.salePrice ?? 0,
             }
           }
           return item
@@ -97,6 +97,18 @@ export const inventoryService = {
   // Manually delete an inventory stock record
   deleteInventory: async (id: string): Promise<ApiResponse<void>> => {
     const response = await apiClient.delete(`/api/inventory/${id}`)
+    return response.data
+  },
+
+  // Verify an import receipt (Staff checklist submission)
+  verifyImportReceipt: async (
+    id: string,
+    data: {
+      verifiedItems: { productId: string; verifiedQuantity: number }[]
+      note?: string
+    }
+  ): Promise<ApiResponse<ImportReceipt>> => {
+    const response = await apiClient.post(`/api/inventory/import-receipts/${id}/verify`, data)
     return response.data
   },
 }

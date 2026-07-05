@@ -44,6 +44,10 @@ class SystemSettingService {
             },
         }));
         await system_setting_repository_1.systemSettingRepository.bulkWrite(ops);
+        // Clean up low_stock_threshold from database if it exists
+        await system_setting_repository_1.systemSettingRepository.deleteByKey('low_stock_threshold');
+        // Ensure vat_rate is public in DB
+        await system_setting_repository_1.systemSettingRepository.updateByKey('vat_rate', { isPublic: true });
     }
     async listSettings(query) {
         await this.ensureDefaultSettings();

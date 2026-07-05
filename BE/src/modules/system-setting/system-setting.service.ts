@@ -64,6 +64,9 @@ export class SystemSettingService {
     }));
     await systemSettingRepository.bulkWrite(ops);
 
+    // Clean up low_stock_threshold from database if it exists
+    await systemSettingRepository.deleteByKey('low_stock_threshold');
+
     // Ensure vat_rate is public in DB
     await systemSettingRepository.updateByKey('vat_rate', { isPublic: true });
   }

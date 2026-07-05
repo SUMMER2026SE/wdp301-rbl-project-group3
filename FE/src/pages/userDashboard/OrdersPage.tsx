@@ -396,7 +396,7 @@ export const OrdersPage = () => {
                         <div className="min-w-0">
                           <p className="truncate text-sm font-bold text-on-surface">{item.productName}</p>
                           <p className="mt-1 text-xs text-on-surface-variant font-medium">
-                            Số lượng: {item.quantity} {item.unit ? `x ${item.unit}` : ''} x {formatVND(item.unitPrice ?? item.price ?? 0)}
+                            Số lượng: {item.quantity} {item.unit ? `x ${item.unit}` : ''} x {formatVND(item.unitPrice ?? 0)}
                           </p>
                         </div>
                         <p className="text-sm font-black text-on-surface">
@@ -571,7 +571,7 @@ export const OrdersPage = () => {
                         </div>
                         <div className="text-right shrink-0">
                           <p className="text-xs font-bold text-on-surface">
-                            {item.quantity} {item.unit || 'item'} x {formatVND(item.unitPrice ?? item.price ?? 0)}
+                            {item.quantity} {item.unit || 'item'} x {formatVND(item.unitPrice ?? 0)}
                           </p>
                           <p className="text-[11px] font-bold text-on-surface-variant mt-0.5">
                             {formatVND(item.subtotal)}

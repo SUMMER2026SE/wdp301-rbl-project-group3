@@ -17,6 +17,7 @@ import {
   Settings2,
   Zap,
   TrendingUp,
+  Calendar,
 } from 'lucide-react'
 
 type NavItem = {
@@ -79,6 +80,12 @@ export const AdminLayout = () => {
       label: 'Chi nhánh',
       description: 'Quản lý cửa hàng',
       icon: <MapPin size={20} />,
+    },
+    {
+      path: '/admin/shifts',
+      label: 'Lịch & Ca làm',
+      description: 'Đăng ký & quản lý ca làm',
+      icon: <Calendar size={20} />,
     },
   ]
 

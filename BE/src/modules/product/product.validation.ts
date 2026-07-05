@@ -39,7 +39,7 @@ export const listProductsSchema = z
 export const createProductSchema = z.object({
   body: z.object({
     name: z.string().min(2).max(150),
-    sku: z.string().min(2).max(50),
+    sku: emptyToUndefined(z.string().min(2).max(50).optional()),
     description: emptyToUndefined(z.string().max(1000).optional()),
     categoryId: emptyToUndefined(objectId.optional()),
     unit: emptyToUndefined(z.string().min(1).max(30).optional()),
@@ -55,7 +55,7 @@ export const updateProductSchema = z.object({
   }),
   body: z.object({
     name: z.string().min(2).max(150).optional(),
-    sku: z.string().min(2).max(50).optional(),
+    sku: emptyToUndefined(z.string().min(2).max(50).optional()),
     description: emptyToUndefined(z.string().max(1000).optional()),
     categoryId: emptyToUndefined(objectId.optional()),
     unit: emptyToUndefined(z.string().min(1).max(30).optional()),

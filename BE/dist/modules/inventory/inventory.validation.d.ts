@@ -75,5 +75,17 @@ export declare const updateInventorySchema: z.ZodObject<{
         lowStockThreshold: z.ZodOptional<z.ZodNumber>;
     }, z.core.$strip>;
 }, z.core.$strip>;
+export declare const verifyImportReceiptSchema: z.ZodObject<{
+    params: z.ZodObject<{
+        id: z.ZodString;
+    }, z.core.$strip>;
+    body: z.ZodObject<{
+        verifiedItems: z.ZodArray<z.ZodObject<{
+            productId: z.ZodString;
+            verifiedQuantity: z.ZodNumber;
+        }, z.core.$strip>>;
+        note: z.ZodOptional<z.ZodString>;
+    }, z.core.$strip>;
+}, z.core.$strip>;
 export { validate };
 //# sourceMappingURL=inventory.validation.d.ts.map

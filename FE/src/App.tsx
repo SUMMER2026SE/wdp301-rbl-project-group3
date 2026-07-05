@@ -31,6 +31,7 @@ import {
   ManageBannersPage,
   ManageEmployeesPage,
   ManageStatisticsPage,
+  ManageShiftsPage,
 } from './pages/adminDashboard'
 import './App.css'
 
@@ -118,6 +119,7 @@ function AppRoutes() {
         <Route path="banners" element={<ManageBannersPage />} />
         <Route path="employees" element={<ManageEmployeesPage />} />
         <Route path="statistics" element={<ManageStatisticsPage />} />
+        <Route path="shifts" element={<ManageShiftsPage />} />
       </Route>
     </Routes>
   )

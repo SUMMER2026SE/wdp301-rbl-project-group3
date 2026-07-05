@@ -2,6 +2,8 @@ import { IProduct } from '../../models/product.model';
 import { AppError } from '../../middlewares/errorHandler.middleware';
 import { cloudinary } from '../../config/cloudinary.config';
 import { productRepository } from './product.repository';
+import { generateUniqueSku } from '../../utils/sku.util';
+import { normalizeString } from '../../utils/string.util';
 
 export interface ListProductsQuery {
   page: number;
@@ -72,9 +74,13 @@ export class ProductService {
   }
 
   async createProduct(data: Partial<IProduct>, file?: ProductFile): Promise<IProduct> {
-    const sku = String(data.sku).toUpperCase();
-    const existing = await productRepository.findBySku(sku);
-    if (existing) throw new AppError('Product SKU already exists', 409);
+    let sku = data.sku ? String(data.sku).toUpperCase().trim() : '';
+    if (!sku) {
+      sku = await generateUniqueSku();
+    } else {
+      const existing = await productRepository.findBySku(sku);
+      if (existing) throw new AppError('Product SKU already exists', 409);
+    }
 
     let imageUrl: string | undefined;
     if (file) {
@@ -88,6 +94,9 @@ export class ProductService {
       costPrice: data.costPrice ?? 0,
       salePrice: data.salePrice ?? 0,
       imageUrl,
+      normalizedName: data.name ? normalizeString(data.name) : undefined,
+      normalizedBrand: data.brand ? normalizeString(data.brand) : undefined,
+      normalizedUnit: normalizeString(data.unit || 'item'),
     });
   }
 
@@ -105,6 +114,16 @@ export class ProductService {
     await this.getProductById(id);
 
     const updateData: Partial<IProduct> = { ...data };
+
+    if (updateData.name !== undefined) {
+      updateData.normalizedName = normalizeString(updateData.name);
+    }
+    if (updateData.brand !== undefined) {
+      updateData.normalizedBrand = normalizeString(updateData.brand);
+    }
+    if (updateData.unit !== undefined) {
+      updateData.normalizedUnit = normalizeString(updateData.unit);
+    }
 
     if (updateData.sku) {
       const sku = String(updateData.sku).toUpperCase();

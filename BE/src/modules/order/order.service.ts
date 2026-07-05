@@ -512,9 +512,7 @@ export class OrderService {
 
       // Check if product is in the active flash sale and limit quantity is not exceeded
       let unitPrice = product.salePrice ?? 0;
-      if (stock && stock.lastImportCost) {
-        unitPrice = stock.lastImportCost;
-      }
+
       let isFlashSaleApplied = false;
 
       if (activeFlashSale) {
