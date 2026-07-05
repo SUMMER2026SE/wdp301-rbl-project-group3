@@ -3548,7 +3548,7 @@ export const ManageInventoryPage = () => {
       {/* ── Bulk AI Price Suggestion Modal ── */}
       {showBulkSuggestModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-4xl bg-surface rounded-2xl border border-outline-variant shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
+          <div className="w-full max-w-6xl bg-surface rounded-2xl border border-outline-variant shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
             <div className="flex items-center justify-between border-b border-outline-variant bg-surface-container-low px-6 py-4">
               <h2 className="text-lg font-black text-on-surface flex items-center gap-2">
                 <Sparkles size={20} className="text-primary animate-pulse" />
@@ -3666,7 +3666,7 @@ export const ManageInventoryPage = () => {
                                   </span>
                                 ) : '---'}
                               </td>
-                              <td className="p-3 text-xs text-on-surface-variant leading-relaxed max-w-[220px] truncate" title={result.reason}>
+                              <td className="p-3 text-xs text-on-surface-variant leading-relaxed min-w-[280px] break-words whitespace-normal">
                                 {result.reason || 'Chưa chạy phân tích'}
                               </td>
                             </tr>
