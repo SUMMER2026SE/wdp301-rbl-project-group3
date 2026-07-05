@@ -377,7 +377,7 @@ export const ManageInventoryPage = () => {
 
   const [bulkSuggestError, setBulkSuggestError] = useState<string | null>(null)
 
-  const handleBulkPriceSuggest = async () => {
+  const handleBulkPriceSuggest = () => {
     if (selectedCatalogIds.length === 0) return;
     if (selectedCatalogIds.length > 10) {
       alert('Bạn chỉ được chọn tối đa 10 sản phẩm để gợi ý giá hàng loạt.');
@@ -386,50 +386,61 @@ export const ManageInventoryPage = () => {
 
     const selectedProducts = products.filter(p => selectedCatalogIds.includes(p._id));
     
-    // Check if any product has no costPrice or categoryId
-    const invalidProds = selectedProducts.filter(p => !p.costPrice || !p.categoryId);
-    if (invalidProds.length > 0) {
-      const names = invalidProds.map(p => p.productName || p.name).join(', ');
-      alert(`Các sản phẩm sau chưa có Giá vốn hoặc Danh mục, không thể gợi ý giá bằng AI: ${names}. Vui lòng bổ sung đầy đủ trước.`);
+    // Initialize results list without calling API immediately
+    const initialResults = selectedProducts.map(prod => {
+      const catId = prod.categoryId ? (typeof prod.categoryId === 'object' ? (prod.categoryId as any)._id : String(prod.categoryId)) : '';
+      return {
+        productId: prod._id,
+        productName: prod.productName || prod.name || 'Sản phẩm',
+        costPrice: prod.costPrice || 0,
+        currentPrice: prod.salePrice || 0,
+        suggestedPrice: 0,
+        confidence: 0,
+        reason: '',
+        floorPrice: 0,
+        categoryId: catId,
+        sku: prod.sku,
+        selected: true
+      };
+    });
+
+    setBulkSuggestResults(initialResults);
+    setBulkSuggestError(null);
+    setShowBulkSuggestModal(true);
+  };
+
+  const runBulkAIPriceSuggest = async () => {
+    // Validate that all items have costPrice and categoryId
+    const invalidItems = bulkSuggestResults.filter(r => !r.costPrice || r.costPrice <= 0 || !r.categoryId);
+    if (invalidItems.length > 0) {
+      const names = invalidItems.map(r => r.productName).join(', ');
+      alert(`Các sản phẩm sau chưa có Giá vốn hoặc chưa chọn Danh mục: ${names}. Vui lòng nhập đầy đủ để chạy AI.`);
       return;
     }
 
     setIsBulkSuggesting(true);
     setBulkSuggestError(null);
-    setBulkSuggestResults([]);
-    setShowBulkSuggestModal(true);
 
     try {
-      const payload = selectedProducts.map(p => {
-        const catId = p.categoryId ? (typeof p.categoryId === 'object' ? (p.categoryId as any)._id : String(p.categoryId)) : '';
-        return {
-          costPrice: p.costPrice || 0,
-          categoryId: catId,
-          name: p.productName || p.name,
-          sku: p.sku,
-        };
-      });
+      const payload = bulkSuggestResults.map(r => ({
+        costPrice: r.costPrice,
+        categoryId: r.categoryId,
+        name: r.productName,
+        sku: r.sku
+      }));
 
       const res = await productService.suggestPriceBulk(payload);
       if (res.success && Array.isArray(res.data)) {
-        const results = res.data.map((item: any, index: number) => {
-          const prod = selectedProducts[index];
-          const catId = prod.categoryId ? (typeof prod.categoryId === 'object' ? (prod.categoryId as any)._id : String(prod.categoryId)) : '';
+        setBulkSuggestResults(prev => prev.map((item, index) => {
+          const aiResult = res.data[index];
           return {
-            productId: prod._id,
-            productName: prod.productName || prod.name || 'Sản phẩm',
-            costPrice: prod.costPrice || 0,
-            currentPrice: prod.salePrice || 0,
-            suggestedPrice: item.suggestedPrice,
-            confidence: item.confidence,
-            reason: item.reason,
-            floorPrice: item.floorPrice,
-            categoryId: catId,
-            sku: prod.sku,
-            selected: true
+            ...item,
+            suggestedPrice: aiResult.suggestedPrice,
+            confidence: aiResult.confidence,
+            reason: aiResult.reason,
+            floorPrice: aiResult.floorPrice
           };
-        });
-        setBulkSuggestResults(results);
+        }));
       } else {
         setBulkSuggestError(res.message || 'Không thể tạo gợi ý giá hàng loạt.');
       }
@@ -455,8 +466,11 @@ export const ManageInventoryPage = () => {
     try {
       for (const item of toApply) {
         try {
+          // Update both salePrice, costPrice and categoryId in catalog!
           const res = await productService.updateProduct(item.productId, {
-            salePrice: item.suggestedPrice
+            salePrice: item.suggestedPrice || item.currentPrice,
+            costPrice: item.costPrice,
+            categoryId: item.categoryId
           });
           if (res.success) {
             successCount++;
@@ -464,12 +478,12 @@ export const ManageInventoryPage = () => {
             failCount++;
           }
         } catch (e) {
-          console.error('Failed to update price for product:', item.productName, e);
+          console.error('Failed to update product details:', item.productName, e);
           failCount++;
         }
       }
 
-      alert(`Đã áp dụng thành công giá mới cho ${successCount} sản phẩm.${failCount > 0 ? ` Thất bại: ${failCount} sản phẩm.` : ''}`);
+      alert(`Đã áp dụng thành công cho ${successCount} sản phẩm.${failCount > 0 ? ` Thất bại: ${failCount} sản phẩm.` : ''}`);
       setShowBulkSuggestModal(false);
       setSelectedCatalogIds([]);
       fetchProducts();
@@ -3585,7 +3599,8 @@ export const ManageInventoryPage = () => {
                               />
                             </th>
                             <th className="p-3 font-bold text-on-surface-variant">Sản phẩm</th>
-                            <th className="p-3 font-bold text-on-surface-variant text-right">Giá vốn</th>
+                            <th className="p-3 font-bold text-on-surface-variant">Danh mục</th>
+                            <th className="p-3 font-bold text-on-surface-variant">Giá vốn</th>
                             <th className="p-3 font-bold text-on-surface-variant text-right">Giá hiện tại</th>
                             <th className="p-3 font-bold text-on-surface-variant text-right text-primary">Giá đề xuất (AI)</th>
                             <th className="p-3 font-bold text-on-surface-variant text-center">Độ tin cậy</th>
@@ -3607,21 +3622,52 @@ export const ManageInventoryPage = () => {
                                 />
                               </td>
                               <td className="p-3 font-medium text-on-surface">
-                                <div>{result.productName}</div>
+                                <div className="max-w-[150px] truncate" title={result.productName}>{result.productName}</div>
                                 <div className="text-[10px] text-on-surface-variant font-mono">{result.sku || 'Chưa có SKU'}</div>
                               </td>
-                              <td className="p-3 text-right font-mono text-on-surface-variant">{formatVND(result.costPrice)}</td>
-                              <td className="p-3 text-right font-mono text-on-surface-variant">{formatVND(result.currentPrice)}</td>
-                              <td className="p-3 text-right font-mono font-bold text-primary">{formatVND(result.suggestedPrice)}</td>
-                              <td className="p-3 text-center">
-                                <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                                  result.confidence >= 80 ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'
-                                }`}>
-                                  {result.confidence}%
-                                </span>
+                              <td className="p-3">
+                                <select
+                                  value={result.categoryId || ''}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setBulkSuggestResults(prev => prev.map(r => r.productId === result.productId ? { ...r, categoryId: val } : r));
+                                  }}
+                                  className="bg-surface-container-low border border-outline-variant rounded-lg py-1 px-2 focus:ring-1 focus:ring-primary text-xs w-36"
+                                >
+                                  <option value="">-- Chọn danh mục --</option>
+                                  {categories.map(c => (
+                                    <option key={c._id} value={c._id}>{c.name}</option>
+                                  ))}
+                                </select>
                               </td>
-                              <td className="p-3 text-xs text-on-surface-variant leading-relaxed max-w-[280px]" title={result.reason}>
-                                {result.reason}
+                              <td className="p-3">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={result.costPrice || ''}
+                                  onChange={(e) => {
+                                    const val = Number(e.target.value);
+                                    setBulkSuggestResults(prev => prev.map(r => r.productId === result.productId ? { ...r, costPrice: val } : r));
+                                  }}
+                                  placeholder="Nhập giá vốn"
+                                  className="bg-surface-container-low border border-outline-variant rounded-lg py-1 px-2 focus:ring-1 focus:ring-primary text-xs font-mono w-24"
+                                />
+                              </td>
+                              <td className="p-3 text-right font-mono text-on-surface-variant">{formatVND(result.currentPrice)}</td>
+                              <td className="p-3 text-right font-mono font-bold text-primary">
+                                {result.suggestedPrice > 0 ? formatVND(result.suggestedPrice) : '---'}
+                              </td>
+                              <td className="p-3 text-center">
+                                {result.confidence > 0 ? (
+                                  <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                    result.confidence >= 80 ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'
+                                  }`}>
+                                    {result.confidence}%
+                                  </span>
+                                ) : '---'}
+                              </td>
+                              <td className="p-3 text-xs text-on-surface-variant leading-relaxed max-w-[220px] truncate" title={result.reason}>
+                                {result.reason || 'Chưa chạy phân tích'}
                               </td>
                             </tr>
                           ))}
@@ -3640,9 +3686,23 @@ export const ManageInventoryPage = () => {
                 onClick={() => setShowBulkSuggestModal(false)}
                 className="rounded-xl px-5 py-2.5 text-sm font-bold text-on-surface-variant hover:bg-surface-container-high transition-colors"
               >
-                {bulkSuggestError ? 'Đóng' : 'Hủy'}
+                Hủy
               </button>
-              {!bulkSuggestError && !isBulkSuggesting && (
+              {!bulkSuggestError && (
+                <button
+                  type="button"
+                  disabled={isBulkSuggesting || bulkUpdateLoading}
+                  onClick={runBulkAIPriceSuggest}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-secondary px-5 py-2.5 text-sm font-bold text-on-secondary hover:bg-opacity-95 active:scale-95 transition-all disabled:opacity-50"
+                >
+                  {isBulkSuggesting ? (
+                    <><RefreshCw size={14} className="animate-spin" /> Đang phân tích...</>
+                  ) : (
+                    <><Sparkles size={14} /> Phân tích & Gợi ý giá (AI)</>
+                  )}
+                </button>
+              )}
+              {!bulkSuggestError && !isBulkSuggesting && bulkSuggestResults.some(r => r.suggestedPrice > 0) && (
                 <button
                   type="button"
                   disabled={bulkUpdateLoading || !bulkSuggestResults.some(r => r.selected)}
