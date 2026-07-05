@@ -6,6 +6,8 @@ export interface IImportReceiptItem {
     subtotal: number;
     appliedInventoryQuantity?: number;
     appliedAverageCost?: number;
+    verified?: boolean;
+    verifiedQuantity?: number;
 }
 export interface IImportReceipt extends Document {
     _id: Types.ObjectId;
@@ -21,6 +23,10 @@ export interface IImportReceipt extends Document {
     mutationLockedAt?: Date;
     cancelledBy?: Types.ObjectId;
     cancelledAt?: Date;
+    verificationStatus?: 'pending' | 'verified' | 'partially_verified';
+    verifiedBy?: Types.ObjectId;
+    verifiedAt?: Date;
+    verificationNote?: string;
     createdAt: Date;
     updatedAt: Date;
 }
