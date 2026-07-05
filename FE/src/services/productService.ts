@@ -122,5 +122,11 @@ export const productService = {
   suggestPrice: async (payload: { costPrice: number; categoryId: string; name?: string; sku?: string; competitorPrice?: number }) => {
     const response = await apiClient.post('/api/products/suggest-price', payload)
     return response.data
+  },
+
+  // Gợi ý giá bán hàng loạt bằng AI
+  suggestPriceBulk: async (payload: Array<{ costPrice: number; categoryId: string; name?: string; sku?: string; competitorPrice?: number }>) => {
+    const response = await apiClient.post('/api/products/suggest-price-bulk', payload)
+    return response.data
   }
 }

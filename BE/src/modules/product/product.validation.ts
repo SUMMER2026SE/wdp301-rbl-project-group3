@@ -65,4 +65,16 @@ export const updateProductSchema = z.object({
   }),
 });
 
+export const suggestPriceBulkSchema = z.object({
+  body: z.array(
+    z.object({
+      costPrice: z.coerce.number().min(0),
+      categoryId: objectId,
+      name: z.string().min(2).max(150).optional(),
+      sku: emptyToUndefined(z.string().min(2).max(50).optional()),
+      competitorPrice: z.coerce.number().min(0).optional(),
+    })
+  ).min(1).max(10),
+});
+
 export { validate };
