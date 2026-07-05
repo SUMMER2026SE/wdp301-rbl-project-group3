@@ -87,6 +87,24 @@ export const ManagePromotionsPage = () => {
   const [isLoadingVouchers, setIsLoadingVouchers] = useState(false)
   const [voucherStatusFilter, setVoucherStatusFilter] = useState<string>('all')
 
+  const getPromotionDisplayStatus = (promo: Promotion) => {
+    if (promo.status === 'draft') return { label: 'Bản nháp', className: 'bg-surface-container-high text-on-surface-variant' }
+    if (promo.status === 'inactive') return { label: 'Ngừng hoạt động', className: 'bg-outline-variant text-on-surface opacity-75' }
+    if (promo.status === 'expired') return { label: 'Hết hạn', className: 'bg-error-container text-on-error-container opacity-60' }
+
+    const now = new Date()
+    const start = new Date(promo.startDate)
+    const end = new Date(promo.endDate)
+
+    if (now > end) {
+      return { label: 'Hết hạn', className: 'bg-error-container text-on-error-container opacity-60' }
+    }
+    if (now < start) {
+      return { label: 'Sắp diễn ra', className: 'bg-blue-100 text-blue-800' }
+    }
+    return { label: 'Đang hoạt động', className: 'bg-success-container text-on-success-container' }
+  }
+
   // Load data helper
   const loadPromotions = async () => {
     setIsLoading(true)
@@ -667,25 +685,14 @@ export const ManagePromotionsPage = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                            promo.status === 'active'
-                              ? 'bg-success-container text-on-success-container'
-                              : promo.status === 'draft'
-                              ? 'bg-surface-container-high text-on-surface-variant'
-                              : promo.status === 'expired'
-                              ? 'bg-error-container text-on-error-container opacity-60'
-                              : 'bg-outline-variant text-on-surface opacity-75'
-                          }`}
-                        >
-                          {promo.status === 'active'
-                            ? 'Đang hoạt động'
-                            : promo.status === 'draft'
-                            ? 'Bản nháp'
-                            : promo.status === 'expired'
-                            ? 'Hết hạn'
-                            : 'Ngừng hoạt động'}
-                        </span>
+                        {(() => {
+                          const display = getPromotionDisplayStatus(promo)
+                          return (
+                            <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold ${display.className}`}>
+                              {display.label}
+                            </span>
+                          )
+                        })()}
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1">
