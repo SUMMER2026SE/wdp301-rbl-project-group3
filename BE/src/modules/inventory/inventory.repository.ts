@@ -1,5 +1,6 @@
 import { Types } from 'mongoose';
 import { Inventory, IInventory } from '../../models/inventory.model';
+import { Product } from '../../models/product.model';
 import { ImportReceipt, IImportReceipt, IImportReceiptItem } from '../../models/importReceipt.model';
 
 export class InventoryRepository {
@@ -295,7 +296,13 @@ export class InventoryRepository {
     existing.lastImportCost = params.unitCost;
     existing.updatedBy = new Types.ObjectId(params.updatedBy);
 
-    return existing.save();
+    const savedInventory = await existing.save();
+    
+    // Đề xuất A: Tự động đồng bộ Giá vốn (Cost Sync)
+    // Khi nhập kho, cập nhật costPrice của Product bằng averageCost để AI Pricing chính xác
+    await Product.findByIdAndUpdate(params.productId, { costPrice: savedInventory.averageCost });
+
+    return savedInventory;
   }
 
   async reverseImportedStock(params: {

@@ -21,6 +21,7 @@ const invoice_routes_1 = __importDefault(require("../modules/invoice/invoice.rou
 const return_routes_1 = __importDefault(require("../modules/return/return.routes"));
 const flash_sale_routes_1 = __importDefault(require("../modules/flash-sale/flash-sale.routes"));
 const banner_routes_1 = __importDefault(require("../modules/banner/banner.routes"));
+const shift_routes_1 = __importDefault(require("../modules/shift/shift.routes"));
 const system_setting_routes_1 = require("../modules/system-setting/system-setting.routes");
 const crawler_routes_1 = __importDefault(require("../modules/crawler/crawler.routes"));
 const competitor_product_routes_1 = __importDefault(require("../modules/competitor-product/competitor-product.routes"));
@@ -42,6 +43,7 @@ router.use('/invoices', invoice_routes_1.default);
 router.use('/returns', return_routes_1.default);
 router.use('/flash-sales', flash_sale_routes_1.default);
 router.use('/banners', banner_routes_1.default);
+router.use('/shifts', shift_routes_1.default);
 router.use('/settings', system_setting_routes_1.publicSystemSettingRoutes);
 router.use('/admin/settings', system_setting_routes_1.adminSystemSettingRoutes);
 router.use('/crawler', crawler_routes_1.default);

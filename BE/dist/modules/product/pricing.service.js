@@ -10,6 +10,7 @@ const inventory_model_1 = require("../../models/inventory.model");
 const ai_service_1 = require("../crawler/ai.service");
 const competitor_product_model_1 = require("../../models/competitor-product.model");
 const mongoose_1 = __importDefault(require("mongoose"));
+const string_util_1 = require("../../utils/string.util");
 class PricingService {
     async suggestPrice(data) {
         const { costPrice, categoryId, competitorPrice, name, sku } = data;
@@ -40,7 +41,7 @@ class PricingService {
         // 4. Competitor Price
         let compPrice = competitorPrice;
         if (!compPrice && name) {
-            const normalizedName = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const normalizedName = (0, string_util_1.normalizeString)(name);
             const cp = await competitor_product_model_1.CompetitorProduct.findOne({ normalizedName }).sort({ createdAt: -1 }).exec();
             if (cp && cp.price) {
                 compPrice = cp.price;

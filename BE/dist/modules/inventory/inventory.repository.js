@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.inventoryRepository = exports.InventoryRepository = void 0;
 const mongoose_1 = require("mongoose");
 const inventory_model_1 = require("../../models/inventory.model");
+const product_model_1 = require("../../models/product.model");
 const importReceipt_model_1 = require("../../models/importReceipt.model");
 class InventoryRepository {
     async findInventory(filters) {
@@ -196,7 +197,11 @@ class InventoryRepository {
         existing.averageCost = newQuantity > 0 ? (currentValue + importedValue) / newQuantity : 0;
         existing.lastImportCost = params.unitCost;
         existing.updatedBy = new mongoose_1.Types.ObjectId(params.updatedBy);
-        return existing.save();
+        const savedInventory = await existing.save();
+        // Đề xuất A: Tự động đồng bộ Giá vốn (Cost Sync)
+        // Khi nhập kho, cập nhật costPrice của Product bằng averageCost để AI Pricing chính xác
+        await product_model_1.Product.findByIdAndUpdate(params.productId, { costPrice: savedInventory.averageCost });
+        return savedInventory;
     }
     async reverseImportedStock(params) {
         const inventory = await inventory_model_1.Inventory.findOne({
@@ -237,6 +242,7 @@ class InventoryRepository {
             .populate('createdBy', 'fullName email')
             .populate('updatedBy', 'fullName email')
             .populate('cancelledBy', 'fullName email')
+            .populate('verifiedBy', 'fullName email')
             .populate('items.productId', 'name sku unit')
             .sort({ createdAt: -1 })
             .exec();
@@ -273,8 +279,20 @@ class InventoryRepository {
             .populate('createdBy', 'fullName email')
             .populate('updatedBy', 'fullName email')
             .populate('cancelledBy', 'fullName email')
+            .populate('verifiedBy', 'fullName email')
             .populate('items.productId', 'name sku unit salePrice imageUrl')
             .exec();
+    }
+    async saveImportReceiptVerification(id, data) {
+        return importReceipt_model_1.ImportReceipt.findByIdAndUpdate(id, {
+            $set: {
+                items: data.items,
+                verificationStatus: data.verificationStatus,
+                verifiedBy: new mongoose_1.Types.ObjectId(data.verifiedBy),
+                verifiedAt: data.verifiedAt,
+                verificationNote: data.verificationNote,
+            },
+        }, { new: true }).exec();
     }
     async updateImportReceipt(id, data) {
         return importReceipt_model_1.ImportReceipt.findOneAndUpdate({ _id: id, status: 'adjusting' }, {
