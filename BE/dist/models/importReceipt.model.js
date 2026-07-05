@@ -42,6 +42,8 @@ const ImportReceiptItemSchema = new mongoose_1.Schema({
     subtotal: { type: Number, required: true, min: 0 },
     appliedInventoryQuantity: { type: Number, min: 0 },
     appliedAverageCost: { type: Number, min: 0 },
+    verified: { type: Boolean, default: false },
+    verifiedQuantity: { type: Number, default: 0 },
 }, { _id: false });
 const ImportReceiptSchema = new mongoose_1.Schema({
     code: { type: String, required: true, unique: true, trim: true },
@@ -60,6 +62,14 @@ const ImportReceiptSchema = new mongoose_1.Schema({
     mutationLockedAt: { type: Date },
     cancelledBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
     cancelledAt: { type: Date },
+    verificationStatus: {
+        type: String,
+        enum: ['pending', 'verified', 'partially_verified'],
+        default: 'pending',
+    },
+    verifiedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
+    verifiedAt: { type: Date },
+    verificationNote: { type: String, trim: true },
 }, {
     timestamps: true,
     versionKey: false,

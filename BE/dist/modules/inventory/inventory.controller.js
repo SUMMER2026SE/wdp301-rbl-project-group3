@@ -94,6 +94,18 @@ class InventoryController {
             });
             (0, response_util_1.sendSuccess)(res, null, 'Inventory item deleted successfully');
         });
+        this.verifyImportReceipt = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
+            const receipt = await inventory_service_1.inventoryService.verifyImportReceipt(String(req.params.id), {
+                verifiedItems: req.body.verifiedItems,
+                note: req.body.note,
+                verifiedBy: req.user.userId,
+                actor: {
+                    userId: req.user.userId,
+                    role: req.user.role,
+                },
+            });
+            (0, response_util_1.sendSuccess)(res, { receipt }, 'Import receipt verified successfully');
+        });
     }
 }
 exports.InventoryController = InventoryController;

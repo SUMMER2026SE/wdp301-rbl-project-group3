@@ -20,5 +20,6 @@ router.post('/import-receipts', (0, inventory_validation_1.validate)(inventory_v
 router.get('/import-receipts/:id', (0, inventory_validation_1.validate)(inventory_validation_1.importReceiptIdParamSchema), inventory_controller_1.inventoryController.getImportReceiptById);
 router.patch('/import-receipts/:id', (0, inventory_validation_1.validate)(inventory_validation_1.updateImportReceiptSchema), inventory_controller_1.inventoryController.updateImportReceipt);
 router.delete('/import-receipts/:id', (0, inventory_validation_1.validate)(inventory_validation_1.importReceiptIdParamSchema), inventory_controller_1.inventoryController.cancelImportReceipt);
+router.post('/import-receipts/:id/verify', (0, inventory_validation_1.validate)(inventory_validation_1.verifyImportReceiptSchema), inventory_controller_1.inventoryController.verifyImportReceipt);
 exports.default = router;
 //# sourceMappingURL=inventory.routes.js.map

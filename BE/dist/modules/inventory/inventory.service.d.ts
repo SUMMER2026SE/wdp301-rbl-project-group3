@@ -67,6 +67,15 @@ export declare class InventoryService {
         actor: InventoryActor;
     }): Promise<IInventory>;
     deleteInventory(id: string, actor: InventoryActor): Promise<void>;
+    verifyImportReceipt(id: string, data: {
+        verifiedItems: {
+            productId: string;
+            verifiedQuantity: number;
+        }[];
+        note?: string;
+        verifiedBy: string;
+        actor: InventoryActor;
+    }): Promise<IImportReceipt>;
 }
 export declare const inventoryService: InventoryService;
 export {};
