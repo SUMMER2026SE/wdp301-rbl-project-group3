@@ -71,6 +71,7 @@ export const productService = {
     productData: {
       name?: string
       sku?: string
+      costPrice?: number
       salePrice?: number
       unit?: string
       description?: string
@@ -87,6 +88,7 @@ export const productService = {
       const formData = new FormData()
       if (productData.name !== undefined) formData.append('name', productData.name)
       if (productData.sku !== undefined) formData.append('sku', productData.sku)
+      if (productData.costPrice !== undefined) formData.append('costPrice', String(productData.costPrice))
       if (productData.salePrice !== undefined) formData.append('salePrice', String(productData.salePrice))
       if (productData.unit !== undefined) formData.append('unit', productData.unit)
       if (productData.description !== undefined) formData.append('description', productData.description)
@@ -121,6 +123,12 @@ export const productService = {
   // Gợi ý giá bán bằng AI
   suggestPrice: async (payload: { costPrice: number; categoryId: string; name?: string; sku?: string; competitorPrice?: number }) => {
     const response = await apiClient.post('/api/products/suggest-price', payload)
+    return response.data
+  },
+
+  // Gợi ý giá bán hàng loạt bằng AI
+  suggestPriceBulk: async (payload: Array<{ costPrice: number; categoryId: string; name?: string; sku?: string; competitorPrice?: number }>) => {
+    const response = await apiClient.post('/api/products/suggest-price-bulk', payload)
     return response.data
   }
 }

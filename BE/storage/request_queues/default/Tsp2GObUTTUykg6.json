@@ -1,9 +1,0 @@
-{
-	"id": "Tsp2GObUTTUykg6",
-	"json": "{\"id\":\"Tsp2GObUTTUykg6\",\"url\":\"https://winmart.vn/products/kitkool-pizza-xuc-xich-phomai-140g--s10183338?storeGroupCode=1998&storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/products/kitkool-pizza-xuc-xich-phomai-140g--s10183338?storeCode=1535&storeGroupCode=1998\",\"uniqueKey\":\"https://winmart.vn/products/kitkool-pizza-xuc-xich-phomai-140g--s10183338?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-07-02T20:18:47.967Z\"}",
-	"method": "GET",
-	"orderNo": null,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/products/kitkool-pizza-xuc-xich-phomai-140g--s10183338?storeCode=1535&storeGroupCode=1998",
-	"url": "https://winmart.vn/products/kitkool-pizza-xuc-xich-phomai-140g--s10183338?storeGroupCode=1998&storeCode=1535"
-}

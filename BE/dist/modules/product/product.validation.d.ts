@@ -53,5 +53,14 @@ export declare const updateProductSchema: z.ZodObject<{
         }>>;
     }, z.core.$strip>;
 }, z.core.$strip>;
+export declare const suggestPriceBulkSchema: z.ZodObject<{
+    body: z.ZodArray<z.ZodObject<{
+        costPrice: z.ZodCoercedNumber<unknown>;
+        categoryId: z.ZodString;
+        name: z.ZodOptional<z.ZodString>;
+        sku: z.ZodPreprocess<z.ZodOptional<z.ZodString>>;
+        competitorPrice: z.ZodOptional<z.ZodCoercedNumber<unknown>>;
+    }, z.core.$strip>>;
+}, z.core.$strip>;
 export { validate };
 //# sourceMappingURL=product.validation.d.ts.map

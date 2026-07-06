@@ -10,6 +10,7 @@ const router = (0, express_1.Router)();
 const backOfficeRoles = ['admin', 'branch_manager', 'staff'];
 router.get('/', (0, product_validation_1.validate)(product_validation_1.listProductsSchema), product_controller_1.productController.list);
 router.post('/suggest-price', auth_middleware_1.authenticate, (0, role_middleware_1.authorize)(...backOfficeRoles), product_controller_1.productController.suggestPrice);
+router.post('/suggest-price-bulk', auth_middleware_1.authenticate, (0, role_middleware_1.authorize)(...backOfficeRoles), (0, product_validation_1.validate)(product_validation_1.suggestPriceBulkSchema), product_controller_1.productController.suggestPriceBulk);
 router.get('/:id', (0, product_validation_1.validate)(product_validation_1.productIdParamSchema), product_controller_1.productController.getById);
 router.post('/', auth_middleware_1.authenticate, (0, role_middleware_1.authorize)(...backOfficeRoles), upload_middleware_1.uploadProductImage, (0, product_validation_1.validate)(product_validation_1.createProductSchema), product_controller_1.productController.create);
 router.patch('/:id', auth_middleware_1.authenticate, (0, role_middleware_1.authorize)(...backOfficeRoles), upload_middleware_1.uploadProductImage, (0, product_validation_1.validate)(product_validation_1.updateProductSchema), product_controller_1.productController.update);

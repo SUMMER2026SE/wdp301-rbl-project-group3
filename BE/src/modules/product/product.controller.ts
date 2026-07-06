@@ -22,6 +22,11 @@ export class ProductController {
     sendSuccess(res, result, 'Suggested price generated');
   });
 
+  suggestPriceBulk = asyncHandler(async (req: Request, res: Response) => {
+    const result = await pricingService.suggestPriceBulk(req.body);
+    sendSuccess(res, result, 'Suggested prices generated');
+  });
+
   getById = asyncHandler(async (req: Request, res: Response) => {
     const product = await productService.getProductById(String(req.params.id));
     sendSuccess(res, { product }, 'Product retrieved');

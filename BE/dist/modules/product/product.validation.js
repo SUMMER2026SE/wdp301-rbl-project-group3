@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validate = exports.updateProductSchema = exports.createProductSchema = exports.listProductsSchema = exports.productIdParamSchema = void 0;
+exports.validate = exports.suggestPriceBulkSchema = exports.updateProductSchema = exports.createProductSchema = exports.listProductsSchema = exports.productIdParamSchema = void 0;
 const zod_1 = require("zod");
 const auth_validation_1 = require("../auth/auth.validation");
 Object.defineProperty(exports, "validate", { enumerable: true, get: function () { return auth_validation_1.validate; } });
@@ -57,5 +57,14 @@ exports.updateProductSchema = zod_1.z.object({
         salePrice: zod_1.z.coerce.number().min(0).optional(),
         status: zod_1.z.enum(['active', 'inactive']).optional(),
     }),
+});
+exports.suggestPriceBulkSchema = zod_1.z.object({
+    body: zod_1.z.array(zod_1.z.object({
+        costPrice: zod_1.z.coerce.number().min(0),
+        categoryId: objectId,
+        name: zod_1.z.string().min(2).max(150).optional(),
+        sku: emptyToUndefined(zod_1.z.string().min(2).max(50).optional()),
+        competitorPrice: zod_1.z.coerce.number().min(0).optional(),
+    })).min(1).max(10),
 });
 //# sourceMappingURL=product.validation.js.map

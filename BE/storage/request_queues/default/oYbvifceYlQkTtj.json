@@ -1,9 +1,0 @@
-{
-	"id": "oYbvifceYlQkTtj",
-	"json": "{\"id\":\"oYbvifceYlQkTtj\",\"url\":\"https://winmart.vn/products/dutch-lady-sua-tt-co-duong-goi-180ml--s10005426?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/dutch-lady-sua-tt-co-duong-goi-180ml--s10005426?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":1,\"errorMessages\":[\"Error: browserController.newPage() failed: KPLKtMZXdI-RzGpu16Q8H\\nCause:browserContext.newPage: Target page, context or browser has been closed.\\n    at BrowserPool._createPageForBrowser (C:\\\\Users\\\\ADMIN\\\\Desktop\\\\wdp301-rbl-project-group3\\\\BE\\\\node_modules\\\\@crawlee\\\\browser-pool\\\\browser-pool.js:413:19)\\n    at C:\\\\Users\\\\ADMIN\\\\Desktop\\\\wdp301-rbl-project-group3\\\\BE\\\\node_modules\\\\@crawlee\\\\browser-pool\\\\browser-pool.js:303:20\"],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":5}}}",
-	"method": "GET",
-	"orderNo": 1783023528042,
-	"retryCount": 1,
-	"uniqueKey": "https://winmart.vn/products/dutch-lady-sua-tt-co-duong-goi-180ml--s10005426?storeCode=1535&storeGroupCode=1998",
-	"url": "https://winmart.vn/products/dutch-lady-sua-tt-co-duong-goi-180ml--s10005426?storeGroupCode=1998&storeCode=1535"
-}
