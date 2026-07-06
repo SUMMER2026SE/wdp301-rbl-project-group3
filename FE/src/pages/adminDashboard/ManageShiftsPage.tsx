@@ -85,23 +85,7 @@ export const ManageShiftsPage = () => {
   const [reviewManagerNote, setReviewManagerNote] = useState<string>('')
   const [isSubmittingReview, setIsSubmittingReview] = useState<boolean>(false)
 
-  // Debug State
-  const [debugErrors, setDebugErrors] = useState<string[]>([])
 
-  useEffect(() => {
-    const handleGlobalError = (event: ErrorEvent) => {
-      setDebugErrors(prev => [...prev, `Error: ${event.message} at ${event.filename}:${event.lineno}`])
-    }
-    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      setDebugErrors(prev => [...prev, `Promise Rejection: ${String(event.reason?.message || event.reason)}`])
-    }
-    window.addEventListener('error', handleGlobalError)
-    window.addEventListener('unhandledrejection', handleUnhandledRejection)
-    return () => {
-      window.removeEventListener('error', handleGlobalError)
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection)
-    }
-  }, [])
 
   // Quick message helper
   const triggerSuccess = (msg: string) => {
@@ -500,18 +484,6 @@ export const ManageShiftsPage = () => {
         </div>
       )}
 
-      {/* ── DEBUG PANEL ── */}
-      <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 text-xs font-mono space-y-1">
-        <p className="font-bold text-sm text-blue-500">Debug Info:</p>
-        <p>• activeTab: "{activeTab}"</p>
-        <p>• isLoading: {isLoading ? "TRUE" : "FALSE"}</p>
-        <p>• isRegsLoading: {isRegsLoading ? "TRUE" : "FALSE"}</p>
-        <p>• selectedBranchId: "{selectedBranchId}"</p>
-        <p>• registrations count: {registrations.length}</p>
-        {debugErrors.map((err, i) => (
-          <p key={i} className="text-error font-bold">• {err}</p>
-        ))}
-      </div>
 
       {/* ── TAB BAR CONTROLS ── */}
       <div className="flex flex-col gap-4 border-b border-outline-variant bg-surface-container-lowest p-2 rounded-xl shadow-sm md:flex-row md:items-center md:justify-between">
