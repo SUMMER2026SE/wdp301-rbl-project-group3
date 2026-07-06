@@ -1,9 +1,0 @@
-{
-	"id": "zEgQAMJS1rWZlQu",
-	"json": "{\"id\":\"zEgQAMJS1rWZlQu\",\"url\":\"https://winmart.vn/products/kitkool-muc-vien-200g--s10183582?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/kitkool-muc-vien-200g--s10183582?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
-	"method": "GET",
-	"orderNo": 1783023036143,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/products/kitkool-muc-vien-200g--s10183582?storeCode=1535&storeGroupCode=1998",
-	"url": "https://winmart.vn/products/kitkool-muc-vien-200g--s10183582?storeGroupCode=1998&storeCode=1535"
-}

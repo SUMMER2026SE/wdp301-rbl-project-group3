@@ -1,9 +1,0 @@
-{
-	"id": "1fFH0NPyFU7tm4j",
-	"json": "{\"id\":\"1fFH0NPyFU7tm4j\",\"url\":\"https://winmart.vn/products/nam-ngu-nuoc-mam-chai-1.2l--s10250375?storeGroupCode=1998&storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/products/nam-ngu-nuoc-mam-chai-1.2l--s10250375?storeCode=1535&storeGroupCode=1998\",\"uniqueKey\":\"https://winmart.vn/products/nam-ngu-nuoc-mam-chai-1.2l--s10250375?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-07-02T20:17:58.601Z\"}",
-	"method": "GET",
-	"orderNo": null,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/products/nam-ngu-nuoc-mam-chai-1.2l--s10250375?storeCode=1535&storeGroupCode=1998",
-	"url": "https://winmart.vn/products/nam-ngu-nuoc-mam-chai-1.2l--s10250375?storeGroupCode=1998&storeCode=1535"
-}

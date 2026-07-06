@@ -84,6 +84,7 @@ export const ManageInventoryPage = () => {
   const [importBranchId, setImportBranchId] = useState('')
   const [supplierName, setSupplierName] = useState('')
   const [importNote, setImportNote] = useState('')
+  const [importProductSearch, setImportProductSearch] = useState('')
   const [importItems, setImportItems] = useState<{ productId: string; quantity: number; unitCost: number }[]>([])
 
   // Optimized Stock-In autocomplete & historical lookup states
@@ -408,6 +409,50 @@ export const ManageInventoryPage = () => {
     setBulkSuggestError(null);
     setShowBulkSuggestModal(true);
   };
+
+  const handleBulkImportFromCatalog = () => {
+    if (selectedCatalogIds.length === 0) return;
+    
+    const selectedProducts = products.filter(p => selectedCatalogIds.includes(p._id));
+    const newItems = selectedProducts.map(prod => {
+      const historicalItem = importBranchInventory.find(
+        inv => {
+          const invProdId = typeof inv.productId === 'object' ? inv.productId?._id : inv.productId;
+          return invProdId === prod._id;
+        }
+      );
+      
+      let suggestedCost = 0;
+      if (historicalItem && historicalItem.lastImportCost && historicalItem.lastImportCost > 0) {
+        suggestedCost = historicalItem.lastImportCost;
+      } else if (prod.salePrice && prod.salePrice > 0) {
+        suggestedCost = prod.salePrice;
+      } else if (prod.costPrice && prod.costPrice > 0) {
+        suggestedCost = prod.costPrice;
+      }
+      
+      return {
+        productId: prod._id,
+        quantity: 1,
+        unitCost: suggestedCost
+      };
+    });
+
+    setImportItems(prev => {
+      const updated = [...prev];
+      newItems.forEach(item => {
+        if (!updated.some(u => u.productId === item.productId)) {
+          updated.push(item);
+        }
+      });
+      return updated;
+    });
+
+    setSelectedCatalogIds([]);
+    setIsImportModalOpen(true);
+  };
+
+
 
   const runBulkAIPriceSuggest = async () => {
     // Validate that all items have costPrice and categoryId
@@ -787,8 +832,15 @@ export const ManageInventoryPage = () => {
           return invProdId === product._id
         }
       )
-      // Suggest cost sequence: lastImportCost -> averageCost -> price -> salePrice -> 0
-      const suggestedCost = historicalItem?.lastImportCost ?? historicalItem?.averageCost ?? product.salePrice ?? 0
+      // Suggest cost sequence: lastImportCost -> salePrice -> costPrice -> 0
+      let suggestedCost = 0
+      if (historicalItem && historicalItem.lastImportCost && historicalItem.lastImportCost > 0) {
+        suggestedCost = historicalItem.lastImportCost
+      } else if (product.salePrice && product.salePrice > 0) {
+        suggestedCost = product.salePrice
+      } else if (product.costPrice && product.costPrice > 0) {
+        suggestedCost = product.costPrice
+      }
 
       setImportItems([...importItems, { productId: product._id, quantity: 1, unitCost: suggestedCost }])
     }
@@ -1943,6 +1995,14 @@ export const ManageInventoryPage = () => {
                 </span>
                 <button
                   type="button"
+                  onClick={handleBulkImportFromCatalog}
+                  className="flex items-center gap-1.5 rounded-xl bg-secondary hover:bg-opacity-90 active:scale-95 px-4 py-2.5 text-sm font-bold text-white shadow transition-all bg-[#007f5f]"
+                >
+                  <PlusCircle size={14} />
+                  Tạo phiếu nhập kho hàng loạt
+                </button>
+                <button
+                  type="button"
                   onClick={handleBulkPriceSuggest}
                   className="flex items-center gap-1.5 rounded-xl bg-primary hover:bg-opacity-90 active:scale-95 px-4 py-2.5 text-sm font-bold text-white shadow transition-all"
                 >
@@ -1979,7 +2039,20 @@ export const ManageInventoryPage = () => {
                 <table className="w-full text-left border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-outline-variant bg-surface-container-low/50">
-                      <th className="p-4 font-bold text-on-surface-variant text-center w-12">Chọn</th>
+                      <th className="p-4 font-bold text-on-surface-variant text-center w-12">
+                        <input
+                          type="checkbox"
+                          checked={products.length > 0 && selectedCatalogIds.length === products.length}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedCatalogIds(products.map(p => p._id));
+                            } else {
+                              setSelectedCatalogIds([]);
+                            }
+                          }}
+                          className="rounded border-outline-variant focus:ring-primary text-primary bg-surface-container-lowest"
+                        />
+                      </th>
                       <th className="p-4 font-bold text-on-surface-variant text-center">STT</th>
                       <th className="p-4 font-bold text-on-surface-variant">Ảnh</th>
                       <th className="p-4 font-bold text-on-surface-variant">Mã SKU</th>
@@ -2006,10 +2079,6 @@ export const ManageInventoryPage = () => {
                               checked={selectedCatalogIds.includes(product._id)}
                               onChange={(e) => {
                                 if (e.target.checked) {
-                                  if (selectedCatalogIds.length >= 10) {
-                                    alert('Bạn chỉ được chọn tối đa 10 sản phẩm để gợi ý giá hàng loạt.');
-                                    return;
-                                  }
                                   setSelectedCatalogIds([...selectedCatalogIds, product._id]);
                                 } else {
                                   setSelectedCatalogIds(selectedCatalogIds.filter(id => id !== product._id));
@@ -2389,7 +2458,7 @@ export const ManageInventoryPage = () => {
       {/* ── CREATE IMPORT RECEIPT MODAL ── */}
       {isImportModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-3xl bg-surface rounded-2xl border border-outline-variant shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="w-full max-w-6xl bg-surface rounded-2xl border border-outline-variant shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-outline-variant bg-surface-container-low px-6 py-4">
               <h2 className="text-lg font-black text-on-surface flex items-center gap-2">
@@ -2406,7 +2475,7 @@ export const ManageInventoryPage = () => {
             </div>
 
             {/* Modal Body */}
-            <form onSubmit={handleImportSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+            <form onSubmit={handleImportSubmit} className="p-6 space-y-4 max-h-[85vh] overflow-y-auto">
               {importError && (
                 <div className="flex items-center gap-3 p-4 bg-error-container text-on-error-container rounded-xl border border-error/20">
                   <AlertCircle size={20} className="shrink-0" />
@@ -2459,32 +2528,149 @@ export const ManageInventoryPage = () => {
                 </div>
               </div>
 
-              {/* Select Product Dropdown */}
-              <div className="space-y-1.5">
-                <label htmlFor="importProductSelect" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1">
-                  <Package size={14} className="text-primary" />
-                  Chọn sản phẩm cần nhập <span className="text-error">*</span>
-                </label>
-                <select
-                  id="importProductSelect"
-                  value=""
-                  onChange={(e) => {
-                    const val = e.target.value
-                    if (!val) return
-                    const matchedProduct = activeProducts.find((p) => p._id === val)
-                    if (matchedProduct) {
-                      handleQuickAddProduct(matchedProduct)
-                    }
-                  }}
-                  className="w-full bg-surface-container-low border border-outline-variant/60 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary focus:border-primary text-sm font-semibold transition-all shadow-sm"
-                >
-                  <option value="">-- Chọn sản phẩm từ danh sách --</option>
-                  {activeProducts.map((p) => (
-                    <option key={p._id} value={p._id}>
-                      {p.productName || p.name} ({p.sku}) - {p.unit || 'cái'} - {formatVND(p.salePrice || 0)}
-                    </option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Column 1: Tìm & Thêm sản phẩm nhanh */}
+                <div className="space-y-2.5">
+                  <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1">
+                    <Package size={14} className="text-primary" />
+                    Tìm & Thêm sản phẩm nhanh <span className="text-error">*</span>
+                  </label>
+                  <div className="border border-outline-variant rounded-xl p-3 bg-surface-container-low/50 space-y-3">
+                    <input
+                      type="text"
+                      placeholder="Nhập tên sản phẩm hoặc mã SKU để tìm kiếm..."
+                      value={importProductSearch}
+                      onChange={(e) => setImportProductSearch(e.target.value)}
+                      className="w-full bg-surface border border-outline-variant/60 rounded-xl py-2 px-3 text-xs focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all shadow-sm"
+                    />
+                    <div className="max-h-40 overflow-y-auto space-y-2 divide-y divide-outline-variant/40 pr-1 text-xs">
+                      {activeProducts
+                        .filter(p => 
+                          (p.productName || p.name || '').toLowerCase().includes(importProductSearch.toLowerCase()) ||
+                          (p.sku || '').toLowerCase().includes(importProductSearch.toLowerCase())
+                        )
+                        .slice(0, 15)
+                        .map((p, idx) => {
+                          const isAdded = importItems.some(item => item.productId === p._id);
+                          return (
+                            <div key={p._id} className={`flex items-center justify-between py-2 ${idx > 0 ? 'border-t border-outline-variant/40' : ''}`}>
+                              <div className="min-w-0 pr-4">
+                                <p className="font-bold text-on-surface truncate max-w-[200px]">{p.productName || p.name}</p>
+                                <p className="text-[10px] text-on-surface-variant font-mono">
+                                  SKU: {p.sku} | Vốn: {formatVND(p.costPrice || 0)} | Bán: {formatVND(p.salePrice || 0)}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (isAdded) {
+                                    const index = importItems.findIndex(item => item.productId === p._id);
+                                    if (index > -1) removeImportItemRow(index);
+                                  } else {
+                                    handleQuickAddProduct(p);
+                                  }
+                                }}
+                                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black tracking-wide transition-all border shrink-0 ${
+                                  isAdded
+                                    ? 'bg-success/15 border-success/30 text-success hover:bg-success/20'
+                                    : 'bg-primary border-primary text-white hover:bg-opacity-90 active:scale-95'
+                                }`}
+                              >
+                                {isAdded ? 'Đã thêm ✓' : 'Thêm +'}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      {activeProducts.filter(p => 
+                        (p.productName || p.name || '').toLowerCase().includes(importProductSearch.toLowerCase()) ||
+                        (p.sku || '').toLowerCase().includes(importProductSearch.toLowerCase())
+                      ).length === 0 && (
+                        <div className="text-center py-4 text-on-surface-variant opacity-60">
+                          Không tìm thấy sản phẩm nào khớp từ khóa.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Column 2: Thêm nhanh theo Danh mục */}
+                <div className="space-y-2.5">
+                  <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1">
+                    <Layers size={14} className="text-primary" />
+                    Nạp nhanh sản phẩm theo Danh mục (50 - 100+ sp)
+                  </label>
+                  <div className="border border-outline-variant rounded-xl p-3 bg-surface-container-low/50 flex flex-col justify-between h-[218px] text-xs">
+                    <div className="space-y-2 text-on-surface-variant leading-relaxed">
+                      <p>Nạp nhanh tất cả các sản phẩm thuộc một danh mục cụ thể vào phiếu nhập kho cùng một lúc.</p>
+                      <p className="font-semibold text-primary">Các bước thực hiện:</p>
+                      <ul className="list-decimal pl-4 space-y-1">
+                        <li>Chọn danh mục hàng hóa muốn nạp ở danh sách phía dưới.</li>
+                        <li>Bấm nút "Nạp toàn bộ sản phẩm".</li>
+                        <li>Hệ thống tự động thêm tất cả sản phẩm thuộc danh mục đó vào phiếu nhập.</li>
+                      </ul>
+                    </div>
+                    <div className="flex items-center gap-2 pt-2">
+                      <select
+                        id="importCategoryQuickSelect"
+                        className="flex-1 bg-surface border border-outline-variant/60 rounded-xl py-2 px-3 text-xs focus:ring-2 focus:ring-primary outline-none transition-all shadow-sm font-semibold"
+                        defaultValue=""
+                      >
+                        <option value="">-- Chọn danh mục --</option>
+                        {categories.map(cat => (
+                          <option key={cat._id} value={cat._id}>{cat.name}</option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const catSelect = document.getElementById('importCategoryQuickSelect') as HTMLSelectElement;
+                          const catId = catSelect?.value;
+                          if (!catId) {
+                            alert('Vui lòng chọn một danh mục.');
+                            return;
+                          }
+                          const matchedProducts = activeProducts.filter(p => {
+                            const pCatId = p.categoryId ? (typeof p.categoryId === 'object' ? (p.categoryId as any)._id : String(p.categoryId)) : '';
+                            return pCatId === catId;
+                          });
+                          if (matchedProducts.length === 0) {
+                            alert('Không có sản phẩm nào thuộc danh mục này.');
+                            return;
+                          }
+                          
+                          const newItems = matchedProducts.map(prod => {
+                            const historicalItem = importBranchInventory.find(
+                              inv => (typeof inv.productId === 'object' ? inv.productId?._id : inv.productId) === prod._id
+                            );
+                            let suggestedCost = 0;
+                            if (historicalItem && historicalItem.lastImportCost && historicalItem.lastImportCost > 0) {
+                              suggestedCost = historicalItem.lastImportCost;
+                            } else if (prod.salePrice && prod.salePrice > 0) {
+                              suggestedCost = prod.salePrice;
+                            } else if (prod.costPrice && prod.costPrice > 0) {
+                              suggestedCost = prod.costPrice;
+                            }
+                            return { productId: prod._id, quantity: 1, unitCost: suggestedCost };
+                          });
+
+                          setImportItems(prev => {
+                            const updated = [...prev];
+                            newItems.forEach(item => {
+                              if (!updated.some(u => u.productId === item.productId)) {
+                                updated.push(item);
+                              }
+                            });
+                            return updated;
+                          });
+                          alert(`Đã thêm thành công ${newItems.length} sản phẩm của danh mục này vào phiếu.`);
+                        }}
+                        className="py-2 px-3 bg-primary hover:bg-opacity-95 text-white font-black rounded-xl transition-all shadow-md active:scale-95 whitespace-nowrap"
+                      >
+                        Nạp toàn bộ sản phẩm
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Items List Builder */}
@@ -2521,7 +2707,7 @@ export const ManageInventoryPage = () => {
                             <th className="p-3 font-bold text-on-surface-variant whitespace-nowrap">Sản phẩm</th>
                             <th className="p-3 font-bold text-on-surface-variant text-center w-24 whitespace-nowrap">Số lượng</th>
                             <th className="p-3 font-bold text-on-surface-variant text-right w-28 whitespace-nowrap">Giá nhập gốc</th>
-                            <th className="p-3 font-bold text-on-surface-variant text-right w-32 whitespace-nowrap">Giá bán thực tế (đ)</th>
+                            <th className="p-3 font-bold text-on-surface-variant text-right w-32 whitespace-nowrap">Giá bán ở cửa hàng (đ)</th>
                             <th className="p-3 font-bold text-on-surface-variant text-right w-28 whitespace-nowrap">Thành tiền</th>
                             <th className="p-3 font-bold text-on-surface-variant text-center w-12"></th>
                           </tr>
@@ -2587,7 +2773,7 @@ export const ManageInventoryPage = () => {
                                   {formatVND(costPrice)}
                                 </td>
 
-                                {/* Unit Cost input (Giá bán thực tế) */}
+                                {/* Unit Cost input (Giá bán ở cửa hàng) */}
                                 <td className="p-3 text-right">
                                   <div className="flex flex-col items-end justify-center w-full">
                                     <input
@@ -2608,9 +2794,9 @@ export const ManageInventoryPage = () => {
                                   </div>
                                 </td>
 
-                                {/* Row Subtotal (Quantity * Cost Price) */}
+                                {/* Row Subtotal (Quantity * unitCost) */}
                                 <td className="p-3 text-right font-black text-primary text-sm whitespace-nowrap">
-                                  {formatVND(item.quantity * costPrice)}
+                                  {formatVND(item.quantity * item.unitCost)}
                                 </td>
 
                                 {/* Delete Action */}

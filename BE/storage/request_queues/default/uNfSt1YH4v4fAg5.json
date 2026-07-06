@@ -1,9 +1,0 @@
-{
-	"id": "uNfSt1YH4v4fAg5",
-	"json": "{\"id\":\"uNfSt1YH4v4fAg5\",\"url\":\"https://winmart.vn/products/budweiser-budvar-bia-den-chai-330ml--s10061086?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/budweiser-budvar-bia-den-chai-330ml--s10061086?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
-	"method": "GET",
-	"orderNo": 1783022979466,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/products/budweiser-budvar-bia-den-chai-330ml--s10061086?storeCode=1535&storeGroupCode=1998",
-	"url": "https://winmart.vn/products/budweiser-budvar-bia-den-chai-330ml--s10061086?storeGroupCode=1998&storeCode=1535"
-}

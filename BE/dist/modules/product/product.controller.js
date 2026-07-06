@@ -21,6 +21,10 @@ class ProductController {
             const result = await pricing_service_1.pricingService.suggestPrice(req.body);
             (0, response_util_1.sendSuccess)(res, result, 'Suggested price generated');
         });
+        this.suggestPriceBulk = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
+            const result = await pricing_service_1.pricingService.suggestPriceBulk(req.body);
+            (0, response_util_1.sendSuccess)(res, result, 'Suggested prices generated');
+        });
         this.getById = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
             const product = await product_service_1.productService.getProductById(String(req.params.id));
             (0, response_util_1.sendSuccess)(res, { product }, 'Product retrieved');

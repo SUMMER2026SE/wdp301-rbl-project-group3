@@ -1,9 +1,0 @@
-{
-	"id": "okrnbH2IFmOQfjZ",
-	"json": "{\"id\":\"okrnbH2IFmOQfjZ\",\"url\":\"https://winmart.vn/dau-hu--c01138?storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/dau-hu--c01138?storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/dau-hu--c01138?storeCode=1535\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":1,\"errorMessages\":[\"Error: requestHandler timed out after 60 seconds.\\n    at Timeout._onTimeout (C:\\\\Users\\\\ADMIN\\\\Desktop\\\\wdp301-rbl-project-group3\\\\BE\\\\node_modules\\\\@apify\\\\src\\\\index.ts:89:74)\\n    at listOnTimeout (node:internal/timers:588:17)\\n    at processTimers (node:internal/timers:523:7)\"],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-07-02T20:18:49.901Z\"}",
-	"method": "GET",
-	"orderNo": null,
-	"retryCount": 1,
-	"uniqueKey": "https://winmart.vn/dau-hu--c01138?storeCode=1535",
-	"url": "https://winmart.vn/dau-hu--c01138?storeCode=1535"
-}
