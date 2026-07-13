@@ -16,6 +16,7 @@ import {
 import { categoryService } from '@services/categoryService'
 import { useAuth } from '@hooks/useAuth'
 import type { Category } from '@/types'
+import { notify } from '../../utils/toast';
 
 export const ManageCategoriesPage = () => {
   const { user: currentUser } = useAuth()
@@ -186,7 +187,7 @@ export const ManageCategoriesPage = () => {
         
         const res = await categoryService.deleteCategory(category._id)
         if (res.success) {
-          alert(`Đã chuyển trạng thái danh mục "${category.name}" sang ngừng hoạt động thành công.`)
+          notify.success(`Đã chuyển trạng thái danh mục "${category.name}" sang ngừng hoạt động thành công.`)
           fetchCategories()
         } else {
           setError(res.message || 'Xóa danh mục thất bại.')

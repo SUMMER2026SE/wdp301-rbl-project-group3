@@ -1,0 +1,68 @@
+{
+  "requestsFinished": 129,
+  "requestsFailed": 0,
+  "requestsRetries": 13,
+  "requestsFailedPerMinute": 0,
+  "requestsFinishedPerMinute": 7,
+  "requestMinDurationMillis": 521,
+  "requestMaxDurationMillis": 37989,
+  "requestTotalFailedDurationMillis": 0,
+  "requestTotalFinishedDurationMillis": 720330,
+  "crawlerStartedAt": "2026-07-13T19:00:00.824Z",
+  "crawlerFinishedAt": null,
+  "statsPersistedAt": "2026-07-13T19:17:21.001Z",
+  "crawlerRuntimeMillis": 1040450,
+  "crawlerLastStartTimestamp": 1783969200551,
+  "requestRetryHistogram": [
+    116,
+    10,
+    3
+  ],
+  "statsId": 0,
+  "requestAvgFailedDurationMillis": null,
+  "requestAvgFinishedDurationMillis": 5584,
+  "requestTotalDurationMillis": 720330,
+  "requestsTotal": 129,
+  "requestsWithStatusCode": {
+    "200": 132,
+    "404": 1
+  },
+  "errors": {},
+  "retryErrors": {
+    "C:\\Users\\ADMIN\\Desktop\\wdp301-rbl-project-group3\\BE\\node_modules\\@crawlee\\playwright\\internals\\utils\\playwright-utils.js:165:17": {
+      "missing error code": {
+        "Error": {
+          "page.goto: net::ERR_NETWORK_IO_SUSPENDED at _": {
+            "count": 12
+          },
+          "page.goto: net::ERR_EMPTY_RESPONSE at https://winmart.vn/dung-cu-sua-chua--c01101?storeCode=1535": {
+            "count": 1
+          }
+        },
+        "TimeoutError": {
+          "page.goto: Timeout 60000ms exceeded.": {
+            "count": 2
+          }
+        }
+      }
+    },
+    "C:\\Users\\ADMIN\\Desktop\\wdp301-rbl-project-group3\\BE\\src\\modules\\crawler\\ai.service.ts:76:13": {
+      "missing error code": {
+        "Error": {
+          "Failed to parse product data using AI": {
+            "count": 2
+          }
+        }
+      }
+    },
+    "C:\\Users\\ADMIN\\Desktop\\wdp301-rbl-project-group3\\BE\\node_modules\\@apify\\src\\index.ts:89:74": {
+      "missing error code": {
+        "Error": {
+          "requestHandler timed out after 60 seconds.": {
+            "count": 2
+          }
+        }
+      }
+    }
+  }
+}

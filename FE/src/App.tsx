@@ -33,6 +33,7 @@ import {
   ManageStatisticsPage,
   ManageShiftsPage,
 } from './pages/adminDashboard'
+import { Toaster } from 'react-hot-toast'
 import './App.css'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
@@ -131,6 +132,7 @@ function App() {
       <CartProvider>
         <Router>
           <AppRoutes />
+          <Toaster />
         </Router>
       </CartProvider>
     </GoogleOAuthProvider>

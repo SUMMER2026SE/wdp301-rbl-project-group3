@@ -320,6 +320,10 @@ export const HomePage = () => {
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [dbProducts, setDbProducts] = useState<Product[]>([])
   const [searchQuery, setSearchQuery] = useState('')
+  const [activeSearchQuery, setActiveSearchQuery] = useState('')
+  const [isSearchFocused, setIsSearchFocused] = useState(false)
+  const [liveSearchResults, setLiveSearchResults] = useState<Product[]>([])
+  const [isSearching, setIsSearching] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string | DbCategory>('All')
   const [hasLoadedProducts, setHasLoadedProducts] = useState(false)
   const [dbCategories, setDbCategories] = useState<DbCategory[]>([])
@@ -348,13 +352,15 @@ export const HomePage = () => {
   }
 
   const fetchDbProducts = async (keyword?: string, branchId?: string) => {
+    setActiveSearchQuery(keyword || '')
     setHasLoadedProducts(false)
     try {
       const activeBranchId = branchId || selectedBranch?._id
       const res = await productService.getProducts({ 
         keyword, 
         status: 'active',
-        branchId: activeBranchId
+        branchId: activeBranchId,
+        limit: 1000
       })
       if (res.success) {
         setDbProducts(res.data)
@@ -483,6 +489,37 @@ export const HomePage = () => {
   }, [dbProducts, selectedCategory, hasLoadedProducts])
 
   useEffect(() => {
+    if (!searchQuery.trim()) {
+      setLiveSearchResults([])
+      return
+    }
+    
+    setIsSearching(true)
+    const timer = setTimeout(async () => {
+      try {
+        const res = await productService.getProducts({
+          keyword: searchQuery,
+          status: 'active',
+          branchId: selectedBranch?._id,
+          limit: 5
+        })
+        if (res.success) {
+          setLiveSearchResults(res.data)
+        } else {
+          setLiveSearchResults([])
+        }
+      } catch (err) {
+        console.error('Live search error:', err)
+        setLiveSearchResults([])
+      } finally {
+        setIsSearching(false)
+      }
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [searchQuery, selectedBranch])
+
+  useEffect(() => {
     const intervalId = window.setInterval(() => {
       setCountdown(getCountdownTime(activeFlashSale?.endDate))
     }, 1000)
@@ -562,7 +599,7 @@ export const HomePage = () => {
             </div>
           </div>
 
-          <div className="order-3 w-full md:order-none md:flex-1 md:max-w-2xl relative group">
+          <div className="order-3 w-full md:order-none md:flex-1 md:max-w-2xl relative group z-50">
             <input
               className="w-full bg-surface-container-low border-none rounded-full py-3 px-6 pl-12 focus:ring-2 focus:ring-primary transition-all"
               placeholder="What are you looking for today? (Press Enter to search)"
@@ -570,19 +607,89 @@ export const HomePage = () => {
               aria-label="Search products"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => {
+                // Delay hiding dropdown so clicks on items register
+                setTimeout(() => setIsSearchFocused(false), 200)
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   fetchDbProducts(searchQuery)
+                  document.getElementById('recommended-products')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  setIsSearchFocused(false)
                 }
               }}
             />
             <button
-              onClick={() => fetchDbProducts(searchQuery)}
+              onClick={() => {
+                fetchDbProducts(searchQuery)
+                document.getElementById('recommended-products')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                setIsSearchFocused(false)
+              }}
               className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
               type="button"
             >
               <Icon>search</Icon>
             </button>
+
+            {isSearchFocused && searchQuery.trim() !== '' && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-surface-container-lowest rounded-xl shadow-xl border border-outline-variant/30 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                {isSearching ? (
+                  <div className="p-4 flex items-center justify-center text-on-surface-variant gap-2">
+                    <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-sm font-bold">Đang tìm kiếm...</span>
+                  </div>
+                ) : liveSearchResults.length === 0 ? (
+                  <div className="p-4 text-center text-on-surface-variant text-sm font-bold">
+                    Không tìm thấy sản phẩm nào khớp với "{searchQuery}"
+                  </div>
+                ) : (
+                  <ul className="flex flex-col">
+                    {liveSearchResults.map((product) => (
+                      <li key={product._id}>
+                        <button
+                          className="w-full text-left p-3 hover:bg-surface-container-low transition-colors flex items-center justify-between gap-3 border-b border-outline-variant/10 last:border-0"
+                          onClick={() => {
+                            // If user clicks, perform the full search
+                            setSearchQuery(product.name || '')
+                            fetchDbProducts(product.name || '')
+                            document.getElementById('recommended-products')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                          }}
+                        >
+                          <div className="flex items-center gap-3 overflow-hidden">
+                            <div className="w-10 h-10 rounded-lg bg-surface-container overflow-hidden shrink-0">
+                              <img 
+                                src={product.imageUrl || '/assets/winmart/tomatoes.png'} 
+                                alt={product.name}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-body-md font-bold text-on-surface truncate">{product.name}</span>
+                              <span className="text-label-sm text-on-surface-variant truncate">{product.categoryId || ''}</span>
+                            </div>
+                          </div>
+                          <span className="text-primary font-bold whitespace-nowrap text-body-md">
+                            {formatVND(product.salePrice || product.costPrice || 0)}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                    <li className="p-2 bg-surface-container-lowest">
+                      <button 
+                        className="w-full text-center text-sm text-primary font-bold hover:underline py-2"
+                        onClick={() => {
+                          fetchDbProducts(searchQuery)
+                          document.getElementById('recommended-products')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                        }}
+                      >
+                        Xem tất cả kết quả cho "{searchQuery}"
+                      </button>
+                    </li>
+                  </ul>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="ml-auto hidden sm:flex items-center gap-3 md:gap-6">
@@ -671,55 +778,8 @@ export const HomePage = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-stack-lg">
-        <section className="grid grid-cols-12 gap-gutter-md">
-          <aside className="col-span-3 bg-surface-container-lowest border border-outline-variant rounded-xl p-inset-card hidden lg:flex flex-col gap-2">
-            <div className="mb-2 px-2">
-              <h2 className="font-headline-sm text-headline-sm text-primary">Categories</h2>
-              <p className="text-label-md text-on-surface-variant">Shop by Department</p>
-            </div>
-            <nav className="flex flex-col gap-1" aria-label="Product categories">
-              <button
-                onClick={() => setSelectedCategory('All')}
-                className={
-                  selectedCategory === 'All'
-                    ? 'flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary-container text-on-primary-container font-bold transition-all scale-[0.98] text-left w-full'
-                    : 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:bg-primary-container/10 hover:text-primary transition-all text-left w-full'
-                }
-                type="button"
-              >
-                <Icon className="w-5 h-5">shop</Icon>
-                All Departments
-              </button>
-              {(dbCategories.length > 0 ? dbCategories : categories).map((category) => {
-                const isDb = '_id' in category
-                const label = isDb ? (category as DbCategory).name : (category as any).label
-                const code = isDb ? (category as DbCategory).code : (category as any).label
-                const iconName = isDb ? (categoryIconMap[code] || categoryIconMap[label] || 'eco') : (category as any).icon
-                const active = typeof selectedCategory === 'object' && selectedCategory !== null
-                  ? (isDb && selectedCategory._id === (category as DbCategory)._id)
-                  : (!isDb && selectedCategory === label)
-
-                return (
-                  <button
-                    key={isDb ? (category as DbCategory)._id : label}
-                    onClick={() => setSelectedCategory(category as any)}
-                    className={
-                      active
-                        ? 'flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary-container text-on-primary-container font-bold transition-all scale-[0.98] text-left w-full'
-                        : 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:bg-primary-container/10 hover:text-primary transition-all text-left w-full'
-                    }
-                    type="button"
-                  >
-                    <Icon className="w-5 h-5">{iconName}</Icon>
-                    {label}
-                  </button>
-                )
-              })}
-            </nav>
-          </aside>
-
-          <section
-            className="col-span-12 lg:col-span-9 min-w-0 relative overflow-hidden rounded-xl h-[520px] sm:h-[460px] lg:h-[420px] bg-primary group"
+        <section
+            className="w-full min-w-0 relative overflow-hidden rounded-xl h-[520px] sm:h-[460px] lg:h-[420px] bg-primary group"
             onMouseMove={handleHeroMouseMove}
             onMouseLeave={handleHeroMouseLeave}
           >
@@ -786,7 +846,6 @@ export const HomePage = () => {
               </div>
             )}
           </section>
-        </section>
 
         <section className="mt-stack-lg">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3 mb-6">
@@ -883,14 +942,63 @@ export const HomePage = () => {
           </div>
         </section>
 
-        <section id="recommended-products" className="mt-stack-lg">
-          <div className="mb-8">
-            <h2 className="font-headline-md text-headline-md">Recommended for You</h2>
-          </div>
+        <section className="mt-stack-lg grid grid-cols-12 gap-gutter-md">
+          <aside className="col-span-12 lg:col-span-3 bg-surface-container-lowest border border-outline-variant rounded-xl p-inset-card hidden lg:flex flex-col gap-2">
+            <div className="mb-2 px-2">
+              <h2 className="font-headline-sm text-headline-sm text-primary">Categories</h2>
+              <p className="text-label-md text-on-surface-variant">Shop by Department</p>
+            </div>
+            <nav className="flex flex-col gap-1" aria-label="Product categories">
+              <button
+                onClick={() => setSelectedCategory('All')}
+                className={
+                  selectedCategory === 'All'
+                    ? 'flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary-container text-on-primary-container font-bold transition-all scale-[0.98] text-left w-full'
+                    : 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:bg-primary-container/10 hover:text-primary transition-all text-left w-full'
+                }
+                type="button"
+              >
+                <Icon className="w-5 h-5">shop</Icon>
+                All Departments
+              </button>
+              {(dbCategories.length > 0 ? dbCategories : categories).map((category) => {
+                const isDb = '_id' in category
+                const label = isDb ? (category as DbCategory).name : (category as any).label
+                const code = isDb ? (category as DbCategory).code : (category as any).label
+                const iconName = isDb ? (categoryIconMap[code] || categoryIconMap[label] || 'eco') : (category as any).icon
+                const active = typeof selectedCategory === 'object' && selectedCategory !== null
+                  ? (isDb && selectedCategory._id === (category as DbCategory)._id)
+                  : (!isDb && selectedCategory === label)
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-gutter-md">
-            {hasLoadedProducts && filteredRecommendedProducts.length === 0 ? (
-              <div className="col-span-full text-center py-12 text-on-surface-variant bg-surface-container-low rounded-xl border border-outline-variant/30">
+                return (
+                  <button
+                    key={isDb ? (category as DbCategory)._id : label}
+                    onClick={() => setSelectedCategory(category as any)}
+                    className={
+                      active
+                        ? 'flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary-container text-on-primary-container font-bold transition-all scale-[0.98] text-left w-full'
+                        : 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:bg-primary-container/10 hover:text-primary transition-all text-left w-full'
+                    }
+                    type="button"
+                  >
+                    <Icon className="w-5 h-5">{iconName}</Icon>
+                    {label}
+                  </button>
+                )
+              })}
+            </nav>
+          </aside>
+
+          <section id="recommended-products" className="col-span-12 lg:col-span-9 scroll-mt-24">
+            <div className="mb-8">
+              <h2 className="font-headline-md text-headline-md">
+                {activeSearchQuery ? `Kết quả tìm kiếm cho "${activeSearchQuery}"` : "Recommended for You"}
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-gutter-md">
+              {hasLoadedProducts && filteredRecommendedProducts.length === 0 ? (
+                <div className="col-span-full text-center py-12 text-on-surface-variant bg-surface-container-low rounded-xl border border-outline-variant/30">
                 <p className="text-sm font-bold">Không có sản phẩm nào được gợi ý tại chi nhánh này</p>
               </div>
             ) : (
@@ -915,6 +1023,7 @@ export const HomePage = () => {
               })
             )}
           </div>
+        </section>
         </section>
       </main>
 

@@ -1,0 +1,9 @@
+{
+	"id": "2aY9z43yD6TPGCU",
+	"json": "{\"id\":\"2aY9z43yD6TPGCU\",\"url\":\"https://winmart.vn/products/kokusai-giay-tham-dau-20ctui--s10026593?storeGroupCode=1998&storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/products/kokusai-giay-tham-dau-20ctui--s10026593?storeCode=1535&storeGroupCode=1998\",\"uniqueKey\":\"https://winmart.vn/products/kokusai-giay-tham-dau-20ctui--s10026593?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":1,\"errorMessages\":[\"Error: Failed to parse product data using AI\\n    at AiService.parseProductData (C:\\\\Users\\\\ADMIN\\\\Desktop\\\\wdp301-rbl-project-group3\\\\BE\\\\src\\\\modules\\\\crawler\\\\ai.service.ts:76:13)\\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\\n    at PlaywrightCrawler.requestHandler [as userProvidedRequestHandler] (C:\\\\Users\\\\ADMIN\\\\Desktop\\\\wdp301-rbl-project-group3\\\\BE\\\\src\\\\modules\\\\crawler\\\\crawler.service.ts:88:32)\\n    at wrap (C:\\\\Users\\\\ADMIN\\\\Desktop\\\\wdp301-rbl-project-group3\\\\BE\\\\node_modules\\\\@apify\\\\src\\\\index.ts:78:27)\"],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-07-13T19:11:46.066Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 1,
+	"uniqueKey": "https://winmart.vn/products/kokusai-giay-tham-dau-20ctui--s10026593?storeCode=1535&storeGroupCode=1998",
+	"url": "https://winmart.vn/products/kokusai-giay-tham-dau-20ctui--s10026593?storeGroupCode=1998&storeCode=1535"
+}

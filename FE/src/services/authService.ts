@@ -70,11 +70,13 @@ export const authService = {
 
   // Reset password with token
   resetPassword: async (
-    token: string,
+    email: string,
+    otp: string,
     newPassword: string,
   ): Promise<ApiResponse<null>> => {
     const response = await apiClient.post('/api/auth/reset-password', {
-      token,
+      email,
+      otp,
       newPassword,
     })
     localStorage.removeItem('accessToken')

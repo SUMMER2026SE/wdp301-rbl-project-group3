@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authService } from '@services/authService'
-import { Mail, Lock, AlertCircle, Loader, CheckCircle, ArrowLeft } from 'lucide-react'
+import { Mail, Lock, AlertCircle, Loader, CheckCircle, ArrowLeft, Eye, EyeOff } from 'lucide-react'
+import { notify } from '@utils/toast'
 
 type ApiError = {
   response?: {
@@ -25,6 +26,8 @@ export const ForgotPasswordPage = () => {
   const [otp, setOtp] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -69,9 +72,9 @@ export const ForgotPasswordPage = () => {
 
     setLoading(true)
     try {
-      // The API takes 'token' and 'newPassword', where 'token' is our OTP
-      await authService.resetPassword(otp, newPassword)
+      await authService.resetPassword(email, otp, newPassword)
       setSuccess('Password has been reset successfully. You can now login.')
+      notify.success('Đổi mật khẩu thành công! Chuyển hướng đến trang đăng nhập...')
       setTimeout(() => {
         navigate('/login')
       }, 3000)
@@ -172,7 +175,7 @@ export const ForgotPasswordPage = () => {
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant" size={20} />
                   <input
-                    type="password"
+                    type={showNewPassword ? "text" : "password"}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     className="w-full bg-surface-container-low border-none rounded-lg py-3 px-12 focus:ring-2 focus:ring-primary transition-all"
@@ -180,6 +183,16 @@ export const ForgotPasswordPage = () => {
                     disabled={loading || success.includes('successfully')}
                     required
                   />
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowNewPassword(!showNewPassword); }}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors cursor-pointer flex items-center justify-center h-full w-10"
+                    aria-label={showNewPassword ? "Hide password" : "Show password"}
+                  >
+                    {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </div>
                 </div>
               </div>
 
@@ -190,7 +203,7 @@ export const ForgotPasswordPage = () => {
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant" size={20} />
                   <input
-                    type="password"
+                    type={showConfirmPassword ? "text" : "password"}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className="w-full bg-surface-container-low border-none rounded-lg py-3 px-12 focus:ring-2 focus:ring-primary transition-all"
@@ -198,6 +211,16 @@ export const ForgotPasswordPage = () => {
                     disabled={loading || success.includes('successfully')}
                     required
                   />
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowConfirmPassword(!showConfirmPassword); }}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors cursor-pointer flex items-center justify-center h-full w-10"
+                    aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                  >
+                    {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </div>
                 </div>
               </div>
 

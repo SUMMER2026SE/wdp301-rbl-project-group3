@@ -1,0 +1,9 @@
+{
+	"id": "DwmVa3ke7knkat2",
+	"json": "{\"id\":\"DwmVa3ke7knkat2\",\"url\":\"https://winmart.vn/products/7up-revive-chanh-muoi-chai-390ml--s10229190?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/7up-revive-chanh-muoi-chai-390ml--s10229190?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
+	"method": "GET",
+	"orderNo": 1783969321597,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/products/7up-revive-chanh-muoi-chai-390ml--s10229190?storeCode=1535&storeGroupCode=1998",
+	"url": "https://winmart.vn/products/7up-revive-chanh-muoi-chai-390ml--s10229190?storeGroupCode=1998&storeCode=1535"
+}

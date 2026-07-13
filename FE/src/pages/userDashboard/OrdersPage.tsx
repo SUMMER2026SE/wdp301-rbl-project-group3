@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { orderService } from '@/services/orderService'
 import type { Order, OrderStatus } from '@/types'
+import { notify } from '../../utils/toast';
 
 const formatVND = (num: number) => {
   return new Intl.NumberFormat('vi-VN', {
@@ -224,7 +225,7 @@ export const OrdersPage = () => {
       const response = await orderService.cancelOrder(orderToCancel.orderId, reason)
       
       if (response.success) {
-        alert('Hủy đơn hàng thành công.')
+        notify.success('Hủy đơn hàng thành công.')
         setCancelModalOpen(false)
         setOrderToCancel(null)
         fetchOrders() // refresh list
@@ -235,10 +236,10 @@ export const OrdersPage = () => {
           setSelectedOrder(null)
         }
       } else {
-        alert(response.message || 'Hủy đơn hàng thất bại.')
+        notify.error(response.message || 'Hủy đơn hàng thất bại.')
       }
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message || 'Lỗi khi hủy đơn hàng.')
+      notify.error(err.response?.data?.message || err.message || 'Lỗi khi hủy đơn hàng.')
     } finally {
       setCancelling(false)
     }
