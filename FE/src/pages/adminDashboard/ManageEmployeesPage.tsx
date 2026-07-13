@@ -19,6 +19,7 @@ import { useAuth } from '@hooks/useAuth'
 import { employeeService } from '@/services/employeeService'
 import { branchService } from '@/services/branchService'
 import type { Employee, Branch } from '@/types'
+import { notify } from '../../utils/toast';
 
 export const ManageEmployeesPage = () => {
   const { user: currentUser } = useAuth()
@@ -226,20 +227,20 @@ export const ManageEmployeesPage = () => {
 
   const handleDelete = async (id: string, name: string) => {
     if (id === currentUser?.id) {
-      alert('Bạn không thể tự vô hiệu hóa tài khoản của chính mình!')
+      notify.error('Bạn không thể tự vô hiệu hóa tài khoản của chính mình!')
       return
     }
     if (!window.confirm(`Bạn có chắc chắn muốn ngưng hoạt động nhân viên "${name}"?`)) return
     try {
       const res = await employeeService.deactivateEmployee(id)
       if (res.success) {
-        alert('Ngưng hoạt động nhân viên thành công.')
+        notify.success('Ngưng hoạt động nhân viên thành công.')
         fetchEmployees()
       } else {
-        alert(res.message || 'Thao tác thất bại.')
+        notify.error(res.message || 'Thao tác thất bại.')
       }
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message || 'Đã có lỗi xảy ra.')
+      notify.error(err.response?.data?.message || err.message || 'Đã có lỗi xảy ra.')
     }
   }
 

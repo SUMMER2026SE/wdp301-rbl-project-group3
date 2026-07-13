@@ -1,0 +1,147 @@
+{
+  "usableSessionsCount": 1,
+  "retiredSessionsCount": 0,
+  "sessions": [
+    {
+      "id": "session_T9lfoogGgJ",
+      "cookieJar": {
+        "version": "tough-cookie@6.0.1",
+        "storeType": "MemoryCookieStore",
+        "rejectPublicSuffixes": true,
+        "enableLooseMode": false,
+        "allowSpecialUseDomain": true,
+        "prefixSecurity": "silent",
+        "cookies": [
+          {
+            "key": "recentView",
+            "value": "[{%22slug%22:%22meizan-dau-dau-nanh-chai-2l--s10010076%22%2C%22title%22:%22D%E1%BA%A7u%20%C4%91%E1%BA%ADu%20n%C3%A0nh%20Meizan%202L%22%2C%22image%22:%22https://s3-hcmc02.higiocloud.vn/images/2026/01/10010076_sbo-2l_00-20260119035143.png%22}%2C{}%2C{%22slug%22:%22ps-bcdr-4d-khang-khuan-bo-2--s10171338%22%2C%22title%22:%22P/S%20BC%C4%90R%204D%20kh%C3%A1ng%20khu%E1%BA%A9n%20(b%E1%BB%99%202)%22%2C%22image%22:%22https://s3-hcmc02.higiocloud.vn/images/2025/01/guideline1_khangkhuan_10171338-20250105085400.png%22}%2C{%22slug%22:%22palmolive-dg-suon-muot-ong-a-600ml--s10162222%22%2C%22title%22:%22PALMOLIVE%20DG%20su%C3%B4n%20m%C6%B0%E1%BB%A3t%20%C3%B3ng%20%E1%BA%A3%20600ml%22%2C%22image%22:%22https://s3-hcmc02.higiocloud.vn/images/2025/08/10162222-0-20250812042737.png%22}%2C{%22slug%22:%22palmolive-dg-duong-am-bo-sung-600ml--s10162220%22%2C%22title%22:%22PALMOLIVE%20DG%20d%C6%B0%E1%BB%A1ng%20%E1%BA%A9m%20b%E1%BB%95%20sung%20600ml%22%2C%22image%22:%22https://s3-hcmc02.higiocloud.vn/images/2025/08/10162220-0-20250812042615.png%22}%2C{%22slug%22:%22green-ace-dau-dau-nanh-2l--s10198354%22%2C%22title%22:%22GREEN%20ACE%20D%E1%BA%A7u%20%C4%91%E1%BA%ADu%20n%C3%A0nh%202L%22%2C%22image%22:%22https://s3-hcmc02.higiocloud.vn/images/2024/09/untitled-20240927020231.png%22}]",
+            "expires": "2026-07-20T19:16:57.000Z",
+            "domain": "winmart.vn",
+            "path": "/",
+            "hostOnly": true,
+            "creation": "2026-07-13T19:14:16.668Z",
+            "lastAccessed": "2026-07-13T19:17:20.390Z"
+          },
+          {
+            "key": "_clck",
+            "value": "1ay1tvo%5E2%5Eg7p%5E0%5E2385",
+            "expires": "2027-07-13T19:14:16.000Z",
+            "domain": "winmart.vn",
+            "path": "/",
+            "hostOnly": false,
+            "creation": "2026-07-13T19:14:16.668Z",
+            "lastAccessed": "2026-07-13T19:17:20.390Z"
+          },
+          {
+            "key": "top10cate",
+            "value": "[{%22name%22:%22Gi%C3%A1%20Si%C3%AAu%20R%E1%BA%BB%22%2C%22seoName%22:%22gia-sieu-re--c114%22}%2C{%22name%22:%22%C6%AFu%20%C4%90%C3%A3i%20H%E1%BB%99i%20Vi%C3%AAn%22%2C%22seoName%22:%22uu-dai-hoi-vien--c51%22}%2C{%22name%22:%22S%E1%BB%AFa%20c%C3%A1c%20lo%E1%BA%A1i%22%2C%22seoName%22:%22sua-cac-loai--c08%22}%2C{%22name%22:%22Rau%20-%20C%E1%BB%A7%20-%20Tr%C3%A1i%20C%C3%A2y%22%2C%22seoName%22:%22rau-cu-trai-cay--c02%22}%2C{%22name%22:%22H%C3%B3a%20Ph%E1%BA%A9m%20-%20T%E1%BA%A9y%20r%E1%BB%ADa%22%2C%22seoName%22:%22hoa-pham-tay-rua--c10%22}%2C{%22name%22:%22Ch%C4%83m%20S%C3%B3c%20C%C3%A1%20Nh%C3%A2n%22%2C%22seoName%22:%22cham-soc-ca-nhan--c11%22}%2C{%22name%22:%22Th%E1%BB%8Bt%20-%20H%E1%BA%A3i%20S%E1%BA%A3n%20T%C6%B0%C6%A1i%22%2C%22seoName%22:%22thit-hai-san-tuoi--c03%22}%2C{%22name%22:%22B%C3%A1nh%20K%E1%BA%B9o%22%2C%22seoName%22:%22banh-keo--c07%22}%2C{%22name%22:%22%C4%90%E1%BB%93%20u%E1%BB%91ng%20c%C3%B3%20c%E1%BB%93n%22%2C%22seoName%22:%22do-uong-co-con--c31%22}%2C{%22name%22:%22%C4%90%E1%BB%93%20U%E1%BB%91ng%20-%20Gi%E1%BA%A3i%20Kh%C3%A1t%22%2C%22seoName%22:%22do-uong-giai-khat--c09%22}]",
+            "expires": "2026-07-13T20:06:58.102Z",
+            "domain": "winmart.vn",
+            "path": "/",
+            "hostOnly": true,
+            "creation": "2026-07-13T19:14:16.668Z",
+            "lastAccessed": "2026-07-13T19:17:20.390Z"
+          },
+          {
+            "key": "_gcl_au",
+            "value": "1.1.10663616.1783970057",
+            "expires": "2026-10-11T19:14:17.000Z",
+            "domain": "winmart.vn",
+            "path": "/",
+            "hostOnly": false,
+            "creation": "2026-07-13T19:14:36.105Z",
+            "lastAccessed": "2026-07-13T19:17:20.390Z"
+          },
+          {
+            "key": "_ga",
+            "value": "GA1.1.1110457527.1783970057",
+            "expires": "2027-08-17T19:16:57.862Z",
+            "domain": "winmart.vn",
+            "path": "/",
+            "hostOnly": false,
+            "creation": "2026-07-13T19:14:36.105Z",
+            "lastAccessed": "2026-07-13T19:17:20.390Z"
+          },
+          {
+            "key": "_fbp",
+            "value": "fb.1.1783970057334.495560193926314268",
+            "expires": "2026-10-11T19:16:57.000Z",
+            "domain": "winmart.vn",
+            "path": "/",
+            "hostOnly": false,
+            "creation": "2026-07-13T19:14:36.105Z",
+            "lastAccessed": "2026-07-13T19:17:20.390Z"
+          },
+          {
+            "key": "_tt_enable_cookie",
+            "value": "1",
+            "expires": "2027-08-07T19:16:57.000Z",
+            "domain": "winmart.vn",
+            "path": "/",
+            "hostOnly": false,
+            "creation": "2026-07-13T19:14:36.105Z",
+            "lastAccessed": "2026-07-13T19:17:20.390Z"
+          },
+          {
+            "key": "_ttp",
+            "value": "01KXEEDK9AFTXAQ8B47WTSCYPE_.tt.1",
+            "expires": "2027-08-07T19:16:57.000Z",
+            "domain": "winmart.vn",
+            "path": "/",
+            "hostOnly": false,
+            "creation": "2026-07-13T19:14:36.105Z",
+            "lastAccessed": "2026-07-13T19:17:20.390Z"
+          },
+          {
+            "key": "_clsk",
+            "value": "1m6eh2x%5E1783970057540%5E1%5E1%5Ek.clarity.ms%2Fcollect",
+            "expires": "2026-07-14T19:14:17.000Z",
+            "domain": "winmart.vn",
+            "path": "/",
+            "hostOnly": false,
+            "creation": "2026-07-13T19:14:36.105Z",
+            "lastAccessed": "2026-07-13T19:17:20.390Z"
+          },
+          {
+            "key": "_ga_9JPW9EW055",
+            "value": "GS2.1.s1783970056$o1$g1$t1783970217$j40$l0$h0",
+            "expires": "2027-08-17T19:16:57.865Z",
+            "domain": "winmart.vn",
+            "path": "/",
+            "hostOnly": false,
+            "creation": "2026-07-13T19:14:36.105Z",
+            "lastAccessed": "2026-07-13T19:17:20.390Z"
+          },
+          {
+            "key": "ttcsid",
+            "value": "1783970057517::-kAbdUDtL1sSS7BN6aYA.1.1783970217993.0::1.159847.160476::0.0.0.0::0.0.0",
+            "expires": "2027-08-07T19:16:57.000Z",
+            "domain": "winmart.vn",
+            "path": "/",
+            "hostOnly": false,
+            "creation": "2026-07-13T19:14:36.105Z",
+            "lastAccessed": "2026-07-13T19:17:20.390Z"
+          },
+          {
+            "key": "ttcsid_CPFCDTJC77U45REKKU0G",
+            "value": "1783970057517::4muPS9iCXruAAIoFvTmw.1.1783970217993.1",
+            "expires": "2027-08-07T19:16:57.000Z",
+            "domain": "winmart.vn",
+            "path": "/",
+            "hostOnly": false,
+            "creation": "2026-07-13T19:14:36.105Z",
+            "lastAccessed": "2026-07-13T19:17:20.390Z"
+          }
+        ]
+      },
+      "userData": {},
+      "maxErrorScore": 3,
+      "errorScoreDecrement": 0.5,
+      "expiresAt": "2026-07-13T20:04:14.987Z",
+      "createdAt": "2026-07-13T19:14:14.987Z",
+      "usageCount": 5,
+      "maxUsageCount": 50,
+      "errorScore": 1
+    }
+  ]
+}

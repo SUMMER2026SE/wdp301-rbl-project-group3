@@ -1,0 +1,9 @@
+{
+	"id": "FBUGy4Z7jIGZW2J",
+	"json": "{\"id\":\"FBUGy4Z7jIGZW2J\",\"url\":\"https://winmart.vn/products/cai-lan-dau-thuc-vat-tinh-luyen-chai-2l--s10010080?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/cai-lan-dau-thuc-vat-tinh-luyen-chai-2l--s10010080?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"crawlDepth\":2,\"enqueueStrategy\":\"same-hostname\"}}}",
+	"method": "GET",
+	"orderNo": 1783969344147,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/products/cai-lan-dau-thuc-vat-tinh-luyen-chai-2l--s10010080?storeCode=1535&storeGroupCode=1998",
+	"url": "https://winmart.vn/products/cai-lan-dau-thuc-vat-tinh-luyen-chai-2l--s10010080?storeGroupCode=1998&storeCode=1535"
+}

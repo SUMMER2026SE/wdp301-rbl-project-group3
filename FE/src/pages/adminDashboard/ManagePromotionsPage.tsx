@@ -21,6 +21,7 @@ import { promotionService } from '@services/promotionService'
 import { branchService } from '@services/branchService'
 import type { Promotion, Voucher, Branch } from '@/types'
 import { useAuth } from '@hooks/useAuth'
+import { notify } from '../../utils/toast';
 
 const formatVND = (num: number) => {
   return new Intl.NumberFormat('vi-VN', {
@@ -367,7 +368,7 @@ export const ManagePromotionsPage = () => {
     try {
       const codeClean = customVoucherCode.trim().toUpperCase()
       if (!codeClean || codeClean.length < 2) {
-        alert('Vui lòng nhập mã voucher từ 2 ký tự trở lên!')
+        notify.error('Vui lòng nhập mã voucher từ 2 ký tự trở lên!')
         setIsGenerating(false)
         return
       }
@@ -377,11 +378,11 @@ export const ManagePromotionsPage = () => {
         setSuccessMsg(`Đã tạo thành công mã voucher "${codeClean}"!`)
         setIsGenerateModalOpen(false)
       } else {
-        alert(res.message || 'Không thể tạo mã voucher')
+        notify.error(res.message || 'Không thể tạo mã voucher')
       }
     } catch (err: any) {
       console.error(err)
-      alert(err.message || 'Lỗi hệ thống khi tạo voucher')
+      notify.error(err.message || 'Lỗi hệ thống khi tạo voucher')
     } finally {
       setIsGenerating(false)
     }
@@ -435,11 +436,11 @@ export const ManagePromotionsPage = () => {
         setSuccessMsg(`Đã vô hiệu hóa voucher ${voucher.code}`)
         loadVouchers()
       } else {
-        alert(res.message || 'Không thể vô hiệu hóa voucher')
+        notify.error(res.message || 'Không thể vô hiệu hóa voucher')
       }
     } catch (err: any) {
       console.error(err)
-      alert(err.message || 'Lỗi hệ thống khi vô hiệu hóa voucher')
+      notify.error(err.message || 'Lỗi hệ thống khi vô hiệu hóa voucher')
     }
   }
 

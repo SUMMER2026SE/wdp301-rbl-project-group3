@@ -37,6 +37,7 @@ import { categoryService } from '@services/categoryService'
 import { competitorProductService } from '@services/competitorProductService'
 import { useAuth } from '@hooks/useAuth'
 import type { Inventory, ImportReceipt, Branch, Product, Category, CompetitorProduct } from '@/types'
+import { notify } from '../../utils/toast';
 
 const formatVND = (num: number) => {
   return new Intl.NumberFormat('vi-VN', {
@@ -381,7 +382,7 @@ export const ManageInventoryPage = () => {
   const handleBulkPriceSuggest = () => {
     if (selectedCatalogIds.length === 0) return;
     if (selectedCatalogIds.length > 10) {
-      alert('Bạn chỉ được chọn tối đa 10 sản phẩm để gợi ý giá hàng loạt.');
+      notify.error('Bạn chỉ được chọn tối đa 10 sản phẩm để gợi ý giá hàng loạt.');
       return;
     }
 
@@ -459,7 +460,7 @@ export const ManageInventoryPage = () => {
     const invalidItems = bulkSuggestResults.filter(r => !r.costPrice || r.costPrice <= 0 || !r.categoryId);
     if (invalidItems.length > 0) {
       const names = invalidItems.map(r => r.productName).join(', ');
-      alert(`Các sản phẩm sau chưa có Giá vốn hoặc chưa chọn Danh mục: ${names}. Vui lòng nhập đầy đủ để chạy AI.`);
+      notify.error(`Các sản phẩm sau chưa có Giá vốn hoặc chưa chọn Danh mục: ${names}. Vui lòng nhập đầy đủ để chạy AI.`);
       return;
     }
 
@@ -500,7 +501,7 @@ export const ManageInventoryPage = () => {
   const handleApplyBulkPrices = async () => {
     const toApply = bulkSuggestResults.filter(r => r.selected);
     if (toApply.length === 0) {
-      alert('Không có sản phẩm nào được chọn để áp dụng giá.');
+      notify.error('Không có sản phẩm nào được chọn để áp dụng giá.');
       return;
     }
 
@@ -538,13 +539,13 @@ export const ManageInventoryPage = () => {
         }
       }
 
-      alert(`Đã áp dụng thành công cho ${successCount} sản phẩm.${failCount > 0 ? ` Thất bại: ${failCount} sản phẩm.` : ''}`);
+      notify.success(`Đã áp dụng thành công cho ${successCount} sản phẩm.${failCount > 0 ? ` Thất bại: ${failCount} sản phẩm.` : ''}`);
       setShowBulkSuggestModal(false);
       setSelectedCatalogIds([]);
       fetchProducts();
     } catch (err: any) {
       console.error(err);
-      alert('Đã xảy ra lỗi trong quá trình áp dụng giá hàng loạt.');
+      notify.error('Đã xảy ra lỗi trong quá trình áp dụng giá hàng loạt.');
     } finally {
       setBulkUpdateLoading(false);
     }
@@ -2626,7 +2627,7 @@ export const ManageInventoryPage = () => {
                           const catSelect = document.getElementById('importCategoryQuickSelect') as HTMLSelectElement;
                           const catId = catSelect?.value;
                           if (!catId) {
-                            alert('Vui lòng chọn một danh mục.');
+                            notify.error('Vui lòng chọn một danh mục.');
                             return;
                           }
                           const matchedProducts = activeProducts.filter(p => {
@@ -2634,7 +2635,7 @@ export const ManageInventoryPage = () => {
                             return pCatId === catId;
                           });
                           if (matchedProducts.length === 0) {
-                            alert('Không có sản phẩm nào thuộc danh mục này.');
+                            notify.error('Không có sản phẩm nào thuộc danh mục này.');
                             return;
                           }
                           
@@ -2662,7 +2663,7 @@ export const ManageInventoryPage = () => {
                             });
                             return updated;
                           });
-                          alert(`Đã thêm thành công ${newItems.length} sản phẩm của danh mục này vào phiếu.`);
+                          notify.success(`Đã thêm thành công ${newItems.length} sản phẩm của danh mục này vào phiếu.`);
                         }}
                         className="py-2 px-3 bg-primary hover:bg-opacity-95 text-white font-black rounded-xl transition-all shadow-md active:scale-95 whitespace-nowrap"
                       >

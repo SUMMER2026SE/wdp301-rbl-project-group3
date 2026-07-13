@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Edit2, MapPin, Plus, Trash2, Loader2, AlertCircle, X, Check } from 'lucide-react'
 import { addressService } from '@/services/addressService'
 import type { UserAddress } from '@/types'
+import { notify } from '../../utils/toast';
 
 export const AddressesPage = () => {
   const [addresses, setAddresses] = useState<UserAddress[]>([])
@@ -67,10 +68,10 @@ export const AddressesPage = () => {
       if (res.success) {
         setAddresses((prev) => prev.filter((a) => a._id !== addressId))
       } else {
-        alert(res.message || 'Xóa địa chỉ thất bại')
+        notify.error(res.message || 'Xóa địa chỉ thất bại')
       }
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message || 'Đã có lỗi xảy ra')
+      notify.error(err.response?.data?.message || err.message || 'Đã có lỗi xảy ra')
     }
   }
 
@@ -81,7 +82,7 @@ export const AddressesPage = () => {
         loadAddresses()
       }
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message || 'Thao tác thất bại')
+      notify.error(err.response?.data?.message || err.message || 'Thao tác thất bại')
     }
   }
 

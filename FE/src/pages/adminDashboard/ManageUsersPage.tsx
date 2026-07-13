@@ -15,6 +15,7 @@ import {
 import { adminUserService } from '@services/adminUserService'
 import { useAuth } from '@hooks/useAuth'
 import type { User } from '@/types'
+import { notify } from '../../utils/toast';
 
 export const ManageUsersPage = () => {
   const { user: currentUser } = useAuth()
@@ -89,12 +90,12 @@ export const ManageUsersPage = () => {
     if (!currentUser) return
     
     if (user.id === currentUser.id) {
-      alert('Bạn không thể tự khóa tài khoản của chính mình!')
+      notify.error('Bạn không thể tự khóa tài khoản của chính mình!')
       return
     }
     
     if (user.role === 'admin') {
-      alert('Không thể khóa tài khoản có quyền Quản trị viên (Admin) khác!')
+      notify.error('Không thể khóa tài khoản có quyền Quản trị viên (Admin) khác!')
       return
     }
     
@@ -114,7 +115,7 @@ export const ManageUsersPage = () => {
         }
         
         if (res.success) {
-          alert(`Đã ${actionText} thành công tài khoản "${user.fullName}".`)
+          notify.success(`Đã ${actionText} thành công tài khoản "${user.fullName}".`)
           fetchUsers() // refresh list
         } else {
           setError(res.message || `Thao tác ${actionText} tài khoản thất bại.`)

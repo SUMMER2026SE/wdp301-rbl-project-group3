@@ -3,6 +3,7 @@ import { Clock, Ticket, AlertCircle, Check, Lock, Crown, Sparkles } from 'lucide
 import { promotionService } from '@/services/promotionService'
 import { useAuth } from '@/hooks/useAuth'
 import type { Promotion } from '@/types'
+import { notify } from '../../utils/toast';
 
 const formatVND = (num: number) => {
   return new Intl.NumberFormat('vi-VN', {
@@ -123,11 +124,11 @@ export const VouchersPage = () => {
   const handleClaimVoucher = async (promoId: string, code: string, pointCost: number) => {
     if (pointCost > 0) {
       if (!user) {
-        alert('Vui lòng đăng nhập để thực hiện đổi điểm tích lũy lấy Voucher.')
+        notify.error('Vui lòng đăng nhập để thực hiện đổi điểm tích lũy lấy Voucher.')
         return
       }
       if ((user.points || 0) < pointCost) {
-        alert(`Bạn không đủ điểm tích lũy để quy đổi! (Cần ${pointCost} điểm, hiện có ${user.points || 0} điểm)`)
+        notify.error(`Bạn không đủ điểm tích lũy để quy đổi! (Cần ${pointCost} điểm, hiện có ${user.points || 0} điểm)`)
         return
       }
       const confirmClaim = window.confirm(
@@ -161,7 +162,7 @@ export const VouchersPage = () => {
         setError(res.message || 'Không thể nhận mã giảm giá.')
       }
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message || 'Đã có lỗi xảy ra.')
+      notify.error(err.response?.data?.message || err.message || 'Đã có lỗi xảy ra.')
     } finally {
       setClaimLoadingId(null)
     }

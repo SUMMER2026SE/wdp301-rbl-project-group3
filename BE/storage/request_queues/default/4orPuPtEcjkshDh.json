@@ -1,0 +1,9 @@
+{
+	"id": "4orPuPtEcjkshDh",
+	"json": "{\"id\":\"4orPuPtEcjkshDh\",\"url\":\"https://winmart.vn/products/ps-bcdr-4d-khang-khuan-bo-2--s10171338?storeGroupCode=1998&storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/products/ps-bcdr-4d-khang-khuan-bo-2--s10171338?storeCode=1535&storeGroupCode=1998\",\"uniqueKey\":\"https://winmart.vn/products/ps-bcdr-4d-khang-khuan-bo-2--s10171338?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2,\"state\":4}},\"handledAt\":\"2026-07-13T19:16:57.292Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/products/ps-bcdr-4d-khang-khuan-bo-2--s10171338?storeCode=1535&storeGroupCode=1998",
+	"url": "https://winmart.vn/products/ps-bcdr-4d-khang-khuan-bo-2--s10171338?storeGroupCode=1998&storeCode=1535"
+}

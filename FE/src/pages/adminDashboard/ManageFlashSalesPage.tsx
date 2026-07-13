@@ -15,6 +15,7 @@ import { productService } from '@services/productService'
 import { branchService } from '@services/branchService'
 import { useAuth } from '@hooks/useAuth'
 import type { FlashSale, Product, Branch } from '@/types'
+import { notify } from '../../utils/toast';
 
 const formatVND = (num: number) => {
   return new Intl.NumberFormat('vi-VN', {
@@ -210,7 +211,7 @@ export const ManageFlashSalesPage = () => {
     if (isBranchManager) {
       const branchIdStr = typeof fs.branchId === 'object' && fs.branchId !== null ? fs.branchId._id : fs.branchId
       if (fs.scope === 'global' || branchIdStr !== user?.branchId) {
-        alert('Bạn chỉ có quyền chỉnh sửa Flash Sale của chi nhánh mình quản lý!')
+        notify.error('Bạn chỉ có quyền chỉnh sửa Flash Sale của chi nhánh mình quản lý!')
         return
       }
     }
@@ -262,7 +263,7 @@ export const ManageFlashSalesPage = () => {
     if (isBranchManager) {
       const branchIdStr = typeof fs.branchId === 'object' && fs.branchId !== null ? fs.branchId._id : fs.branchId
       if (fs.scope === 'global' || branchIdStr !== user?.branchId) {
-        alert('Bạn chỉ có quyền xóa Flash Sale của chi nhánh mình quản lý!')
+        notify.error('Bạn chỉ có quyền xóa Flash Sale của chi nhánh mình quản lý!')
         return
       }
     }

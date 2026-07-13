@@ -1,0 +1,9 @@
+{
+	"id": "shOfgOfNmmTzUk6",
+	"json": "{\"id\":\"shOfgOfNmmTzUk6\",\"url\":\"https://winmart.vn/products/palmolive-dg-duong-am-bo-sung-600ml--s10162220?storeGroupCode=1998&storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/products/palmolive-dg-duong-am-bo-sung-600ml--s10162220?storeCode=1535&storeGroupCode=1998\",\"uniqueKey\":\"https://winmart.vn/products/palmolive-dg-duong-am-bo-sung-600ml--s10162220?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":1,\"errorMessages\":[\"Error: requestHandler timed out after 60 seconds.\\n    at Timeout._onTimeout (C:\\\\Users\\\\ADMIN\\\\Desktop\\\\wdp301-rbl-project-group3\\\\BE\\\\node_modules\\\\@apify\\\\src\\\\index.ts:89:74)\\n    at listOnTimeout (node:internal/timers:588:17)\\n    at processTimers (node:internal/timers:523:7)\"],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2,\"state\":5}}}",
+	"method": "GET",
+	"orderNo": 1783970420250,
+	"retryCount": 1,
+	"uniqueKey": "https://winmart.vn/products/palmolive-dg-duong-am-bo-sung-600ml--s10162220?storeCode=1535&storeGroupCode=1998",
+	"url": "https://winmart.vn/products/palmolive-dg-duong-am-bo-sung-600ml--s10162220?storeGroupCode=1998&storeCode=1535"
+}

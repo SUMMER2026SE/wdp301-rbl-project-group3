@@ -23,6 +23,7 @@ import { orderService } from '@services/orderService'
 import { branchService } from '@services/branchService'
 import { useAuth } from '@hooks/useAuth'
 import type { AdminOrder, AdminOrderStatus, Branch } from '@/types'
+import { notify } from '../../utils/toast';
 
 // Format currency in VND
 const formatVND = (num: number) => {
@@ -222,10 +223,10 @@ export const ManageOrdersPage = () => {
           }
         }
       } else {
-        alert(response.message || 'Duyệt đơn hàng không thành công.')
+        notify.success(response.message || 'Duyệt đơn hàng không thành công.')
       }
     } catch (err: any) {
-      alert(err.message || 'Lỗi kết nối khi duyệt đơn.')
+      notify.error(err.message || 'Lỗi kết nối khi duyệt đơn.')
     } finally {
       setActionLoading(false)
     }
@@ -265,10 +266,10 @@ export const ManageOrdersPage = () => {
           }
         }
       } else {
-        alert(response.message || 'Cập nhật trạng thái không thành công.')
+        notify.success(response.message || 'Cập nhật trạng thái không thành công.')
       }
     } catch (err: any) {
-      alert(err.message || 'Lỗi kết nối khi cập nhật trạng thái.')
+      notify.error(err.message || 'Lỗi kết nối khi cập nhật trạng thái.')
     } finally {
       setActionLoading(false)
     }

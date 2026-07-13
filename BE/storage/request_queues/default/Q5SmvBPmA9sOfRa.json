@@ -1,0 +1,9 @@
+{
+	"id": "Q5SmvBPmA9sOfRa",
+	"json": "{\"id\":\"Q5SmvBPmA9sOfRa\",\"url\":\"https://winmart.vn/info/return-and-exchange-policy\",\"loadedUrl\":\"https://winmart.vn/info/return-and-exchange-policy\",\"uniqueKey\":\"https://winmart.vn/info/return-and-exchange-policy\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-07-13T19:13:44.821Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/info/return-and-exchange-policy",
+	"url": "https://winmart.vn/info/return-and-exchange-policy"
+}
