@@ -6,7 +6,7 @@ import { listOrdersSchema, orderIdParamSchema, updateOrderStatusSchema, myOrderI
 
 const router = Router();
 const backOffice = authorize('admin', 'branch_manager', 'staff');
-const customerOnly = authorize('customer');
+const customerOnly = authorize('customer', 'admin', 'branch_manager', 'staff');
 
 router.use(authenticate);
 

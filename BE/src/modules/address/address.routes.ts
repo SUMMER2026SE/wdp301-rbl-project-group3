@@ -11,7 +11,7 @@ import {
 
 const router = Router();
 
-router.use(authenticate, authorize('customer'));
+router.use(authenticate, authorize('customer', 'admin', 'branch_manager', 'staff'));
 
 router.get('/', addressController.getAddresses);
 router.post('/', validate(addAddressSchema), addressController.addAddress);

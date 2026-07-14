@@ -12,7 +12,7 @@ import {
 const router = Router();
 
 // Tất cả cart routes đều yêu cầu đăng nhập + role customer
-router.use(authenticate, authorize('customer'));
+router.use(authenticate, authorize('customer', 'admin', 'branch_manager', 'staff'));
 
 // UC07 — Thêm vào giỏ hàng
 router.post('/items', validate(addToCartSchema), cartController.addToCart);
