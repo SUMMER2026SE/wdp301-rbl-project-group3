@@ -23,6 +23,7 @@ import {
 } from '../modules/system-setting/system-setting.routes';
 import crawlerRoutes from '../modules/crawler/crawler.routes';
 import competitorProductRoutes from '../modules/competitor-product/competitor-product.routes';
+import favoriteRoutes from '../modules/favorite/favorite.routes';
 
 const router = Router();
 
@@ -48,5 +49,6 @@ router.use('/settings', publicSystemSettingRoutes);
 router.use('/admin/settings', adminSystemSettingRoutes);
 router.use('/crawler', crawlerRoutes);
 router.use('/competitor-products', competitorProductRoutes);
+router.use('/favorites', favoriteRoutes);
 
 export default router;
