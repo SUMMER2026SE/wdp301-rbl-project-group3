@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useMemo, type MouseEvent, type ReactNode }
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@hooks/useAuth'
 import { useCart } from '@/contexts/CartContext'
+import { useFavorites } from '@/contexts/FavoritesContext'
 import { productService } from '@services/productService'
 import { branchService } from '@services/branchService'
 import { categoryService } from '@services/categoryService'
@@ -260,6 +261,7 @@ const FlashSaleCard = ({
 }
 
 const RecommendedCard = ({ product, onAddToCart }: { product: any; onAddToCart?: () => void }) => {
+  const { isFavorite, addToFavorites, removeFromFavorites } = useFavorites()
   const title = product.productName || product.name
   const price = formatVND(product.salePrice || 0)
   const unit = product.unit || 'unit'
@@ -267,6 +269,17 @@ const RecommendedCard = ({ product, onAddToCart }: { product: any; onAddToCart?:
   const rating = '4.8'
   const reviews = '15'
   const hasFavorite = true
+  const prodId = product._id || product.id
+  const favorited = isFavorite(prodId)
+
+  const handleFavoriteClick = (e: any) => {
+    e.stopPropagation()
+    if (favorited) {
+      removeFromFavorites(prodId)
+    } else {
+      addToFavorites(prodId)
+    }
+  }
 
   return (
     <article className="bg-surface-container-lowest rounded-xl p-4 soft-lift border border-transparent hover:border-primary/20 group transition-all">
@@ -274,11 +287,14 @@ const RecommendedCard = ({ product, onAddToCart }: { product: any; onAddToCart?:
         <img className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" src={image} alt={title} />
         {hasFavorite ? (
           <button
-            className="absolute bottom-2 right-2 bg-white/90 p-2 rounded-full shadow-md text-primary opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0"
+            onClick={handleFavoriteClick}
+            className={`absolute bottom-2 right-2 p-2 rounded-full shadow-md transition-all translate-y-2 group-hover:translate-y-0 group-hover:opacity-100 ${
+              favorited ? 'bg-error text-white opacity-100 translate-y-0' : 'bg-white/90 text-primary opacity-0'
+            }`}
             type="button"
             aria-label={`Favorite ${title}`}
           >
-            <Icon>favorite</Icon>
+            <Icon filled={favorited}>favorite</Icon>
           </button>
         ) : null}
       </div>
