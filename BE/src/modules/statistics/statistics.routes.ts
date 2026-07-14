@@ -41,7 +41,7 @@ router.get(
 
 router.get(
   '/customer/dashboard',
-  authorize('customer'),
+  authorize('customer', 'admin', 'branch_manager', 'staff'),
   validate(trendQuerySchema),
   statisticsController.getCustomerDashboard
 );
