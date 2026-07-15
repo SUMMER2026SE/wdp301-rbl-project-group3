@@ -35,7 +35,6 @@ import {
   Utensils,
   WalletCards,
   Zap,
-  LogOut,
   X,
   type LucideIcon,
 } from 'lucide-react'
@@ -200,25 +199,25 @@ const formatVND = (num: number) => {
   }).format(num)
 }
 
-const FlashSaleCard = ({ 
-  product, 
-  flashSalePrice, 
-  onAddToCart 
-}: { 
-  product: any; 
-  flashSalePrice: number; 
-  onAddToCart?: () => void 
+const FlashSaleCard = ({
+  product,
+  flashSalePrice,
+  onAddToCart
+}: {
+  product: any;
+  flashSalePrice: number;
+  onAddToCart?: () => void
 }) => {
   const title = product.productName || product.name
   const price = formatVND(flashSalePrice)
   const originalPrice = formatVND(product.salePrice || 0)
-  
+
   const originalVal = product.salePrice || 0
-  const discountPercent = originalVal > 0 
+  const discountPercent = originalVal > 0
     ? Math.round(((originalVal - flashSalePrice) / originalVal) * 100)
     : 20
   const discount = `-${discountPercent}%`
-  
+
   const unit = product.unit || 'unit'
   const image = product.imageUrl || productImageMap[title] || '/assets/winmart/tomatoes.png'
 
@@ -356,8 +355,8 @@ export const HomePage = () => {
     setHasLoadedProducts(false)
     try {
       const activeBranchId = branchId || selectedBranch?._id
-      const res = await productService.getProducts({ 
-        keyword, 
+      const res = await productService.getProducts({
+        keyword,
         status: 'active',
         branchId: activeBranchId,
         limit: 1000
@@ -493,7 +492,7 @@ export const HomePage = () => {
       setLiveSearchResults([])
       return
     }
-    
+
     setIsSearching(true)
     const timer = setTimeout(async () => {
       try {
@@ -587,7 +586,7 @@ export const HomePage = () => {
               <span className="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">
                 Deliver from
               </span>
-              <div 
+              <div
                 onClick={() => setIsBranchModalOpen(true)}
                 className="flex items-center text-primary font-bold cursor-pointer hover:opacity-80 transition-all"
               >
@@ -658,8 +657,8 @@ export const HomePage = () => {
                         >
                           <div className="flex items-center gap-3 overflow-hidden">
                             <div className="w-10 h-10 rounded-lg bg-surface-container overflow-hidden shrink-0">
-                              <img 
-                                src={product.imageUrl || '/assets/winmart/tomatoes.png'} 
+                              <img
+                                src={product.imageUrl || '/assets/winmart/tomatoes.png'}
                                 alt={product.name}
                                 className="w-full h-full object-cover"
                               />
@@ -676,7 +675,7 @@ export const HomePage = () => {
                       </li>
                     ))}
                     <li className="p-2 bg-surface-container-lowest">
-                      <button 
+                      <button
                         className="w-full text-center text-sm text-primary font-bold hover:underline py-2"
                         onClick={() => {
                           fetchDbProducts(searchQuery)
@@ -694,10 +693,10 @@ export const HomePage = () => {
 
           <div className="ml-auto hidden sm:flex items-center gap-3 md:gap-6">
             {isAuthenticated && user ? (
-              <div className="relative">
+              <div className="relative flex h-full items-center">
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center gap-2 cursor-pointer group"
+                  className="flex items-center gap-2 cursor-pointer group lg:min-w-[200px]"
                 >
                   <div className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center group-hover:bg-primary/10 transition-colors overflow-hidden">
                     {user.avatarUrl ? (
@@ -710,39 +709,43 @@ export const HomePage = () => {
                       <Icon className="text-primary">person</Icon>
                     )}
                   </div>
-                  <span className="font-label-lg text-label-lg hidden lg:block">
+                  <span className="font-label-lg text-label-lg hidden lg:block pr-1">
                     {user.fullName}
                   </span>
                 </button>
 
                 {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-surface-container-lowest rounded-lg shadow-xl py-2 z-50">
+                  <div className="absolute right-0 top-[calc(100%+16px)] w-full min-w-[200px] bg-surface-container-lowest rounded-b-xl shadow-lg py-2 z-50 border border-t-0 border-outline-variant flex flex-col">
                     <button
                       onClick={() => {
-                        navigate('/dashboard')
+                        const isBackOffice = ['admin', 'branch_manager', 'staff'].includes(user.role)
+                        navigate(isBackOffice ? '/admin' : '/dashboard')
                         setShowUserMenu(false)
                       }}
-                      className="w-full px-4 py-2 text-left hover:bg-surface-container-low transition-colors flex items-center gap-2"
+                      className="flex w-full items-center gap-[18px] pl-[10px] pr-4 py-2.5 text-left text-sm hover:bg-surface-container-low transition-colors text-on-surface"
                     >
-                      <Icon>dashboard</Icon>
-                      Dashboard
+                      <Icon className="text-on-surface-variant text-[20px]">dashboard</Icon>
+                      <span className="font-medium">Dashboard</span>
                     </button>
                     <button
                       onClick={() => {
                         navigate('/dashboard/profile')
                         setShowUserMenu(false)
                       }}
-                      className="w-full px-4 py-2 text-left hover:bg-surface-container-low transition-colors flex items-center gap-2"
+                      className="flex w-full items-center gap-[18px] pl-[10px] pr-4 py-2.5 text-left text-sm hover:bg-surface-container-low transition-colors text-on-surface"
                     >
-                      <Icon>person</Icon>
-                      Profile
+                      <Icon className="text-on-surface-variant text-[20px]">person</Icon>
+                      <span className="font-medium">Profile</span>
                     </button>
                     <button
-                      onClick={handleLogout}
-                      className="w-full px-4 py-2 text-left hover:bg-surface-container-low transition-colors flex items-center gap-2 text-error"
+                      onClick={() => {
+                        setShowUserMenu(false)
+                        handleLogout()
+                      }}
+                      className="flex w-full items-center gap-[18px] pl-[10px] pr-4 py-2.5 text-left text-sm text-error hover:bg-error-container transition-colors"
                     >
-                      <LogOut size={20} />
-                      Logout
+                      <Icon className="text-[20px]">logout</Icon>
+                      <span className="font-medium">Logout</span>
                     </button>
                   </div>
                 )}
@@ -779,73 +782,72 @@ export const HomePage = () => {
 
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-stack-lg">
         <section
-            className="w-full min-w-0 relative overflow-hidden rounded-xl h-[520px] sm:h-[460px] lg:h-[420px] bg-primary group"
-            onMouseMove={handleHeroMouseMove}
-            onMouseLeave={handleHeroMouseLeave}
-          >
-            <img
-              ref={heroImageRef}
-              className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-80 transition-transform duration-700 group-hover:scale-105"
-              src={currentBanner ? currentBanner.imageUrl : heroImage}
-              alt={currentBanner ? currentBanner.title : "Premium organic supermarket aisle with fresh produce"}
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent flex flex-col justify-center px-6 md:px-12 text-white">
-              <span className="bg-secondary text-white font-bold px-4 py-1 rounded-full w-fit mb-4 text-label-lg animate-bounce">
-                {currentBanner ? "Ưu Đãi Đặc Biệt" : "Exclusive Offer"}
-              </span>
-              <h2 className="font-headline-lg text-[36px] sm:text-[40px] md:text-[48px] leading-tight mb-4 max-w-[11ch] sm:max-w-none">
-                {currentBanner ? currentBanner.title : "Fresh Food Festival"}
-                <br />
-                <span className="text-primary-fixed">{currentBanner ? currentBanner.subtitle : "Up to 30% OFF"}</span>
-              </h2>
-              <p className="text-body-lg mb-8 opacity-90 max-w-[280px] sm:max-w-sm md:max-w-none">
-                {currentBanner ? currentBanner.description : "Experience the peak of season's harvest with our premium organic selection."}
-                {currentBanner?.promoCode && (
-                  <>
-                    <br />
-                    Mã code: <span className="font-bold border-b-2 border-primary-fixed">{currentBanner.promoCode}</span>
-                  </>
-                )}
-                {!currentBanner && (
-                  <>
-                    <br />
-                    Use code: <span className="font-bold border-b-2 border-primary-fixed">FRESH2026</span>
-                  </>
-                )}
-              </p>
-              <button
-                onClick={() => {
-                  const targetId = currentBanner?.linkUrl || '#recommended-products';
-                  if (targetId.startsWith('#')) {
-                    document.getElementById(targetId.substring(1))?.scrollIntoView({ behavior: 'smooth' });
-                  } else {
-                    navigate(targetId);
-                  }
-                }}
-                className="beveled-btn bg-primary-container hover:bg-primary text-on-primary-container hover:text-white px-8 py-4 rounded-xl font-bold w-fit transition-all flex items-center gap-2 group-hover:translate-x-2"
-                type="button"
-              >
-                Shop Now <Icon>arrow_forward</Icon>
-              </button>
-            </div>
+          className="w-full min-w-0 relative overflow-hidden rounded-xl h-[520px] sm:h-[460px] lg:h-[420px] bg-primary group"
+          onMouseMove={handleHeroMouseMove}
+          onMouseLeave={handleHeroMouseLeave}
+        >
+          <img
+            ref={heroImageRef}
+            className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-80 transition-transform duration-700 group-hover:scale-105"
+            src={currentBanner ? currentBanner.imageUrl : heroImage}
+            alt={currentBanner ? currentBanner.title : "Premium organic supermarket aisle with fresh produce"}
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent flex flex-col justify-center px-6 md:px-12 text-white">
+            <span className="bg-secondary text-white font-bold px-4 py-1 rounded-full w-fit mb-4 text-label-lg animate-bounce">
+              {currentBanner ? "Ưu Đãi Đặc Biệt" : "Exclusive Offer"}
+            </span>
+            <h2 className="font-headline-lg text-[36px] sm:text-[40px] md:text-[48px] leading-tight mb-4 max-w-[11ch] sm:max-w-none">
+              {currentBanner ? currentBanner.title : "Fresh Food Festival"}
+              <br />
+              <span className="text-primary-fixed">{currentBanner ? currentBanner.subtitle : "Up to 30% OFF"}</span>
+            </h2>
+            <p className="text-body-lg mb-8 opacity-90 max-w-[280px] sm:max-w-sm md:max-w-none">
+              {currentBanner ? currentBanner.description : "Experience the peak of season's harvest with our premium organic selection."}
+              {currentBanner?.promoCode && (
+                <>
+                  <br />
+                  Mã code: <span className="font-bold border-b-2 border-primary-fixed">{currentBanner.promoCode}</span>
+                </>
+              )}
+              {!currentBanner && (
+                <>
+                  <br />
+                  Use code: <span className="font-bold border-b-2 border-primary-fixed">FRESH2026</span>
+                </>
+              )}
+            </p>
+            <button
+              onClick={() => {
+                const targetId = currentBanner?.linkUrl || '#recommended-products';
+                if (targetId.startsWith('#')) {
+                  document.getElementById(targetId.substring(1))?.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                  navigate(targetId);
+                }
+              }}
+              className="beveled-btn bg-primary-container hover:bg-primary text-on-primary-container hover:text-white px-8 py-4 rounded-xl font-bold w-fit transition-all flex items-center gap-2 group-hover:translate-x-2"
+              type="button"
+            >
+              Shop Now <Icon>arrow_forward</Icon>
+            </button>
+          </div>
 
-            {/* Dot Indicators for carousel */}
-            {activeBanners.length > 1 && (
-              <div className="absolute bottom-4 right-4 flex gap-2 z-10">
-                {activeBanners.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setCurrentBannerIndex(idx)}
-                    className={`w-2.5 h-2.5 rounded-full transition-all ${
-                      idx === currentBannerIndex ? 'bg-primary w-6' : 'bg-white/50 hover:bg-white'
+          {/* Dot Indicators for carousel */}
+          {activeBanners.length > 1 && (
+            <div className="absolute bottom-4 right-4 flex gap-2 z-10">
+              {activeBanners.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentBannerIndex(idx)}
+                  className={`w-2.5 h-2.5 rounded-full transition-all ${idx === currentBannerIndex ? 'bg-primary w-6' : 'bg-white/50 hover:bg-white'
                     }`}
-                    type="button"
-                    aria-label={`Go to slide ${idx + 1}`}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
+                  type="button"
+                  aria-label={`Go to slide ${idx + 1}`}
+                />
+              ))}
+            </div>
+          )}
+        </section>
 
         <section className="mt-stack-lg">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3 mb-6">
@@ -999,31 +1001,31 @@ export const HomePage = () => {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-gutter-md">
               {hasLoadedProducts && filteredRecommendedProducts.length === 0 ? (
                 <div className="col-span-full text-center py-12 text-on-surface-variant bg-surface-container-low rounded-xl border border-outline-variant/30">
-                <p className="text-sm font-bold">Không có sản phẩm nào được gợi ý tại chi nhánh này</p>
-              </div>
-            ) : (
-              filteredRecommendedProducts.map((product) => {
-                return (
-                  <RecommendedCard
-                    key={product._id}
-                    product={product}
-                    onAddToCart={async () => {
-                      if (!isAuthenticated) {
-                        navigate('/login')
-                        return
-                      }
-                      try {
-                        await addToCart(product._id, 1)
-                      } catch (err: any) {
-                        alert(err.message || 'Failed to add to cart')
-                      }
-                    }}
-                  />
-                )
-              })
-            )}
-          </div>
-        </section>
+                  <p className="text-sm font-bold">Không có sản phẩm nào được gợi ý tại chi nhánh này</p>
+                </div>
+              ) : (
+                filteredRecommendedProducts.map((product) => {
+                  return (
+                    <RecommendedCard
+                      key={product._id}
+                      product={product}
+                      onAddToCart={async () => {
+                        if (!isAuthenticated) {
+                          navigate('/login')
+                          return
+                        }
+                        try {
+                          await addToCart(product._id, 1)
+                        } catch (err: any) {
+                          alert(err.message || 'Failed to add to cart')
+                        }
+                      }}
+                    />
+                  )
+                })
+              )}
+            </div>
+          </section>
         </section>
       </main>
 
@@ -1371,17 +1373,15 @@ export const HomePage = () => {
                     <div
                       key={branch._id}
                       onClick={() => handleSelectBranch(branch)}
-                      className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 flex items-center justify-between gap-4 ${
-                        isSelected
+                      className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 flex items-center justify-between gap-4 ${isSelected
                           ? 'border-primary bg-primary/5'
                           : 'border-outline-variant/40 hover:border-primary/30 hover:bg-surface-container-low'
-                      }`}
+                        }`}
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
-                            isSelected ? 'bg-primary text-white' : 'bg-surface-container-highest text-on-surface-variant'
-                          }`}>
+                          <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${isSelected ? 'bg-primary text-white' : 'bg-surface-container-highest text-on-surface-variant'
+                            }`}>
                             {branch.code}
                           </span>
                           <h4 className="font-black text-sm truncate text-on-surface">{branch.name}</h4>
@@ -1395,9 +1395,8 @@ export const HomePage = () => {
                           </p>
                         )}
                       </div>
-                      <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${
-                        isSelected ? 'border-primary bg-primary' : 'border-outline'
-                      }`}>
+                      <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${isSelected ? 'border-primary bg-primary' : 'border-outline'
+                        }`}>
                         {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
                       </div>
                     </div>
