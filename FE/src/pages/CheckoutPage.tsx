@@ -229,7 +229,7 @@ export const CheckoutPage = () => {
   }
 
   const handleSelectSavedAddress = (addr: UserAddress) => {
-    setSelectedAddressId(addr._id)
+    setSelectedAddressId(addr.addressId || addr._id || '')
     setFullName(addr.receiverName)
     setPhoneNumber(addr.phoneNumber)
     setShippingAddress(addr.addressDetail)
@@ -324,12 +324,12 @@ export const CheckoutPage = () => {
     }
 
     if (!fullName.trim() || !phoneNumber.trim() || !shippingAddress.trim()) {
-      setError('Please fill in all required delivery fields.')
+      setError('Vui lòng điền đầy đủ các thông tin giao nhận bắt buộc.')
       return
     }
 
     if (!selectedBranch) {
-      setError('Please select a branch first.')
+      setError('Vui lòng chọn chi nhánh phục vụ trước.')
       return
     }
 
@@ -351,13 +351,13 @@ export const CheckoutPage = () => {
         // Clear local cart
         await clearCart()
       } else {
-        setError(res.message || 'Failed to place order. Please try again.')
+        setError(res.message || 'Đặt hàng thất bại. Vui lòng thử lại.')
       }
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
           err.message ||
-          'Something went wrong while placing order.'
+          'Đã xảy ra lỗi trong quá trình đặt hàng.'
       )
     } finally {
       setIsSubmitting(false)
@@ -371,23 +371,23 @@ export const CheckoutPage = () => {
           <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-10 h-10" />
           </div>
-          <h1 className="text-2xl font-black text-on-surface mb-2">Order Placed Successfully!</h1>
+          <h1 className="text-2xl font-black text-on-surface mb-2">Đặt hàng thành công!</h1>
           <p className="text-on-surface-variant mb-6 text-sm">
-            Thank you for shopping with {storeName}. Your order ID is{' '}
+            Cảm ơn bạn đã mua sắm tại {storeName}. Mã đơn hàng của bạn là{' '}
             <span className="font-bold text-primary">{successOrder.orderId}</span>.
           </p>
 
           <div className="bg-surface-container-high rounded-xl p-4 mb-6 text-left space-y-2 text-sm text-on-surface">
             <div className="flex justify-between">
-              <span className="text-on-surface-variant font-bold">Total Amount:</span>
+              <span className="text-on-surface-variant font-bold">Tổng tiền:</span>
               <span className="font-black text-primary">{formatVND(successOrder.totalAmount)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-on-surface-variant font-bold">Payment Method:</span>
+              <span className="text-on-surface-variant font-bold">Phương thức:</span>
               <span className="uppercase font-bold">{successOrder.paymentMethod}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-on-surface-variant font-bold">Status:</span>
+              <span className="text-on-surface-variant font-bold">Trạng thái:</span>
               <span className="capitalize font-bold text-tertiary">{successOrder.status}</span>
             </div>
           </div>
@@ -397,13 +397,13 @@ export const CheckoutPage = () => {
               to="/dashboard/orders"
               className="flex-1 bg-surface-container-highest hover:bg-surface-container-high-variant text-on-surface px-4 py-3 rounded-xl font-bold text-sm transition-all text-center border border-outline-variant/30"
             >
-              Track Orders
+              Theo dõi đơn hàng
             </Link>
             <Link
               to="/"
               className="flex-1 bg-primary hover:bg-on-primary-fixed-variant text-white px-4 py-3 rounded-xl font-bold text-sm transition-all text-center shadow-md"
             >
-              Continue Shopping
+              Tiếp tục mua sắm
             </Link>
           </div>
         </div>
@@ -424,8 +424,8 @@ export const CheckoutPage = () => {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-lg font-black leading-none">Checkout</h1>
-            <p className="text-[12px] text-on-surface-variant mt-1">Complete your purchase details</p>
+            <h1 className="text-lg font-black leading-none">Thanh toán</h1>
+            <p className="text-[12px] text-on-surface-variant mt-1">Hoàn tất thông tin đơn đặt hàng</p>
           </div>
         </div>
       </header>
@@ -434,15 +434,15 @@ export const CheckoutPage = () => {
         {!cart || cart.items.length === 0 ? (
           <div className="text-center py-16 bg-surface-container-low rounded-2xl border border-outline-variant/30 max-w-lg mx-auto">
             <AlertCircle className="w-16 h-16 text-on-surface-variant/40 mx-auto mb-4" />
-            <h2 className="text-xl font-bold">Your cart is empty</h2>
+            <h2 className="text-xl font-bold">Giỏ hàng của bạn đang trống</h2>
             <p className="text-on-surface-variant text-sm mt-1 mb-6">
-              Add some delicious groceries first before checkout!
+              Vui lòng thêm sản phẩm vào giỏ hàng trước khi thanh toán!
             </p>
             <Link
               to="/"
               className="inline-flex bg-primary hover:bg-on-primary-fixed-variant text-white px-6 py-3 rounded-xl font-bold transition-all shadow-md"
             >
-              Go to Store
+              Quay lại Cửa hàng
             </Link>
           </div>
         ) : (
@@ -460,7 +460,7 @@ export const CheckoutPage = () => {
                 <div className="bg-error-container text-on-error-container p-4 rounded-xl flex items-center gap-3 text-sm font-bold">
                   <AlertCircle className="w-5 h-5 shrink-0" />
                   <span>
-                    Giá trị đơn hàng tối thiểu phải từ {formatVND(Number(publicSettings.min_order_amount))} trở lên để đặt hàng.
+                     Giá trị đơn hàng tối thiểu phải từ {formatVND(Number(publicSettings.min_order_amount))} trở lên để đặt hàng.
                   </span>
                 </div>
               )}
@@ -469,7 +469,7 @@ export const CheckoutPage = () => {
               <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant/30 space-y-4">
                 <h3 className="text-lg font-bold flex items-center gap-2 border-b border-outline-variant/30 pb-3">
                   <MapPin className="text-primary w-5 h-5" />
-                  Delivery Details
+                  Thông tin giao hàng
                 </h3>
 
                 {savedAddresses.length > 0 && (
@@ -479,10 +479,11 @@ export const CheckoutPage = () => {
                     </label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {savedAddresses.map((addr) => {
-                        const isSelected = selectedAddressId === addr._id
+                        const addrKey = addr.addressId || addr._id || ''
+                        const isSelected = selectedAddressId === addrKey
                         return (
                           <div
-                            key={addr._id}
+                            key={addrKey}
                             onClick={() => handleSelectSavedAddress(addr)}
                             className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                               isSelected
@@ -496,7 +497,7 @@ export const CheckoutPage = () => {
                               </span>
                               {addr.isDefault && (
                                 <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">
-                                  Default
+                                  Mặc định
                                 </span>
                               )}
                             </div>
@@ -528,28 +529,28 @@ export const CheckoutPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-label-md text-on-surface-variant font-bold flex items-center gap-1.5">
-                      <User className="w-4 h-4" /> Full Name *
+                      <User className="w-4 h-4" /> Họ và tên *
                     </label>
                     <input
                       type="text"
                       required
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      placeholder="e.g. John Doe"
+                      placeholder="Ví dụ: Nguyễn Văn A"
                       className="w-full bg-surface border border-outline rounded-xl px-4 py-3 text-sm focus:border-primary/50 focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                     />
                   </div>
 
                   <div className="space-y-1.5">
                     <label className="text-label-md text-on-surface-variant font-bold flex items-center gap-1.5">
-                      <Phone className="w-4 h-4" /> Phone Number *
+                      <Phone className="w-4 h-4" /> Số điện thoại *
                     </label>
                     <input
                       type="tel"
                       required
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
-                      placeholder="e.g. 0912345678"
+                      placeholder="Ví dụ: 0912345678"
                       className="w-full bg-surface border border-outline rounded-xl px-4 py-3 text-sm focus:border-primary/50 focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                     />
                   </div>
@@ -557,27 +558,27 @@ export const CheckoutPage = () => {
 
                 <div className="space-y-1.5">
                   <label className="text-label-md text-on-surface-variant font-bold flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4" /> Shipping Address *
+                    <MapPin className="w-4 h-4" /> Địa chỉ nhận hàng *
                   </label>
                   <input
                     type="text"
                     required
                     value={shippingAddress}
                     onChange={(e) => setShippingAddress(e.target.value)}
-                    placeholder="e.g. 123 Nguyen Hue, District 1, HCMC"
+                    placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành"
                     className="w-full bg-surface border border-outline rounded-xl px-4 py-3 text-sm focus:border-primary/50 focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                   />
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-label-md text-on-surface-variant font-bold flex items-center gap-1.5">
-                    <FileText className="w-4 h-4" /> Order Notes
+                    <FileText className="w-4 h-4" /> Ghi chú đơn hàng
                   </label>
                   <textarea
                     rows={3}
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
-                    placeholder="Special instructions for delivery..."
+                    placeholder="Ghi chú đặc biệt cho người giao hàng..."
                     className="w-full bg-surface border border-outline rounded-xl px-4 py-3 text-sm focus:border-primary/50 focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none"
                   />
                 </div>
@@ -606,7 +607,7 @@ export const CheckoutPage = () => {
                       </p>
                       {selectedBranch.phone && (
                         <p className="text-[10px] text-on-surface-variant mt-1">
-                          Phone: {selectedBranch.phone}
+                          Số điện thoại: {selectedBranch.phone}
                         </p>
                       )}
                     </div>
@@ -622,15 +623,15 @@ export const CheckoutPage = () => {
               <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant/30 space-y-4">
                 <h3 className="text-lg font-bold flex items-center gap-2 border-b border-outline-variant/30 pb-3">
                   <CreditCard className="text-primary w-5 h-5" />
-                  Payment Method
+                  Phương thức thanh toán
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
-                    { id: 'COD', label: 'Cash on Delivery (COD)', desc: 'Pay with cash upon delivery' },
-                    { id: 'momo', label: 'MoMo Wallet', desc: 'Pay using MoMo sandbox gateway' },
-                    { id: 'vnpay', label: 'VNPay Gateway', desc: 'Fast bank transfer via VNPay' },
-                    { id: 'banking', label: 'Direct Bank Transfer', desc: 'Transfer to our company account' },
+                    { id: 'COD', label: 'Thanh toán khi nhận hàng (COD)', desc: 'Thanh toán bằng tiền mặt khi nhận hàng' },
+                    { id: 'momo', label: 'Ví điện tử MoMo', desc: 'Thanh toán qua cổng thử nghiệm MoMo' },
+                    { id: 'vnpay', label: 'Cổng thanh toán VNPay', desc: 'Chuyển khoản nhanh qua cổng VNPay' },
+                    { id: 'banking', label: 'Chuyển khoản ngân hàng', desc: 'Chuyển khoản trực tiếp vào tài khoản công ty' },
                   ].map((method) => {
                     const active = paymentMethod === method.id
                     return (
@@ -665,7 +666,7 @@ export const CheckoutPage = () => {
             <div className="lg:col-span-5 space-y-6">
               <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant/30 space-y-4">
                 <h3 className="text-lg font-bold border-b border-outline-variant/30 pb-3">
-                  Order Summary
+                  Tóm tắt đơn hàng
                 </h3>
 
                 <div className="divide-y divide-outline-variant/30 max-h-96 overflow-y-auto pr-2">
@@ -679,7 +680,7 @@ export const CheckoutPage = () => {
                         <div className="flex-1 min-w-0">
                           <h4 className="font-bold text-sm truncate">{item.product.name}</h4>
                           <p className="text-[12px] text-on-surface-variant mt-0.5">
-                            Qty {item.quantity} x {formatVND(item.product.price)}
+                            SL {item.quantity} x {formatVND(item.product.price)}
                           </p>
                         </div>
                         <span className="font-bold text-sm text-on-surface">
@@ -772,7 +773,7 @@ export const CheckoutPage = () => {
 
                 <div className="border-t border-outline-variant/30 pt-4 space-y-2 text-sm">
                   <div className="flex justify-between text-on-surface-variant">
-                    <span>Subtotal ({cart.totalItems} items)</span>
+                    <span>Tạm tính ({cart.totalItems} sản phẩm)</span>
                     <span>{formatVND(cart.totalAmount)}</span>
                   </div>
                   {appliedVoucher && (
@@ -786,13 +787,13 @@ export const CheckoutPage = () => {
                     <span>{formatVND(vatAmount)}</span>
                   </div>
                   <div className="flex justify-between text-on-surface-variant">
-                    <span>Shipping Fee</span>
+                    <span>Phí vận chuyển</span>
                     <span className={shippingFee === 0 ? "text-success font-bold" : "font-bold"}>
-                      {shippingFee === 0 ? 'FREE' : formatVND(shippingFee)}
+                      {shippingFee === 0 ? 'MIỄN PHÍ' : formatVND(shippingFee)}
                     </span>
                   </div>
                   <div className="flex justify-between text-body-lg font-bold border-t border-outline-variant/30 pt-3">
-                    <span>Total Amount</span>
+                    <span>Tổng tiền thanh toán</span>
                     <span className="text-primary text-headline-sm">
                       {formatVND(Math.max(0, cart.totalAmount - discountAmount) + vatAmount + shippingFee)}
                     </span>
@@ -807,11 +808,11 @@ export const CheckoutPage = () => {
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader className="w-5 h-5 animate-spin" /> Placing Order...
+                      <Loader className="w-5 h-5 animate-spin" /> Đang đặt hàng...
                     </>
                   ) : (
                     <>
-                      Place Order ({formatVND(Math.max(0, cart.totalAmount - discountAmount) + vatAmount + shippingFee)})
+                      Đặt hàng ({formatVND(Math.max(0, cart.totalAmount - discountAmount) + vatAmount + shippingFee)})
                     </>
                   )}
                 </button>

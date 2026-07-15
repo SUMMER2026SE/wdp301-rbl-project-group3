@@ -447,6 +447,7 @@ export interface SystemSettingGroups {
 
 export interface UserAddress {
   addressId: string
+  _id?: string
   userId: string
   receiverName: string
   phoneNumber: string

@@ -128,8 +128,6 @@ const categories: Category[] = [
 ]
 
 const heroImage = '/assets/winmart/hero-market.png'
-const citrusImage = '/assets/winmart/citrus.png'
-const bbqImage = '/assets/winmart/bbq.png'
 
 
 const getCountdownTime = (endDateStr?: string): CountdownTime => {
@@ -315,9 +313,9 @@ const RecommendedCard = ({ product, onAddToCart }: { product: any; onAddToCart?:
           }}
           className="flex items-center justify-center gap-1 bg-primary text-white px-3 py-1.5 rounded-lg text-[12px] font-bold beveled-btn hover:bg-primary-container transition-all"
           type="button"
-          aria-label={`Add ${title} to cart`}
+          aria-label={`Thêm ${title} vào giỏ`}
         >
-          <Icon className="w-[18px] h-[18px]">add</Icon> Add
+          <Icon className="w-[18px] h-[18px]">add</Icon> Thêm
         </button>
       </div>
     </article>
@@ -908,7 +906,7 @@ export const HomePage = () => {
                       try {
                         await addToCart(productIdStr, 1)
                       } catch (err: any) {
-                        alert(err.message || 'Failed to add to cart')
+                        alert(err.message || 'Thêm vào giỏ hàng thất bại.')
                       }
                     }}
                   />
@@ -918,55 +916,14 @@ export const HomePage = () => {
           </div>
         </section>
 
-        <section className="mt-stack-lg grid grid-cols-1 md:grid-cols-3 gap-gutter-md h-auto md:h-[400px]">
-          <div className="col-span-1 min-h-[260px] rounded-xl bg-[#FEE2E2] relative overflow-hidden group">
-            <div className="p-8 z-10 relative">
-              <h3 className="text-secondary font-black text-headline-md mb-2">BOGO SPECIAL</h3>
-              <p className="text-on-surface-variant font-bold mb-4">
-                Buy 1 Get 1 Free on all Citrus Fruits
-              </p>
-              <button
-                className="text-secondary border-2 border-secondary px-4 py-2 rounded-lg font-bold hover:bg-secondary hover:text-white transition-all"
-                type="button"
-              >
-                Claim Now
-              </button>
-            </div>
-            <img
-              className="absolute bottom-0 right-0 w-2/3 object-contain opacity-40 group-hover:scale-110 transition-transform duration-500"
-              src={citrusImage}
-              alt="Sliced oranges and lemons"
-            />
-          </div>
-
-          <div className="col-span-1 md:col-span-2 min-h-[260px] rounded-xl bg-[#E0F2FE] relative overflow-hidden group">
-            <div className="p-8 z-10 relative flex flex-col justify-center h-full max-w-sm">
-              <h3 className="text-primary font-black text-headline-md mb-2">BBQ SEASON READY</h3>
-              <p className="text-on-surface-variant font-bold mb-4">
-                Get the best marinated meats and grilling gear for your next weekend party.
-              </p>
-              <button
-                className="bg-primary text-white px-6 py-3 rounded-lg font-bold beveled-btn hover:scale-105 transition-all w-fit"
-                type="button"
-              >
-                Browse Gear
-              </button>
-            </div>
-            <img
-              className="absolute top-0 right-0 h-full w-1/2 object-cover mix-blend-multiply opacity-60 group-hover:scale-105 transition-transform duration-700"
-              src={bbqImage}
-              alt="Outdoor grill with skewers and steaks"
-            />
-          </div>
-        </section>
 
         <section className="mt-stack-lg grid grid-cols-12 gap-gutter-md">
           <aside className="col-span-12 lg:col-span-3 bg-surface-container-lowest border border-outline-variant rounded-xl p-inset-card hidden lg:flex flex-col gap-2">
             <div className="mb-2 px-2">
-              <h2 className="font-headline-sm text-headline-sm text-primary">Categories</h2>
-              <p className="text-label-md text-on-surface-variant">Shop by Department</p>
+              <h2 className="font-headline-sm text-headline-sm text-primary">Danh mục</h2>
+              <p className="text-label-md text-on-surface-variant">Mua sắm theo ngành hàng</p>
             </div>
-            <nav className="flex flex-col gap-1" aria-label="Product categories">
+            <nav className="flex flex-col gap-1" aria-label="Danh mục sản phẩm">
               <button
                 onClick={() => setSelectedCategory('All')}
                 className={
@@ -977,7 +934,7 @@ export const HomePage = () => {
                 type="button"
               >
                 <Icon className="w-5 h-5">shop</Icon>
-                All Departments
+                Tất cả ngành hàng
               </button>
               {(dbCategories.length > 0 ? dbCategories : categories).map((category) => {
                 const isDb = '_id' in category
@@ -1010,7 +967,7 @@ export const HomePage = () => {
           <section id="recommended-products" className="col-span-12 lg:col-span-9 scroll-mt-24">
             <div className="mb-8">
               <h2 className="font-headline-md text-headline-md">
-                {activeSearchQuery ? `Kết quả tìm kiếm cho "${activeSearchQuery}"` : "Recommended for You"}
+                {activeSearchQuery ? `Kết quả tìm kiếm cho "${activeSearchQuery}"` : "Gợi ý dành cho bạn"}
               </h2>
             </div>
 
@@ -1033,7 +990,7 @@ export const HomePage = () => {
                         try {
                           await addToCart(product._id, 1)
                         } catch (err: any) {
-                          alert(err.message || 'Failed to add to cart')
+                          alert(err.message || 'Thêm vào giỏ hàng thất bại.')
                         }
                       }}
                     />
@@ -1227,8 +1184,8 @@ export const HomePage = () => {
                 {!cart || cart.items.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center opacity-60">
                     <Icon className="text-outline w-16 h-16 mb-4 animate-bounce">shopping_cart_off</Icon>
-                    <p className="font-bold text-body-lg">Your cart is empty</p>
-                    <p className="text-body-md">Add items to start shopping!</p>
+                    <p className="font-bold text-body-lg">Giỏ hàng của bạn đang trống</p>
+                    <p className="text-body-md">Thêm sản phẩm để bắt đầu mua sắm!</p>
                   </div>
                 ) : (
                   cart.items.map((item) => {
@@ -1315,7 +1272,7 @@ export const HomePage = () => {
               {cart && cart.items.length > 0 && (
                 <div className="px-6 py-5 border-t border-outline-variant bg-surface-container-low space-y-4">
                   <div className="flex justify-between items-center text-body-lg font-bold">
-                    <span>Total Amount</span>
+                    <span>Tổng tiền</span>
                     <span className="text-primary text-headline-sm">{formatVND(cart.totalAmount)}</span>
                   </div>
                   <button
@@ -1326,7 +1283,7 @@ export const HomePage = () => {
                     className="w-full bg-primary hover:bg-on-primary-fixed-variant text-white py-4 rounded-xl font-bold text-body-md transition-all flex items-center justify-center gap-2 shadow-lg"
                     type="button"
                   >
-                    Proceed to Checkout
+                    Tiến hành thanh toán
                     <Icon>arrow_forward</Icon>
                   </button>
                 </div>
