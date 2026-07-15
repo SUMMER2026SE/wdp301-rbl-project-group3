@@ -66,7 +66,7 @@ export const AddressesPage = () => {
     try {
       const res = await addressService.deleteAddress(addressId)
       if (res.success) {
-        setAddresses((prev) => prev.filter((a) => a._id !== addressId))
+        setAddresses((prev) => prev.filter((a) => a.addressId !== addressId))
       } else {
         notify.error(res.message || 'Xóa địa chỉ thất bại')
       }
@@ -98,7 +98,7 @@ export const AddressesPage = () => {
 
     try {
       if (editingAddress) {
-        const res = await addressService.updateAddress(editingAddress._id, {
+        const res = await addressService.updateAddress(editingAddress.addressId, {
           receiverName,
           phoneNumber,
           addressDetail,
@@ -179,7 +179,7 @@ export const AddressesPage = () => {
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {addresses.map((address) => (
             <article
-              key={address._id}
+              key={address.addressId}
               className={`relative rounded-xl border bg-surface-container-lowest p-5 transition-all ${
                 address.isDefault ? 'border-primary shadow-sm bg-primary/[0.01]' : 'border-outline-variant hover:border-primary/45'
               }`}
@@ -198,7 +198,7 @@ export const AddressesPage = () => {
                       </span>
                     ) : (
                       <button
-                        onClick={() => handleSetDefault(address._id)}
+                        onClick={() => handleSetDefault(address.addressId)}
                         className="text-xs text-primary font-bold hover:underline cursor-pointer"
                       >
                         Thiết lập mặc định
@@ -223,7 +223,7 @@ export const AddressesPage = () => {
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleDelete(address._id)}
+                      onClick={() => handleDelete(address.addressId)}
                       className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-bold text-error transition-colors hover:bg-error-container/10 cursor-pointer"
                     >
                       <Trash2 size={16} />

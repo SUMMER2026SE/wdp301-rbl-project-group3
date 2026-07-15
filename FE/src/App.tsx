@@ -111,6 +111,13 @@ function AppRoutes() {
       {/* Admin / Back-office Routes */}
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<ManageOrdersPage />} />
+        <Route path="customer-overview" element={<DashboardOverview />} />
+        <Route path="orders-history" element={<OrdersPage />} />
+        <Route path="favorites" element={<FavoritesPage />} />
+        <Route path="profile" element={<DashboardProfilePage />} />
+        <Route path="addresses" element={<AddressesPage />} />
+        <Route path="vouchers" element={<VouchersPage />} />
+        <Route path="customer-settings" element={<SettingsPage />} />
         <Route path="inventory" element={<ManageInventoryPage />} />
         <Route path="branches" element={<ManageBranchesPage />} />
         <Route path="categories" element={<ManageCategoriesPage />} />

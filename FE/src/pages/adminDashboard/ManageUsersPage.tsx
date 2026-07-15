@@ -10,7 +10,8 @@ import {
   Mail,
   Phone,
   CheckCircle,
-  XCircle
+  XCircle,
+  X
 } from 'lucide-react'
 import { adminUserService } from '@services/adminUserService'
 import { useAuth } from '@hooks/useAuth'
@@ -23,6 +24,7 @@ export const ManageUsersPage = () => {
   // State variables
   const [usersList, setUsersList] = useState<User[]>([])
   const [loading, setLoading] = useState(false)
+  const [confirmLockUser, setConfirmLockUser] = useState<User | null>(null)
   const [error, setError] = useState<string | null>(null)
   
   // Search & Filter state
@@ -99,33 +101,38 @@ export const ManageUsersPage = () => {
       return
     }
     
-    const isBanned = user.status === 'banned'
+    setConfirmLockUser(user)
+  }
+
+  const confirmLockAction = async () => {
+    if (!confirmLockUser) return
+
+    const isBanned = confirmLockUser.status === 'banned'
     const actionText = isBanned ? 'mở khóa' : 'khóa'
-    
-    if (window.confirm(`Bạn có chắc chắn muốn ${actionText} tài khoản "${user.fullName}" (Email: ${user.email}) không?`)) {
-      try {
-        setLoading(true)
-        setError(null)
-        
-        let res
-        if (isBanned) {
-          res = await adminUserService.unlockUser(user.id)
-        } else {
-          res = await adminUserService.lockUser(user.id)
-        }
-        
-        if (res.success) {
-          notify.success(`Đã ${actionText} thành công tài khoản "${user.fullName}".`)
-          fetchUsers() // refresh list
-        } else {
-          setError(res.message || `Thao tác ${actionText} tài khoản thất bại.`)
-        }
-      } catch (err: any) {
-        const msg = err.response?.data?.message || err.message || `Lỗi khi thực hiện ${actionText} tài khoản.`
-        setError(msg)
-      } finally {
-        setLoading(false)
+
+    try {
+      setLoading(true)
+      setError(null)
+      
+      let res
+      if (isBanned) {
+        res = await adminUserService.unlockUser(confirmLockUser.id)
+      } else {
+        res = await adminUserService.lockUser(confirmLockUser.id)
       }
+      
+      if (res.success) {
+        notify.success(`Đã ${actionText} thành công tài khoản "${confirmLockUser.fullName}".`)
+        fetchUsers() // refresh list
+      } else {
+        setError(res.message || `Thao tác ${actionText} tài khoản thất bại.`)
+      }
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || `Lỗi khi thực hiện ${actionText} tài khoản.`
+      setError(msg)
+    } finally {
+      setLoading(false)
+      setConfirmLockUser(null)
     }
   }
 
@@ -139,7 +146,7 @@ export const ManageUsersPage = () => {
       case 'staff':
         return 'bg-primary-container text-on-primary-container border border-primary/20'
       default:
-        return 'bg-success-container text-on-success-container border border-success/20'
+        return 'bg-emerald-100 text-emerald-800 border border-emerald-600/20'
     }
   }
 
@@ -418,6 +425,62 @@ export const ManageUsersPage = () => {
                 className="inline-flex items-center justify-center rounded-xl border border-outline px-4 py-2 text-xs font-bold text-on-surface bg-surface hover:bg-surface-container-high active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
               >
                 Trang sau
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Lock User Modal */}
+      {confirmLockUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm transition-all">
+          <div className="bg-surface-container-lowest max-w-sm w-full rounded-2xl border border-outline-variant shadow-2xl overflow-hidden flex flex-col text-on-surface">
+            <div className={`p-5 flex items-center justify-between border-b border-outline-variant ${confirmLockUser.status === 'banned' ? 'bg-emerald-100 text-emerald-800' : 'bg-error-container text-on-error-container'}`}>
+              <h3 className="text-lg font-black flex items-center gap-2">
+                {confirmLockUser.status === 'banned' ? (
+                  <ShieldCheck className="w-5 h-5" />
+                ) : (
+                  <ShieldAlert className="w-5 h-5" />
+                )}
+                Xác nhận {confirmLockUser.status === 'banned' ? 'Mở khóa' : 'Khóa'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setConfirmLockUser(null)}
+                className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-black/10 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 text-sm">
+              <p className="mb-2">Bạn có chắc chắn muốn <span className="font-bold">{confirmLockUser.status === 'banned' ? 'mở khóa' : 'khóa'}</span> tài khoản này không?</p>
+              <div className="rounded-xl border border-outline-variant bg-surface-container-low p-3 mb-4">
+                <p className="font-bold text-on-surface">{confirmLockUser.fullName}</p>
+                <p className="text-on-surface-variant text-xs mt-1">{confirmLockUser.email}</p>
+              </div>
+              <p className="text-xs text-on-surface-variant">
+                {confirmLockUser.status === 'banned' 
+                  ? 'Tài khoản sau khi được mở khóa sẽ có thể đăng nhập và tiếp tục sử dụng hệ thống.'
+                  : 'Tài khoản bị khóa sẽ không thể truy cập vào hệ thống cho đến khi được mở lại.'}
+              </p>
+            </div>
+            <div className="p-4 bg-surface-container-low border-t border-outline-variant flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmLockUser(null)}
+                disabled={loading}
+                className="px-4 py-2 rounded-xl text-sm font-bold bg-surface hover:bg-surface-container-highest transition-colors disabled:opacity-50 cursor-pointer text-on-surface border border-outline-variant"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={confirmLockAction}
+                disabled={loading}
+                className={`px-4 py-2 rounded-xl text-sm font-bold text-white transition-colors disabled:opacity-50 cursor-pointer flex items-center gap-2 shadow-sm ${confirmLockUser.status === 'banned' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-error hover:bg-error/90'}`}
+              >
+                {loading && <Loader2 size={16} className="animate-spin" />}
+                Xác nhận
               </button>
             </div>
           </div>
