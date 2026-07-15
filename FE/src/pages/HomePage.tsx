@@ -343,6 +343,8 @@ export const HomePage = () => {
   const [hasLoadedProducts, setHasLoadedProducts] = useState(false)
   const [dbCategories, setDbCategories] = useState<DbCategory[]>([])
   const [publicSettings, setPublicSettings] = useState<Record<string, any>>({})
+  const [confirmClearCart, setConfirmClearCart] = useState(false)
+  const [confirmRemoveItem, setConfirmRemoveItem] = useState<any | null>(null)
 
   const [activeBanners, setActiveBanners] = useState<Banner[]>([])
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0)
@@ -1196,15 +1198,7 @@ export const HomePage = () => {
                 <div className="flex items-center gap-2">
                   {cart && cart.items.length > 0 && (
                     <button
-                      onClick={async () => {
-                        if (window.confirm('Are you sure you want to clear your cart?')) {
-                          try {
-                            await clearCart()
-                          } catch (err: any) {
-                            alert(err.message)
-                          }
-                        }
-                      }}
+                      onClick={() => setConfirmClearCart(true)}
                       className="text-error font-bold text-label-md flex items-center gap-1 hover:bg-error/10 px-3 py-1.5 rounded-lg transition-colors"
                       type="button"
                     >
@@ -1252,13 +1246,7 @@ export const HomePage = () => {
                         </div>
                         <div className="flex flex-col items-end gap-2">
                           <button
-                            onClick={async () => {
-                              try {
-                                await removeItem(item.itemId)
-                              } catch (err: any) {
-                                alert(err.message)
-                              }
-                            }}
+                            onClick={() => setConfirmRemoveItem(item)}
                             className="text-on-surface-variant hover:text-error transition-colors"
                             type="button"
                             aria-label={`Remove ${item.product.name}`}
@@ -1275,11 +1263,7 @@ export const HomePage = () => {
                                     alert(err.message)
                                   }
                                 } else {
-                                  try {
-                                    await removeItem(item.itemId)
-                                  } catch (err: any) {
-                                    alert(err.message)
-                                  }
+                                  setConfirmRemoveItem(item)
                                 }
                               }}
                               className="w-7 h-7 flex items-center justify-center hover:bg-surface-container-high transition-colors font-bold"
@@ -1419,6 +1403,117 @@ export const HomePage = () => {
                   )
                 })
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Clear Cart Modal */}
+      {confirmClearCart && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm transition-all">
+          <div className="bg-surface-container-lowest max-w-sm w-full rounded-2xl border border-outline-variant shadow-2xl overflow-hidden flex flex-col text-on-surface">
+            <div className="p-5 flex items-center justify-between border-b border-outline-variant bg-error-container text-on-error-container">
+              <h3 className="text-lg font-black flex items-center gap-2">
+                <Icon className="w-5 h-5">delete</Icon>
+                Xóa giỏ hàng
+              </h3>
+              <button
+                type="button"
+                onClick={() => setConfirmClearCart(false)}
+                className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-black/10 transition-colors cursor-pointer"
+              >
+                <Icon className="w-5 h-5">close</Icon>
+              </button>
+            </div>
+            <div className="p-5 text-sm">
+              <p className="mb-2">Bạn có chắc chắn muốn xóa tất cả sản phẩm ra khỏi giỏ hàng không?</p>
+              <p className="text-xs text-error font-semibold mt-4">
+                Lưu ý: Thao tác này không thể hoàn tác.
+              </p>
+            </div>
+            <div className="p-4 bg-surface-container-low border-t border-outline-variant flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmClearCart(false)}
+                className="px-4 py-2 rounded-xl text-sm font-bold bg-surface hover:bg-surface-container-highest transition-colors cursor-pointer text-on-surface border border-outline-variant"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setConfirmClearCart(false)
+                  try {
+                    await clearCart()
+                  } catch (err: any) {
+                    alert(err.message)
+                  }
+                }}
+                className="px-4 py-2 rounded-xl text-sm font-bold text-white transition-colors cursor-pointer flex items-center gap-2 shadow-sm bg-error hover:bg-error/90"
+              >
+                Xác nhận xóa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Remove Item Modal */}
+      {confirmRemoveItem && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm transition-all">
+          <div className="bg-surface-container-lowest max-w-sm w-full rounded-2xl border border-outline-variant shadow-2xl overflow-hidden flex flex-col text-on-surface">
+            <div className="p-5 flex items-center justify-between border-b border-outline-variant bg-error-container text-on-error-container">
+              <h3 className="text-lg font-black flex items-center gap-2">
+                <Icon className="w-5 h-5">delete</Icon>
+                Xóa sản phẩm
+              </h3>
+              <button
+                type="button"
+                onClick={() => setConfirmRemoveItem(null)}
+                className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-black/10 transition-colors cursor-pointer"
+              >
+                <Icon className="w-5 h-5">close</Icon>
+              </button>
+            </div>
+            <div className="p-5 text-sm">
+              <p className="mb-2">Bạn có chắc chắn muốn xóa sản phẩm này ra khỏi giỏ hàng?</p>
+              <div className="rounded-xl border border-outline-variant bg-surface-container-low p-3 mb-4 flex gap-3">
+                <div className="w-12 h-12 rounded-lg bg-surface flex items-center justify-center overflow-hidden">
+                  <img
+                    src={confirmRemoveItem.product.imageUrl || productImageMap[confirmRemoveItem.product.productName || confirmRemoveItem.product.name] || '/assets/winmart/tomatoes.png'}
+                    alt={confirmRemoveItem.product.productName || confirmRemoveItem.product.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div>
+                  <p className="font-bold text-on-surface">{confirmRemoveItem.product.productName || confirmRemoveItem.product.name}</p>
+                  <p className="text-on-surface-variant text-xs mt-1">Số lượng: {confirmRemoveItem.quantity}</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-4 bg-surface-container-low border-t border-outline-variant flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmRemoveItem(null)}
+                className="px-4 py-2 rounded-xl text-sm font-bold bg-surface hover:bg-surface-container-highest transition-colors cursor-pointer text-on-surface border border-outline-variant"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const itemId = confirmRemoveItem.itemId
+                  setConfirmRemoveItem(null)
+                  try {
+                    await removeItem(itemId)
+                  } catch (err: any) {
+                    alert(err.message)
+                  }
+                }}
+                className="px-4 py-2 rounded-xl text-sm font-bold text-white transition-colors cursor-pointer flex items-center gap-2 shadow-sm bg-error hover:bg-error/90"
+              >
+                Xác nhận xóa
+              </button>
             </div>
           </div>
         </div>
