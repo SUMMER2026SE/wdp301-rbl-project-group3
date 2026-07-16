@@ -37,7 +37,7 @@ export const authenticate = async (
       throw new AppError('Account is not active', 403);
     }
     if (
-      user.refreshTokenVersion !== payload.tokenVersion ||
+      (user.refreshTokenVersion ?? 0) !== payload.tokenVersion ||
       user.role !== payload.role
     ) {
       throw new AppError('Session is no longer valid. Please login again.', 401);

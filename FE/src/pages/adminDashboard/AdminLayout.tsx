@@ -67,8 +67,8 @@ export const AdminLayout = () => {
     return <Navigate to="/login" replace />
   }
 
-  const displayName = user.fullName || 'Staff'
-  const roleLabel = user.role
+  const displayName = user.fullName || 'Nhân viên'
+  const roleLabel = user.role === 'admin' ? 'Quản trị viên' : user.role === 'branch_manager' ? 'Quản lý chi nhánh' : 'Nhân viên'
 
   const customerRoutes = [
     '/admin/customer-overview',
@@ -256,7 +256,7 @@ export const AdminLayout = () => {
               <div className="hidden sm:block">
                 <p className="text-lg font-black leading-none text-primary">PMAN-Mart Admin</p>
                 <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-on-surface-variant">
-                  Back-Office Portal
+                  Cổng quản trị nội bộ
                 </p>
               </div>
             </Link>
@@ -434,10 +434,31 @@ export const AdminLayout = () => {
                 Admin
               </Link>
               <ChevronRight size={16} />
-              <span className="font-bold text-on-surface capitalize">
-                {location.pathname === '/admin'
-                  ? 'Đơn hàng'
-                  : location.pathname.split('/').pop()}
+              <span className="font-bold text-on-surface">
+                {(() => {
+                  if (location.pathname === '/admin') return 'Đơn hàng'
+                  const lastPath = location.pathname.split('/').pop() || ''
+                  const routeNames: Record<string, string> = {
+                    settings: 'Cài đặt hệ thống',
+                    inventory: 'Kho hàng',
+                    branches: 'Chi nhánh',
+                    categories: 'Danh mục',
+                    users: 'Thành viên',
+                    promotions: 'Khuyến mãi',
+                    'flash-sales': 'Flash Sale',
+                    banners: 'Banner',
+                    employees: 'Nhân viên',
+                    statistics: 'Thống kê & Báo cáo',
+                    shifts: 'Lịch & Ca làm',
+                    profile: 'Hồ sơ cá nhân',
+                    addresses: 'Sổ địa chỉ',
+                    vouchers: 'Kho Voucher',
+                    'customer-overview': 'Tổng quan',
+                    'orders-history': 'Đơn hàng của tôi',
+                    'customer-settings': 'Cài đặt',
+                  }
+                  return routeNames[lastPath] || lastPath
+                })()}
               </span>
             </div>
 

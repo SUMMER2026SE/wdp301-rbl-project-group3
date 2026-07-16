@@ -81,6 +81,45 @@ const UNIT_LABELS: Record<string, string> = {
   loyalty_points_per_10k: 'điểm / 10.000đ',
 }
 
+const SETTING_TRANSLATIONS: Record<string, { label: string; description?: string }> = {
+  store_name: {
+    label: 'Tên cửa hàng',
+    description: 'Tên hiển thị của hệ thống cửa hàng',
+  },
+  hotline: {
+    label: 'Hotline',
+    description: 'Số điện thoại đường dây nóng của hệ thống',
+  },
+  support_email: {
+    label: 'Email hỗ trợ',
+    description: 'Địa chỉ thư điện tử nhận các yêu cầu phản hồi từ khách hàng',
+  },
+  maintenance_mode: {
+    label: 'Chế độ bảo trì',
+    description: 'Khi kích hoạt, trang bán hàng sẽ hiển thị thông báo bảo trì đối với khách hàng.',
+  },
+  min_order_amount: {
+    label: 'Giá trị đơn hàng tối thiểu',
+    description: 'Mức tiền tối thiểu (VND) để đơn hàng có thể được đặt và thanh toán.',
+  },
+  order_cancel_timeout_minutes: {
+    label: 'Thời gian chờ hủy đơn',
+    description: 'Số phút tối đa cho phép đơn hàng chờ xác nhận trước khi tự động hủy.',
+  },
+  free_shipping_threshold: {
+    label: 'Ngưỡng miễn phí giao hàng',
+    description: 'Tổng giá trị đơn hàng tối thiểu (VND) để khách hàng được miễn phí giao hàng.',
+  },
+  default_delivery_fee: {
+    label: 'Phí giao hàng mặc định',
+    description: 'Phí vận chuyển mặc định áp dụng cho đơn hàng (VND).',
+  },
+  vat_rate: {
+    label: 'Thuế suất VAT',
+    description: 'Tỷ lệ phần trăm thuế VAT áp dụng trên mỗi đơn hàng.',
+  },
+}
+
 // ─── Format VND helper ───────────────────────────────────────────────────────
 const formatVND = (val: number) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val)
@@ -323,6 +362,10 @@ export const ManageSystemSettingsPage = () => {
                   const unit = UNIT_LABELS[setting.key]
                   const currentValue = localValues[setting.key] ?? setting.value
 
+                  const translation = SETTING_TRANSLATIONS[setting.key]
+                  const displayLabel = translation?.label || setting.label
+                  const displayDesc = translation?.description || setting.description
+
                   return (
                     <div
                       key={setting.key}
@@ -337,7 +380,7 @@ export const ManageSystemSettingsPage = () => {
                             htmlFor={`setting-${setting.key}`}
                             className="text-sm font-bold text-on-surface cursor-pointer"
                           >
-                            {setting.label}
+                            {displayLabel}
                           </label>
                           {isDirty && (
                             <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-amber-700">
@@ -350,10 +393,10 @@ export const ManageSystemSettingsPage = () => {
                             </span>
                           )}
                         </div>
-                        {setting.description && (
+                        {displayDesc && (
                           <p className="flex items-center gap-1.5 text-xs text-on-surface-variant">
                             <Info size={11} className="shrink-0 opacity-60" />
-                            {setting.description}
+                            {displayDesc}
                           </p>
                         )}
                         <code className="text-[10px] font-mono text-on-surface-variant/60">
@@ -501,7 +544,7 @@ export const ManageSystemSettingsPage = () => {
                     .filter((s) => s.valueType === 'number' && UNIT_LABELS[s.key] === 'VND')
                     .map((s) => (
                       <span key={s.key} className="mr-3">
-                        <strong>{s.label}</strong>:{' '}
+                        <strong>{SETTING_TRANSLATIONS[s.key]?.label || s.label}</strong>:{' '}
                         {formatVND(Number(localValues[s.key] ?? s.value))}
                       </span>
                     ))}

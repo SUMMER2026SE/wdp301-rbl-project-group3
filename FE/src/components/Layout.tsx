@@ -9,7 +9,7 @@ export const Layout = ({ children }: LayoutProps) => {
     <div className="layout">
       <header className="layout-header">
         <nav className="layout-nav">
-          <a href="/">Home</a>
+          <a href="/">Trang chủ</a>
         </nav>
       </header>
       <main className="layout-main">{children}</main>
