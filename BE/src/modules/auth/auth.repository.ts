@@ -1,7 +1,7 @@
 import { Types } from 'mongoose';
 import { User, IUser } from '../../models/user.model';
 import { UserToken, IUserToken } from '../../models/userToken.model';
-import { PasswordReset, IPasswordReset } from '../../models/passwordReset.model';
+import { PasswordReset, IPasswordReset, PasswordResetType } from '../../models/passwordReset.model';
 import { DeviceInfo } from '../../types/common.types';
 
 export class AuthRepository {
@@ -31,16 +31,16 @@ export class AuthRepository {
     return User.findByIdAndUpdate(id, data, { new: true }).exec();
   }
 
-  async setEmailVerifyToken(userId: string, tokenHash: string, expires: Date): Promise<void> {
+  async setEmailVerifyOtp(userId: string, otpHash: string, expires: Date): Promise<void> {
     await User.findByIdAndUpdate(userId, {
-      emailVerifyToken: tokenHash,
+      emailVerifyToken: otpHash,
       emailVerifyTokenExpires: expires,
     }).exec();
   }
 
-  async findUserByEmailVerifyToken(tokenHash: string): Promise<IUser | null> {
+  async findUserByEmailVerifyOtp(otpHash: string): Promise<IUser | null> {
     return User.findOne({
-      emailVerifyToken: tokenHash,
+      emailVerifyToken: otpHash,
       emailVerifyTokenExpires: { $gt: new Date() },
     })
       .select('+emailVerifyToken +emailVerifyTokenExpires')
@@ -51,6 +51,13 @@ export class AuthRepository {
     await User.findByIdAndUpdate(userId, {
       isEmailVerified: true,
       status: 'active',
+      emailVerifyToken: undefined,
+      emailVerifyTokenExpires: undefined,
+    }).exec();
+  }
+
+  async clearEmailVerifyOtp(userId: string): Promise<void> {
+    await User.findByIdAndUpdate(userId, {
       emailVerifyToken: undefined,
       emailVerifyTokenExpires: undefined,
     }).exec();
@@ -110,20 +117,26 @@ export class AuthRepository {
     await UserToken.findByIdAndUpdate(tokenId, { refreshTokenHash, expiresAt }).exec();
   }
 
-  // ─── PasswordReset ───────────────────────────────────────
-  async createPasswordReset(data: {
+  // ─── PasswordReset (OTP) ─────────────────────────────────
+  async createPasswordResetOtp(data: {
     userId: Types.ObjectId;
     tokenHash: string;
+    type: PasswordResetType;
     expiresAt: Date;
   }): Promise<IPasswordReset> {
-    await PasswordReset.deleteMany({ userId: data.userId });
+    // Xoá OTP cũ cùng type trước khi tạo mới
+    await PasswordReset.deleteMany({ userId: data.userId, type: data.type });
     const reset = new PasswordReset(data);
     return reset.save();
   }
 
-  async findPasswordResetByTokenHash(tokenHash: string): Promise<IPasswordReset | null> {
+  async findPasswordResetOtp(
+    tokenHash: string,
+    type: PasswordResetType
+  ): Promise<IPasswordReset | null> {
     return PasswordReset.findOne({
       tokenHash,
+      type,
       expiresAt: { $gt: new Date() },
       usedAt: { $exists: false },
     }).exec();

@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google'
 import { useAuth } from '@hooks/useAuth'
 import { authService } from '@services/authService'
-import { Mail, Lock, User as UserIcon, Phone, AlertCircle, Loader, CheckCircle } from 'lucide-react'
+import { Mail, Lock, User as UserIcon, Phone, AlertCircle, Loader, CheckCircle, Eye, EyeOff } from 'lucide-react'
+import { notify } from '@utils/toast'
 
 type ApiError = {
   response?: {
@@ -34,6 +35,8 @@ export const RegisterPage = () => {
   const [showOtp, setShowOtp] = useState(false)
   const [otp, setOtp] = useState('')
   const [otpLoading, setOtpLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -78,9 +81,10 @@ export const RegisterPage = () => {
     setOtpLoading(true)
 
     try {
-      await authService.verifyEmail(otp)
+      await authService.verifyEmail(email, otp)
       setSuccess(true)
       setShowOtp(false)
+      notify.success('Đăng ký và xác thực tài khoản thành công!')
       setTimeout(() => {
         navigate('/login')
       }, 3000)
@@ -100,8 +104,12 @@ export const RegisterPage = () => {
       }
 
       await authService.googleLogin(credentialResponse.credential)
-      navigate('/')
-      window.location.reload() // Reload to update auth state
+      // Remove the token so they are not automatically logged in
+      localStorage.removeItem('accessToken')
+      notify.success('Đăng ký bằng Google thành công! Chuyển hướng đến trang đăng nhập...')
+      setTimeout(() => {
+        navigate('/login')
+      }, 3000)
     } catch (err) {
       setError(getErrorMessage(err, 'Google login failed'))
     }
@@ -290,13 +298,23 @@ export const RegisterPage = () => {
                 />
                 <input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-surface-container-low border-none rounded-lg py-3 px-12 focus:ring-2 focus:ring-primary transition-all"
                   placeholder="********"
                   disabled={loading}
                 />
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setShowPassword(!showPassword)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowPassword(!showPassword); }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors cursor-pointer flex items-center justify-center h-full w-10"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </div>
               </div>
             </div>
 
@@ -314,13 +332,23 @@ export const RegisterPage = () => {
                 />
                 <input
                   id="confirmPassword"
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="w-full bg-surface-container-low border-none rounded-lg py-3 px-12 focus:ring-2 focus:ring-primary transition-all"
                   placeholder="********"
                   disabled={loading}
                 />
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowConfirmPassword(!showConfirmPassword); }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors cursor-pointer flex items-center justify-center h-full w-10"
+                  aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                >
+                  {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </div>
               </div>
             </div>
 

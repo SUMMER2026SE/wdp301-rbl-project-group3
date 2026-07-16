@@ -1,0 +1,9 @@
+{
+	"id": "hI7d6cAAC6jWHVO",
+	"json": "{\"id\":\"hI7d6cAAC6jWHVO\",\"url\":\"https://winmart.vn/products/koreno-paldo-mi-vi-kim-chi-100g--s10007821?storeGroupCode=1998&storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/products/koreno-paldo-mi-vi-kim-chi-100g--s10007821?storeCode=1535&storeGroupCode=1998\",\"uniqueKey\":\"https://winmart.vn/products/koreno-paldo-mi-vi-kim-chi-100g--s10007821?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-07-13T19:09:12.386Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/products/koreno-paldo-mi-vi-kim-chi-100g--s10007821?storeCode=1535&storeGroupCode=1998",
+	"url": "https://winmart.vn/products/koreno-paldo-mi-vi-kim-chi-100g--s10007821?storeGroupCode=1998&storeCode=1535"
+}

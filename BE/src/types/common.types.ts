@@ -1,4 +1,4 @@
-export type UserRole = 'superadmin' | 'admin' | 'manager' | 'staff' | 'customer';
+export type UserRole = 'admin' | 'branch_manager' | 'staff' | 'customer';
 export type UserStatus = 'active' | 'inactive' | 'banned';
 export type AuthProvider = 'local' | 'google';
 export type DeviceType = 'web' | 'mobile' | 'unknown';
@@ -13,6 +13,7 @@ export interface JwtAccessPayload {
 export interface JwtRefreshPayload {
   userId: string;
   tokenId: string;
+  tokenVersion: number;
 }
 
 export interface DeviceInfo {

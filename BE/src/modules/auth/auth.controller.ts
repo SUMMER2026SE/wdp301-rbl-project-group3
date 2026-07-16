@@ -21,13 +21,21 @@ const clearRefreshCookie = (res: Response): void => {
 export class AuthController {
   register = asyncHandler(async (req: Request, res: Response) => {
     const result = await authService.register(req.body);
-    sendSuccess(res, result, result.message, 201);
+    sendSuccess(res, null, result.message, 201);
   });
 
+  // Xác thực email sau đăng ký — nhận email + otp (không cần đăng nhập)
   verifyEmail = asyncHandler(async (req: Request, res: Response) => {
-    const { token } = req.body;
-    const result = await authService.verifyEmail(token);
-    sendSuccess(res, result, result.message);
+    const { email, otp } = req.body;
+    const result = await authService.verifyEmailWithOtp(email, otp);
+    sendSuccess(res, null, result.message);
+  });
+
+  // Gửi lại OTP xác thực email (không cần đăng nhập)
+  resendEmailOtp = asyncHandler(async (req: Request, res: Response) => {
+    const { email } = req.body;
+    const result = await authService.resendEmailVerificationOtp(email);
+    sendSuccess(res, null, result.message);
   });
 
   login = asyncHandler(async (req: Request, res: Response) => {
@@ -50,7 +58,7 @@ export class AuthController {
   refreshToken = asyncHandler(async (req: Request, res: Response) => {
     const refreshToken =
       req.cookies?.refreshToken ||
-      req.headers['x-refresh-token'] as string ||
+      (req.headers['x-refresh-token'] as string) ||
       req.body?.refreshToken;
 
     if (!refreshToken) throw new AppError('Refresh token required', 401);
@@ -68,7 +76,7 @@ export class AuthController {
   logout = asyncHandler(async (req: Request, res: Response) => {
     const refreshToken =
       req.cookies?.refreshToken ||
-      req.headers['x-refresh-token'] as string ||
+      (req.headers['x-refresh-token'] as string) ||
       req.body?.refreshToken;
 
     if (refreshToken) {
@@ -83,7 +91,7 @@ export class AuthController {
     const userId = req.user!.userId;
     const result = await authService.logoutAll(userId);
     clearRefreshCookie(res);
-    sendSuccess(res, result, result.message);
+    sendSuccess(res, null, result.message);
   });
 
   forgotPassword = asyncHandler(async (req: Request, res: Response) => {
@@ -92,9 +100,10 @@ export class AuthController {
     sendSuccess(res, null, result.message);
   });
 
+  // Reset password — nhận email + otp + newPassword
   resetPassword = asyncHandler(async (req: Request, res: Response) => {
-    const { token, newPassword } = req.body;
-    const result = await authService.resetPassword(token, newPassword);
+    const { email, otp, newPassword } = req.body;
+    const result = await authService.resetPassword(otp, newPassword);
     clearRefreshCookie(res);
     sendSuccess(res, null, result.message);
   });
@@ -107,18 +116,14 @@ export class AuthController {
     sendSuccess(res, null, result.message);
   });
 
+  // Yêu cầu OTP xác thực email (khi đã đăng nhập)
   requestEmailVerificationOtp = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!.userId;
     const result = await authService.requestEmailVerificationOtp(userId);
     sendSuccess(res, null, result.message);
   });
 
-  requestPasswordChangeOtp = asyncHandler(async (req: Request, res: Response) => {
-    const userId = req.user!.userId;
-    const result = await authService.requestPasswordChangeOtp(userId);
-    sendSuccess(res, null, result.message);
-  });
-
+  // Xác thực email bằng OTP (khi đã đăng nhập)
   verifyEmailOtp = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!.userId;
     const { otp } = req.body;
@@ -126,6 +131,14 @@ export class AuthController {
     sendSuccess(res, null, result.message);
   });
 
+  // Yêu cầu OTP để đổi mật khẩu (khi đã đăng nhập)
+  requestPasswordChangeOtp = asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!.userId;
+    const result = await authService.requestPasswordChangeOtp(userId);
+    sendSuccess(res, null, result.message);
+  });
+
+  // Đổi mật khẩu bằng OTP (khi đã đăng nhập)
   changePasswordWithOtp = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!.userId;
     const { otp, newPassword } = req.body;

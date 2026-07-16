@@ -1,8 +1,10 @@
 import mongoose, { Document, Types } from 'mongoose';
+export type PasswordResetType = 'forgot_password' | 'change_password';
 export interface IPasswordReset extends Document {
     _id: Types.ObjectId;
     userId: Types.ObjectId;
     tokenHash: string;
+    type: PasswordResetType;
     expiresAt: Date;
     usedAt?: Date;
     createdAt: Date;

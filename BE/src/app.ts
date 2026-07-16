@@ -7,6 +7,8 @@ import { env } from './config/env.config';
 import { connectDatabase } from './config/database.config';
 import apiRoutes from './routes/index';
 import { errorHandler } from './middlewares/errorHandler.middleware';
+import { initCrawlerCron } from './modules/crawler/crawler.cron';
+import { maintenanceModeMiddleware } from './middlewares/maintenanceMode.middleware';
 
 const app = express();
 
@@ -31,6 +33,9 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// ─── Maintenance Mode Guard ────────────────────────────────
+app.use(maintenanceModeMiddleware);
+
 // ─── API Routes ────────────────────────────────────────────
 app.use('/api', apiRoutes);
 
@@ -45,6 +50,7 @@ app.use(errorHandler);
 // ─── Start Server ──────────────────────────────────────────
 const start = async () => {
   await connectDatabase();
+  initCrawlerCron();
   app.listen(env.port, () => {
     console.log(`Server running on port ${env.port} [${env.nodeEnv}]`);
   });

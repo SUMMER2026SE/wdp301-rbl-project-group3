@@ -1,0 +1,9 @@
+{
+	"id": "2OW0k9tF13aElG9",
+	"json": "{\"id\":\"2OW0k9tF13aElG9\",\"url\":\"https://winmart.vn/products/trung-nguyen-cafe-gourmetblend-500g--s10012831?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/trung-nguyen-cafe-gourmetblend-500g--s10012831?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"crawlDepth\":2,\"enqueueStrategy\":\"same-hostname\"}}}",
+	"method": "GET",
+	"orderNo": 1783969319741,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/products/trung-nguyen-cafe-gourmetblend-500g--s10012831?storeCode=1535&storeGroupCode=1998",
+	"url": "https://winmart.vn/products/trung-nguyen-cafe-gourmetblend-500g--s10012831?storeGroupCode=1998&storeCode=1535"
+}

@@ -1,0 +1,1 @@
+{"version":3,"file":"crawler.config.js","sourceRoot":"","sources":["../../../src/modules/crawler/crawler.config.ts"],"names":[],"mappings":";;;AAAa,QAAA,aAAa,GAAG;IAC3B,0BAA0B;IAC1B,SAAS,EAAE;QACT,qBAAqB;KACtB;IAED,oBAAoB;IACpB,mBAAmB,EAAE,IAAI,EAAE,kEAAkE;IAC7F,cAAc,EAAE,CAAC,EAAU,iEAAiE;IAC5F,yBAAyB,EAAE,EAAE;CAC9B,CAAC"}

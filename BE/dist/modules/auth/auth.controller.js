@@ -21,12 +21,19 @@ class AuthController {
     constructor() {
         this.register = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
             const result = await auth_service_1.authService.register(req.body);
-            (0, response_util_1.sendSuccess)(res, result, result.message, 201);
+            (0, response_util_1.sendSuccess)(res, null, result.message, 201);
         });
+        // Xác thực email sau đăng ký — nhận email + otp (không cần đăng nhập)
         this.verifyEmail = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
-            const { token } = req.body;
-            const result = await auth_service_1.authService.verifyEmail(token);
-            (0, response_util_1.sendSuccess)(res, result, result.message);
+            const { email, otp } = req.body;
+            const result = await auth_service_1.authService.verifyEmailWithOtp(email, otp);
+            (0, response_util_1.sendSuccess)(res, null, result.message);
+        });
+        // Gửi lại OTP xác thực email (không cần đăng nhập)
+        this.resendEmailOtp = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
+            const { email } = req.body;
+            const result = await auth_service_1.authService.resendEmailVerificationOtp(email);
+            (0, response_util_1.sendSuccess)(res, null, result.message);
         });
         this.login = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
             const deviceInfo = (0, deviceInfo_util_1.extractDeviceInfo)(req);
@@ -66,16 +73,17 @@ class AuthController {
             const userId = req.user.userId;
             const result = await auth_service_1.authService.logoutAll(userId);
             clearRefreshCookie(res);
-            (0, response_util_1.sendSuccess)(res, result, result.message);
+            (0, response_util_1.sendSuccess)(res, null, result.message);
         });
         this.forgotPassword = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
             const { email } = req.body;
             const result = await auth_service_1.authService.forgotPassword(email);
             (0, response_util_1.sendSuccess)(res, null, result.message);
         });
+        // Reset password — nhận email + otp + newPassword
         this.resetPassword = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
-            const { token, newPassword } = req.body;
-            const result = await auth_service_1.authService.resetPassword(token, newPassword);
+            const { email, otp, newPassword } = req.body;
+            const result = await auth_service_1.authService.resetPassword(otp, newPassword);
             clearRefreshCookie(res);
             (0, response_util_1.sendSuccess)(res, null, result.message);
         });
@@ -86,22 +94,26 @@ class AuthController {
             clearRefreshCookie(res);
             (0, response_util_1.sendSuccess)(res, null, result.message);
         });
+        // Yêu cầu OTP xác thực email (khi đã đăng nhập)
         this.requestEmailVerificationOtp = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
             const userId = req.user.userId;
             const result = await auth_service_1.authService.requestEmailVerificationOtp(userId);
             (0, response_util_1.sendSuccess)(res, null, result.message);
         });
-        this.requestPasswordChangeOtp = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
-            const userId = req.user.userId;
-            const result = await auth_service_1.authService.requestPasswordChangeOtp(userId);
-            (0, response_util_1.sendSuccess)(res, null, result.message);
-        });
+        // Xác thực email bằng OTP (khi đã đăng nhập)
         this.verifyEmailOtp = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
             const userId = req.user.userId;
             const { otp } = req.body;
             const result = await auth_service_1.authService.verifyEmailOtp(userId, otp);
             (0, response_util_1.sendSuccess)(res, null, result.message);
         });
+        // Yêu cầu OTP để đổi mật khẩu (khi đã đăng nhập)
+        this.requestPasswordChangeOtp = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
+            const userId = req.user.userId;
+            const result = await auth_service_1.authService.requestPasswordChangeOtp(userId);
+            (0, response_util_1.sendSuccess)(res, null, result.message);
+        });
+        // Đổi mật khẩu bằng OTP (khi đã đăng nhập)
         this.changePasswordWithOtp = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
             const userId = req.user.userId;
             const { otp, newPassword } = req.body;

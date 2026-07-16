@@ -26,5 +26,6 @@ export declare const env: {
     google: {
         clientId: string;
     };
+    geminiApiKey: string;
 };
 //# sourceMappingURL=env.config.d.ts.map

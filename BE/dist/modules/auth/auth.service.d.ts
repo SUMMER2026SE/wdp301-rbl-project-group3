@@ -8,13 +8,13 @@ export declare class AuthService {
     }): Promise<{
         message: string;
     }>;
-    verifyEmail(token: string): Promise<{
+    verifyEmailWithOtp(email: string, otp: string): Promise<{
+        message: string;
+    }>;
+    resendEmailVerificationOtp(email: string): Promise<{
         message: string;
     }>;
     requestEmailVerificationOtp(userId: string): Promise<{
-        message: string;
-    }>;
-    requestPasswordChangeOtp(userId: string): Promise<{
         message: string;
     }>;
     verifyEmailOtp(userId: string, otp: string): Promise<{
@@ -37,19 +37,20 @@ export declare class AuthService {
         accessToken: string;
         refreshToken: string;
     }>;
-    logout(refreshToken: string): Promise<{
-        message: string;
-    }>;
+    logout(refreshToken: string): Promise<void>;
     logoutAll(userId: string): Promise<{
         message: string;
     }>;
     forgotPassword(email: string): Promise<{
         message: string;
     }>;
-    resetPassword(token: string, newPassword: string): Promise<{
+    resetPassword(otp: string, newPassword: string): Promise<{
         message: string;
     }>;
     changePassword(userId: string, currentPassword: string, newPassword: string): Promise<{
+        message: string;
+    }>;
+    requestPasswordChangeOtp(userId: string): Promise<{
         message: string;
     }>;
     changePasswordWithOtp(userId: string, otp: string, newPassword: string): Promise<{

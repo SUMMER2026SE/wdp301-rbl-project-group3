@@ -1,0 +1,9 @@
+{
+	"id": "qYK5X4cMz8QOhyb",
+	"json": "{\"id\":\"qYK5X4cMz8QOhyb\",\"url\":\"https://winmart.vn/info/about\",\"loadedUrl\":\"https://winmart.vn/info/about\",\"uniqueKey\":\"https://winmart.vn/info/about\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-07-13T19:13:39.166Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/info/about",
+	"url": "https://winmart.vn/info/about"
+}

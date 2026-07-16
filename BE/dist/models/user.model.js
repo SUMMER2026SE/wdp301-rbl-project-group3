@@ -43,7 +43,7 @@ const UserSchema = new mongoose_1.Schema({
     address: { type: String, trim: true },
     role: {
         type: String,
-        enum: ['superadmin', 'admin', 'manager', 'staff', 'customer'],
+        enum: ['admin', 'branch_manager', 'staff', 'customer'],
         default: 'customer',
     },
     branchId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Branch' },
@@ -63,6 +63,13 @@ const UserSchema = new mongoose_1.Schema({
         enum: ['active', 'inactive', 'banned'],
         default: 'inactive',
     },
+    points: { type: Number, default: 0, min: 0 },
+    lifetimePoints: { type: Number, default: 0, min: 0 },
+    memberLevel: {
+        type: String,
+        enum: ['new', 'bronze', 'silver', 'gold', 'diamond'],
+        default: 'new',
+    },
     lastLoginAt: { type: Date },
     passwordChangedAt: { type: Date },
 }, {
@@ -71,5 +78,13 @@ const UserSchema = new mongoose_1.Schema({
 });
 UserSchema.index({ email: 1 });
 UserSchema.index({ googleId: 1 });
+UserSchema.index({ branchId: 1, role: 1 }, {
+    unique: true,
+    partialFilterExpression: {
+        role: 'branch_manager',
+        status: 'active',
+        branchId: { $exists: true },
+    },
+});
 exports.User = mongoose_1.default.model('User', UserSchema);
 //# sourceMappingURL=user.model.js.map

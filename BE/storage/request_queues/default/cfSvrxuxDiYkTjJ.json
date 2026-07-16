@@ -1,0 +1,9 @@
+{
+	"id": "cfSvrxuxDiYkTjJ",
+	"json": "{\"id\":\"cfSvrxuxDiYkTjJ\",\"url\":\"https://winmart.vn/products/doi-dua-vang-khoai-mon-le-pho-khay-260g--s10006984?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/doi-dua-vang-khoai-mon-le-pho-khay-260g--s10006984?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"crawlDepth\":2,\"enqueueStrategy\":\"same-hostname\"}}}",
+	"method": "GET",
+	"orderNo": 1783969376183,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/products/doi-dua-vang-khoai-mon-le-pho-khay-260g--s10006984?storeCode=1535&storeGroupCode=1998",
+	"url": "https://winmart.vn/products/doi-dua-vang-khoai-mon-le-pho-khay-260g--s10006984?storeGroupCode=1998&storeCode=1535"
+}

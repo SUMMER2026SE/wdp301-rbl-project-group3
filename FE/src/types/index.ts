@@ -2,14 +2,38 @@ export interface User {
   id: string
   fullName: string
   email: string
-  role: 'customer' | 'admin'
+  role: 'customer' | 'admin' | 'branch_manager' | 'staff'
+  branchId?: string
   avatarUrl?: string
   phone?: string
   isEmailVerified: boolean
   status: 'active' | 'inactive' | 'banned'
   authProvider: 'local' | 'google'
+  points?: number
+  lifetimePoints?: number
+  memberLevel?: 'new' | 'bronze' | 'silver' | 'gold' | 'diamond'
   createdAt?: Date
   updatedAt?: Date
+}
+
+export interface Employee {
+  id: string
+  fullName: string
+  email: string
+  phone: string | null
+  address: string | null
+  role: 'branch_manager' | 'staff'
+  status: 'active' | 'inactive' | 'banned'
+  branch: {
+    id: string
+    name?: string
+    code?: string
+    address?: string
+    status?: string
+  } | null
+  lastLoginAt: string | Date | null
+  createdAt: string | Date
+  updatedAt: string | Date
 }
 
 export interface AuthResponse {
@@ -50,3 +74,403 @@ export interface ErrorResponse {
   message: string
   statusCode?: number
 }
+
+export interface CartProduct {
+  id: string
+  name: string
+  price: number
+  unit?: string
+  imageUrl?: string
+}
+
+export interface CartItem {
+  itemId: string
+  product: CartProduct
+  quantity: number
+  subtotal: number
+  addedAt: string
+}
+
+export interface CartResponse {
+  cartId: string
+  items: CartItem[]
+  totalItems: number
+  totalAmount: number
+}
+
+export interface Product {
+  _id: string
+  productName: string
+  name?: string
+  categoryId: string
+  costPrice?: number      // giá vốn nhập gốc
+  salePrice?: number      // giá bán ra khách
+  sku?: string
+  description?: string
+  unit?: string
+  imageUrl?: string
+  barcode?: string
+  status: boolean | string | 'active' | 'inactive'
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface CompetitorProduct {
+  _id: string
+  name: string
+  sku: string
+  price: number
+  description?: string
+  brand?: string
+  unit?: string
+  imageUrl?: string
+  source: string
+  sourceUrl?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface OrderItem {
+  productId: string
+  productName: string
+  sku?: string
+  unit?: string
+  imageUrl?: string | null
+  quantity: number
+  price?: number
+  unitPrice?: number
+  subtotal: number
+}
+
+export type OrderStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'preparing'
+  | 'delivering'
+  | 'delivered'
+  | 'cancelled'
+
+export interface Order {
+  orderId: string
+  code?: string
+  status: OrderStatus
+  branch?: {
+    branchId: string
+    name?: string
+    code?: string
+    address?: string
+    phone?: string | null
+  }
+  paymentMethod?: 'COD' | 'banking' | 'momo' | 'vnpay'
+  paymentStatus?: 'pending' | 'paid' | 'failed' | 'refunded'
+  shippingAddress?: string
+  deliveryAddress?: string | null
+  phoneNumber?: string
+  note?: string | null
+  orderDate?: string
+  items: OrderItem[]
+  totalAmount: number
+  createdAt: string
+  updatedAt?: string
+}
+
+export interface PlaceOrderInput {
+  branchId: string
+  shippingAddress: string
+  phoneNumber: string
+  note?: string
+  paymentMethod: 'COD' | 'banking' | 'momo' | 'vnpay'
+  selectedItemIds?: string[]
+  voucherCode?: string
+}
+
+export interface OrdersListResponse {
+  orders: Order[]
+  total: number
+  page: number
+  limit: number
+}
+
+export interface Branch {
+  _id: string
+  name: string
+  code: string
+  address: string
+  phone?: string
+  managerId?: string
+  status: 'active' | 'inactive'
+  openingTime?: string
+  closingTime?: string
+  activeDays?: string[]
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface InventoryProduct {
+  _id: string
+  name: string
+  productName?: string
+  sku: string
+  unit: string
+  costPrice?: number
+  salePrice: number
+  imageUrl?: string
+}
+
+export interface InventoryBranch {
+  _id: string
+  name: string
+  code: string
+  address?: string
+}
+
+export interface Inventory {
+  _id: string
+  branchId: InventoryBranch | string
+  productId: InventoryProduct
+  quantity: number
+  averageCost: number
+  lastImportCost?: number
+  lowStockThreshold: number
+  updatedBy?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface ImportReceiptItem {
+  productId: InventoryProduct
+  quantity: number
+  unitCost: number
+  subtotal: number
+  verified?: boolean
+  verifiedQuantity?: number
+}
+
+export interface ImportReceipt {
+  _id: string
+  code: string
+  branchId: InventoryBranch
+  supplierName?: string
+  note?: string
+  items: ImportReceiptItem[]
+  totalCost: number
+  createdBy: { _id: string; fullName: string; email: string }
+  createdAt: string
+  updatedAt?: string
+  status: 'active' | 'adjusting' | 'cancelled'
+  verificationStatus?: 'pending' | 'verified' | 'partially_verified'
+  verifiedBy?: { _id: string; fullName: string; email: string }
+  verifiedAt?: string
+  verificationNote?: string
+}
+
+export interface CreateImportReceiptInput {
+  branchId: string
+  supplierName?: string
+  note?: string
+  items: {
+    productId: string
+    quantity: number
+    unitCost: number
+  }[]
+}
+
+export type AdminOrderStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'preparing'
+  | 'delivering'
+  | 'delivered'
+  | 'cancelled'
+
+export interface AdminOrderItem {
+  productId: {
+    _id: string
+    productName: string
+    name?: string
+    sku?: string
+    unit?: string
+    imageUrl?: string
+  } | string
+  quantity: number
+  unitPrice: number
+  subtotal: number
+}
+
+export interface AdminOrder {
+  _id: string
+  code: string
+  customerId: {
+    _id: string
+    fullName: string
+    email: string
+    phone?: string
+  } | string
+  branchId: {
+    _id: string
+    name: string
+    code: string
+    address?: string
+  } | string
+  items: AdminOrderItem[]
+  totalAmount: number
+  status: AdminOrderStatus
+  deliveryAddress?: string
+  note?: string
+  confirmedBy?: {
+    _id: string
+    fullName: string
+    email: string
+  } | string
+  confirmedAt?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Category {
+  _id: string
+  name: string
+  code: string
+  description?: string
+  minMargin?: number
+  status: 'active' | 'inactive'
+  createdAt: string
+  updatedAt: string
+}
+
+export interface PromotionVoucherDetail {
+  code: string
+  isClaimed: boolean
+  claimStatus: 'active' | 'used' | null
+  pointCost?: number
+  targetMemberLevel?: 'all' | 'new' | 'bronze' | 'silver' | 'gold' | 'diamond'
+}
+
+export interface Promotion {
+  id: string
+  name: string
+  description?: string
+  discountType: 'percentage' | 'fixed_amount'
+  discountValue: number
+  maxDiscountAmount?: number
+  minOrderAmount?: number
+  pointCost?: number
+  targetMemberLevel?: 'all' | 'new' | 'bronze' | 'silver' | 'gold' | 'diamond'
+  scope: 'global' | 'branch'
+  branchId?: string
+  startDate: string
+  endDate: string
+  status: 'draft' | 'active' | 'inactive' | 'expired'
+  usageLimit?: number
+  vouchers?: string[]
+  vouchersDetail?: PromotionVoucherDetail[]
+  isEligible?: boolean
+  ineligibleReason?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Voucher {
+  id: string
+  code: string
+  promotionId: string
+  discountType: 'percentage' | 'fixed_amount'
+  discountValue: number
+  maxDiscountAmount?: number
+  minOrderAmount?: number
+  branchId?: string
+  expiresAt: string
+  status: 'active' | 'used' | 'expired' | 'disabled'
+  pointCost?: number
+  targetMemberLevel?: 'all' | 'new' | 'bronze' | 'silver' | 'gold' | 'diamond'
+  createdAt: string
+}
+
+export interface FlashSaleProduct {
+  productId: Product | string
+  flashSalePrice: number
+  limitQuantity: number
+  soldQuantity: number
+}
+
+export interface FlashSale {
+  id: string
+  _id?: string
+  name: string
+  description?: string
+  startDate: string
+  endDate: string
+  scope: 'global' | 'branch'
+  branchId?: Branch | string
+  products: FlashSaleProduct[]
+  status: 'draft' | 'active' | 'inactive' | 'expired'
+  createdBy?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface VoucherLookupResponse {
+  voucher: Voucher
+  discountAmount: number;
+}
+
+export interface ActivePromotionsResponse {
+  data: Promotion[]
+  pagination: {
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+  }
+}
+
+export type SettingValueType = 'string' | 'number' | 'boolean'
+export type SettingGroup = 'general' | 'order' | 'delivery' | 'inventory' | 'payment' | 'loyalty'
+
+export interface SystemSetting {
+  id: string
+  key: string
+  label: string
+  group: SettingGroup
+  value: string | number | boolean
+  valueType: SettingValueType
+  description?: string
+  isPublic: boolean
+  updatedBy?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface SystemSettingGroups {
+  groups: Record<SettingGroup, SystemSetting[]>
+}
+
+export interface UserAddress {
+  addressId: string
+  _id?: string
+  userId: string
+  receiverName: string
+  phoneNumber: string
+  addressDetail: string
+  isDefault: boolean
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface Banner {
+  id: string
+  _id?: string
+  title: string
+  subtitle: string
+  description?: string
+  promoCode?: string
+  imageUrl: string
+  linkUrl?: string
+  status: 'active' | 'inactive'
+  order: number
+  createdBy?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+

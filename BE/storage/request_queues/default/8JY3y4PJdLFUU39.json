@@ -1,0 +1,9 @@
+{
+	"id": "8JY3y4PJdLFUU39",
+	"json": "{\"id\":\"8JY3y4PJdLFUU39\",\"url\":\"https://winmart.vn/cham-tay-gia-soc\",\"loadedUrl\":\"https://winmart.vn/cham-tay-gia-soc\",\"uniqueKey\":\"https://winmart.vn/cham-tay-gia-soc\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-07-13T19:06:18.794Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/cham-tay-gia-soc",
+	"url": "https://winmart.vn/cham-tay-gia-soc"
+}

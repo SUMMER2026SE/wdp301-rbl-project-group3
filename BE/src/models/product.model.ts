@@ -8,12 +8,17 @@ export interface IProduct extends Document {
   sku: string;
   description?: string;
   categoryId?: Types.ObjectId;
+  brand?: string;
   unit: string;
+  costPrice: number;
   salePrice: number;
   imageUrl?: string;
   status: ProductStatus;
   createdAt: Date;
   updatedAt: Date;
+  normalizedName?: string;
+  normalizedBrand?: string;
+  normalizedUnit?: string;
 }
 
 const ProductSchema = new Schema<IProduct>(
@@ -22,14 +27,19 @@ const ProductSchema = new Schema<IProduct>(
     sku: { type: String, required: true, unique: true, uppercase: true, trim: true },
     description: { type: String, trim: true },
     categoryId: { type: Schema.Types.ObjectId, ref: 'Category' },
+    brand: { type: String, trim: true },
     unit: { type: String, required: true, trim: true, default: 'item' },
-    salePrice: { type: Number, required: true, min: 0, default: 0 },
+    costPrice: { type: Number, required: false, min: 0, default: 0 },
+    salePrice: { type: Number, required: false, min: 0, default: 0 },
     imageUrl: { type: String },
     status: {
       type: String,
       enum: ['active', 'inactive'],
       default: 'active',
     },
+    normalizedName: { type: String, index: true },
+    normalizedBrand: { type: String, index: true },
+    normalizedUnit: { type: String, index: true },
   },
   {
     timestamps: true,
@@ -37,7 +47,6 @@ const ProductSchema = new Schema<IProduct>(
   }
 );
 
-ProductSchema.index({ sku: 1 });
 ProductSchema.index({ name: 'text' });
 ProductSchema.index({ status: 1 });
 

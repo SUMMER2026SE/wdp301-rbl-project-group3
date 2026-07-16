@@ -38,6 +38,7 @@ export const generateTokenPair = (user: {
   const refreshToken = generateRefreshToken({
     userId: user._id.toString(),
     tokenId,
+    tokenVersion: user.refreshTokenVersion,
   });
 
   return { accessToken, refreshToken };

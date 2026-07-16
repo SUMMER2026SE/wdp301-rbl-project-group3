@@ -11,6 +11,8 @@ const env_config_1 = require("./config/env.config");
 const database_config_1 = require("./config/database.config");
 const index_1 = __importDefault(require("./routes/index"));
 const errorHandler_middleware_1 = require("./middlewares/errorHandler.middleware");
+const crawler_cron_1 = require("./modules/crawler/crawler.cron");
+const maintenanceMode_middleware_1 = require("./middlewares/maintenanceMode.middleware");
 const app = (0, express_1.default)();
 // ─── Security Middlewares ──────────────────────────────────
 app.use((0, helmet_1.default)());
@@ -28,6 +30,8 @@ app.use((0, cookie_parser_1.default)());
 app.get('/health', (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+// ─── Maintenance Mode Guard ────────────────────────────────
+app.use(maintenanceMode_middleware_1.maintenanceModeMiddleware);
 // ─── API Routes ────────────────────────────────────────────
 app.use('/api', index_1.default);
 // ─── 404 Handler ───────────────────────────────────────────
@@ -39,6 +43,7 @@ app.use(errorHandler_middleware_1.errorHandler);
 // ─── Start Server ──────────────────────────────────────────
 const start = async () => {
     await (0, database_config_1.connectDatabase)();
+    (0, crawler_cron_1.initCrawlerCron)();
     app.listen(env_config_1.env.port, () => {
         console.log(`Server running on port ${env_config_1.env.port} [${env_config_1.env.nodeEnv}]`);
     });
