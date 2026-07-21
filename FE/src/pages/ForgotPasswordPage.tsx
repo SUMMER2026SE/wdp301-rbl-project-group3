@@ -39,7 +39,7 @@ export const ForgotPasswordPage = () => {
     setSuccess('')
     
     if (!email) {
-      setError('Please enter your email')
+      setError('Vui lòng nhập địa chỉ email của bạn')
       return
     }
 
@@ -47,9 +47,9 @@ export const ForgotPasswordPage = () => {
     try {
       await authService.forgotPassword(email)
       setStep('otp')
-      setSuccess('If your email exists in our system, an OTP has been sent.')
+      setSuccess('Nếu email của bạn tồn tại trong hệ thống, mã OTP đã được gửi đi.')
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to request OTP'))
+      setError(getErrorMessage(err, 'Yêu cầu gửi mã OTP thất bại'))
     } finally {
       setLoading(false)
     }
@@ -61,25 +61,25 @@ export const ForgotPasswordPage = () => {
     setSuccess('')
 
     if (newPassword !== confirmPassword) {
-      setError('Passwords do not match')
+      setError('Mật khẩu xác nhận không khớp')
       return
     }
     
     if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters')
+      setError('Mật khẩu phải chứa ít nhất 8 ký tự')
       return
     }
 
     setLoading(true)
     try {
       await authService.resetPassword(email, otp, newPassword)
-      setSuccess('Password has been reset successfully. You can now login.')
+      setSuccess('Mật khẩu đã được đặt lại thành công. Bạn đã có thể đăng nhập.')
       notify.success('Đổi mật khẩu thành công! Chuyển hướng đến trang đăng nhập...')
       setTimeout(() => {
         navigate('/login')
       }, 3000)
     } catch (err) {
-      setError(getErrorMessage(err, 'Invalid or expired OTP'))
+      setError(getErrorMessage(err, 'Mã OTP không hợp lệ hoặc đã hết hạn'))
     } finally {
       setLoading(false)
     }
@@ -93,16 +93,16 @@ export const ForgotPasswordPage = () => {
           <div className="mb-6">
             <Link to="/login" className="inline-flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors text-sm font-bold">
               <ArrowLeft size={16} />
-              Back to login
+              Quay lại đăng nhập
             </Link>
           </div>
 
           <div className="text-center mb-8">
             <h1 className="font-headline-lg text-headline-lg text-primary mb-2">
-              Forgot Password
+              Quên mật khẩu
             </h1>
             <p className="text-body-md text-on-surface-variant">
-              {step === 'email' ? 'Enter your email to receive an OTP' : 'Enter the OTP and your new password'}
+              {step === 'email' ? 'Nhập email của bạn để nhận mã OTP' : 'Nhập mã OTP và mật khẩu mới'}
             </p>
           </div>
 
@@ -124,7 +124,7 @@ export const ForgotPasswordPage = () => {
             <form onSubmit={handleRequestOtp} className="space-y-5">
               <div>
                 <label htmlFor="email" className="block text-label-md font-label-md text-on-surface mb-2">
-                  Email Address
+                  Địa chỉ Email
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant" size={20} />
@@ -134,7 +134,7 @@ export const ForgotPasswordPage = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full bg-surface-container-low border-none rounded-lg py-3 px-12 focus:ring-2 focus:ring-primary transition-all"
-                    placeholder="your@email.com"
+                    placeholder="email@example.com"
                     disabled={loading}
                     required
                   />
@@ -146,14 +146,14 @@ export const ForgotPasswordPage = () => {
                 disabled={loading || !email}
                 className="w-full bg-primary text-white py-3 rounded-lg font-bold text-label-lg hover:bg-primary-container hover:text-on-primary-container transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {loading ? <Loader className="animate-spin" size={20} /> : 'Send OTP'}
+                {loading ? <Loader className="animate-spin" size={20} /> : 'Gửi mã OTP'}
               </button>
             </form>
           ) : (
              <form onSubmit={handleResetPassword} className="space-y-5">
               <div>
                 <label className="block text-label-md font-label-md text-on-surface mb-2">
-                  OTP Code
+                  Mã OTP
                 </label>
                 <input
                   type="text"
@@ -163,14 +163,14 @@ export const ForgotPasswordPage = () => {
                   onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
                   className="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-center text-2xl font-black tracking-[0.5em] focus:ring-2 focus:ring-primary transition-all"
                   placeholder="000000"
-                  disabled={loading || success.includes('successfully')}
+                  disabled={loading || success.includes('successfully') || success.includes('thành công')}
                   required
                 />
               </div>
 
               <div>
                 <label className="block text-label-md font-label-md text-on-surface mb-2">
-                  New Password
+                  Mật khẩu mới
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant" size={20} />
@@ -180,7 +180,7 @@ export const ForgotPasswordPage = () => {
                     onChange={(e) => setNewPassword(e.target.value)}
                     className="w-full bg-surface-container-low border-none rounded-lg py-3 px-12 focus:ring-2 focus:ring-primary transition-all"
                     placeholder="********"
-                    disabled={loading || success.includes('successfully')}
+                    disabled={loading || success.includes('successfully') || success.includes('thành công')}
                     required
                   />
                   <div
@@ -189,7 +189,7 @@ export const ForgotPasswordPage = () => {
                     onClick={() => setShowNewPassword(!showNewPassword)}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowNewPassword(!showNewPassword); }}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors cursor-pointer flex items-center justify-center h-full w-10"
-                    aria-label={showNewPassword ? "Hide password" : "Show password"}
+                    aria-label={showNewPassword ? "Ẩn mật khẩu" : "Hiển thị mật khẩu"}
                   >
                     {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </div>
@@ -198,7 +198,7 @@ export const ForgotPasswordPage = () => {
 
               <div>
                 <label className="block text-label-md font-label-md text-on-surface mb-2">
-                  Confirm New Password
+                  Xác nhận mật khẩu mới
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant" size={20} />
@@ -208,7 +208,7 @@ export const ForgotPasswordPage = () => {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className="w-full bg-surface-container-low border-none rounded-lg py-3 px-12 focus:ring-2 focus:ring-primary transition-all"
                     placeholder="********"
-                    disabled={loading || success.includes('successfully')}
+                    disabled={loading || success.includes('successfully') || success.includes('thành công')}
                     required
                   />
                   <div
@@ -217,7 +217,7 @@ export const ForgotPasswordPage = () => {
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowConfirmPassword(!showConfirmPassword); }}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors cursor-pointer flex items-center justify-center h-full w-10"
-                    aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                    aria-label={showConfirmPassword ? "Ẩn xác nhận mật khẩu" : "Hiển thị xác nhận mật khẩu"}
                   >
                     {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </div>
@@ -226,10 +226,10 @@ export const ForgotPasswordPage = () => {
 
               <button
                 type="submit"
-                disabled={loading || otp.length !== 6 || success.includes('successfully')}
+                disabled={loading || otp.length !== 6 || success.includes('successfully') || success.includes('thành công')}
                 className="w-full bg-primary text-white py-3 rounded-lg font-bold text-label-lg hover:bg-primary-container hover:text-on-primary-container transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {loading ? <Loader className="animate-spin" size={20} /> : 'Reset Password'}
+                {loading ? <Loader className="animate-spin" size={20} /> : 'Đặt lại mật khẩu'}
               </button>
             </form>
           )}

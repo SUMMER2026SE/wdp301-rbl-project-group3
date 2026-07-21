@@ -129,6 +129,14 @@ const categories: Category[] = [
 
 const heroImage = '/assets/winmart/hero-market.png'
 
+const ALL_BRANCH: Branch = {
+  _id: '',
+  name: 'Tất cả chi nhánh',
+  code: 'ALL',
+  address: 'Hiển thị sản phẩm từ tất cả chi nhánh hệ thống',
+  status: 'active'
+}
+
 
 const getCountdownTime = (endDateStr?: string): CountdownTime => {
   if (!endDateStr) {
@@ -412,9 +420,13 @@ export const HomePage = () => {
         if (savedBranchStr) {
           try {
             const parsed = JSON.parse(savedBranchStr)
-            const found = res.data.find((b) => b._id === parsed._id)
-            if (found) {
-              activeBranch = found
+            if (parsed && parsed._id === '') {
+              activeBranch = ALL_BRANCH
+            } else {
+              const found = res.data.find((b) => b._id === parsed._id)
+              if (found) {
+                activeBranch = found
+              }
             }
           } catch (e) {
             console.error('Failed to parse saved branch', e)
@@ -797,73 +809,75 @@ export const HomePage = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-stack-lg">
-        <section
-          className="w-full min-w-0 relative overflow-hidden rounded-xl h-[520px] sm:h-[460px] lg:h-[420px] bg-primary group"
-          onMouseMove={handleHeroMouseMove}
-          onMouseLeave={handleHeroMouseLeave}
-        >
-          <img
-            ref={heroImageRef}
-            className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-80 transition-transform duration-700 group-hover:scale-105"
-            src={currentBanner ? currentBanner.imageUrl : heroImage}
-            alt={currentBanner ? currentBanner.title : "Premium organic supermarket aisle with fresh produce"}
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent flex flex-col justify-center px-6 md:px-12 text-white">
-            <span className="bg-secondary text-white font-bold px-4 py-1 rounded-full w-fit mb-4 text-label-lg animate-bounce">
-              {currentBanner ? "Ưu Đãi Đặc Biệt" : "Exclusive Offer"}
-            </span>
-            <h2 className="font-headline-lg text-[36px] sm:text-[40px] md:text-[48px] leading-tight mb-4 max-w-[11ch] sm:max-w-none">
-              {currentBanner ? currentBanner.title : "Fresh Food Festival"}
-              <br />
-              <span className="text-primary-fixed">{currentBanner ? currentBanner.subtitle : "Up to 30% OFF"}</span>
-            </h2>
-            <p className="text-body-lg mb-8 opacity-90 max-w-[280px] sm:max-w-sm md:max-w-none">
-              {currentBanner ? currentBanner.description : "Experience the peak of season's harvest with our premium organic selection."}
-              {currentBanner?.promoCode && (
-                <>
-                  <br />
-                  Mã code: <span className="font-bold border-b-2 border-primary-fixed">{currentBanner.promoCode}</span>
-                </>
-              )}
-              {!currentBanner && (
-                <>
-                  <br />
-                  Use code: <span className="font-bold border-b-2 border-primary-fixed">FRESH2026</span>
-                </>
-              )}
-            </p>
-            <button
-              onClick={() => {
-                const targetId = currentBanner?.linkUrl || '#recommended-products';
-                if (targetId.startsWith('#')) {
-                  document.getElementById(targetId.substring(1))?.scrollIntoView({ behavior: 'smooth' });
-                } else {
-                  navigate(targetId);
-                }
-              }}
-              className="beveled-btn bg-primary-container hover:bg-primary text-on-primary-container hover:text-white px-8 py-4 rounded-xl font-bold w-fit transition-all flex items-center gap-2 group-hover:translate-x-2"
-              type="button"
-            >
-              Shop Now <Icon>arrow_forward</Icon>
-            </button>
-          </div>
-
-          {/* Dot Indicators for carousel */}
-          {activeBanners.length > 1 && (
-            <div className="absolute bottom-4 right-4 flex gap-2 z-10">
-              {activeBanners.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setCurrentBannerIndex(idx)}
-                  className={`w-2.5 h-2.5 rounded-full transition-all ${idx === currentBannerIndex ? 'bg-primary w-6' : 'bg-white/50 hover:bg-white'
-                    }`}
-                  type="button"
-                  aria-label={`Go to slide ${idx + 1}`}
-                />
-              ))}
+        {activeBanners.length > 0 && (
+          <section
+            className="w-full min-w-0 relative overflow-hidden rounded-xl h-[520px] sm:h-[460px] lg:h-[420px] bg-primary group mb-8"
+            onMouseMove={handleHeroMouseMove}
+            onMouseLeave={handleHeroMouseLeave}
+          >
+            <img
+              ref={heroImageRef}
+              className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-80 transition-transform duration-700 group-hover:scale-105"
+              src={currentBanner ? currentBanner.imageUrl : heroImage}
+              alt={currentBanner ? currentBanner.title : "Premium organic supermarket aisle with fresh produce"}
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent flex flex-col justify-center px-6 md:px-12 text-white">
+              <span className="bg-secondary text-white font-bold px-4 py-1 rounded-full w-fit mb-4 text-label-lg animate-bounce">
+                {currentBanner ? "Ưu Đãi Đặc Biệt" : "Exclusive Offer"}
+              </span>
+              <h2 className="font-headline-lg text-[36px] sm:text-[40px] md:text-[48px] leading-tight mb-4 max-w-[11ch] sm:max-w-none">
+                {currentBanner ? currentBanner.title : "Fresh Food Festival"}
+                <br />
+                <span className="text-primary-fixed">{currentBanner ? currentBanner.subtitle : "Up to 30% OFF"}</span>
+              </h2>
+              <p className="text-body-lg mb-8 opacity-90 max-w-[280px] sm:max-w-sm md:max-w-none">
+                {currentBanner ? currentBanner.description : "Experience the peak of season's harvest with our premium organic selection."}
+                {currentBanner?.promoCode && (
+                  <>
+                    <br />
+                    Mã code: <span className="font-bold border-b-2 border-primary-fixed">{currentBanner.promoCode}</span>
+                  </>
+                )}
+                {!currentBanner && (
+                  <>
+                    <br />
+                    Use code: <span className="font-bold border-b-2 border-primary-fixed">FRESH2026</span>
+                  </>
+                )}
+              </p>
+              <button
+                onClick={() => {
+                  const targetId = currentBanner?.linkUrl || '#recommended-products';
+                  if (targetId.startsWith('#')) {
+                    document.getElementById(targetId.substring(1))?.scrollIntoView({ behavior: 'smooth' });
+                  } else {
+                    navigate(targetId);
+                  }
+                }}
+                className="beveled-btn bg-primary-container hover:bg-primary text-on-primary-container hover:text-white px-8 py-4 rounded-xl font-bold w-fit transition-all flex items-center gap-2 group-hover:translate-x-2"
+                type="button"
+              >
+                Shop Now <Icon>arrow_forward</Icon>
+              </button>
             </div>
-          )}
-        </section>
+
+            {/* Dot Indicators for carousel */}
+            {activeBanners.length > 1 && (
+              <div className="absolute bottom-4 right-4 flex gap-2 z-10">
+                {activeBanners.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentBannerIndex(idx)}
+                    className={`w-2.5 h-2.5 rounded-full transition-all ${idx === currentBannerIndex ? 'bg-primary w-6' : 'bg-white/50 hover:bg-white'
+                      }`}
+                    type="button"
+                    aria-label={`Go to slide ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        )}
 
         <section className="mt-stack-lg">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3 mb-6">
@@ -1324,7 +1338,37 @@ export const HomePage = () => {
                   <p className="text-xs mt-1">Vui lòng thử từ khóa khác.</p>
                 </div>
               ) : (
-                filteredBranches.map((branch) => {
+                <>
+                  {/* Option: Tất cả chi nhánh */}
+                  <div
+                    onClick={() => handleSelectBranch(ALL_BRANCH)}
+                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 flex items-center justify-between gap-4 mb-3 ${
+                      selectedBranch?._id === ''
+                        ? 'border-primary bg-primary/5'
+                        : 'border-outline-variant/40 hover:border-primary/30 hover:bg-surface-container-low'
+                    }`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
+                          selectedBranch?._id === '' ? 'bg-primary text-white' : 'bg-surface-container-highest text-on-surface-variant'
+                        }`}>
+                          ALL
+                        </span>
+                        <h4 className="font-black text-sm truncate text-on-surface">Tất cả chi nhánh</h4>
+                      </div>
+                      <p className="text-xs text-on-surface-variant mt-1.5 line-clamp-2 leading-relaxed">
+                        Hiển thị sản phẩm từ tất cả chi nhánh thuộc hệ thống siêu thị PMAN-Mart
+                      </p>
+                    </div>
+                    <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${
+                      selectedBranch?._id === '' ? 'border-primary bg-primary' : 'border-outline'
+                    }`}>
+                      {selectedBranch?._id === '' && <div className="w-2 h-2 rounded-full bg-white" />}
+                    </div>
+                  </div>
+
+                  {filteredBranches.map((branch) => {
                   const isSelected = selectedBranch?._id === branch._id
                   return (
                     <div
@@ -1358,7 +1402,8 @@ export const HomePage = () => {
                       </div>
                     </div>
                   )
-                })
+                })}
+                </>
               )}
             </div>
           </div>
