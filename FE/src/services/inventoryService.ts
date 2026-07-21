@@ -1,6 +1,11 @@
 import apiClient from '@services/api'
 import type { ApiResponse, Inventory, ImportReceipt, CreateImportReceiptInput } from '@/types'
 
+const unwrapReceiptResponse = (raw: any): ApiResponse<ImportReceipt> => ({
+  ...raw,
+  data: raw.data?.receipt ?? raw.data,
+})
+
 export const inventoryService = {
   // Get inventory records (lowStock, branchId, productId)
   getInventory: async (params?: {
@@ -66,7 +71,7 @@ export const inventoryService = {
   // Create a new import receipt and add stock
   createImportReceipt: async (data: CreateImportReceiptInput): Promise<ApiResponse<ImportReceipt>> => {
     const response = await apiClient.post('/api/inventory/import-receipts', data)
-    return response.data
+    return unwrapReceiptResponse(response.data)
   },
 
   // Manually add a product stock entry to branch inventory
@@ -109,6 +114,21 @@ export const inventoryService = {
     }
   ): Promise<ApiResponse<ImportReceipt>> => {
     const response = await apiClient.post(`/api/inventory/import-receipts/${id}/verify`, data)
-    return response.data
+    return unwrapReceiptResponse(response.data)
+  },
+
+  // Approve a pending import receipt (Admin only)
+  approveImportReceipt: async (id: string): Promise<ApiResponse<ImportReceipt>> => {
+    const response = await apiClient.post(`/api/inventory/import-receipts/${id}/approve`)
+    return unwrapReceiptResponse(response.data)
+  },
+
+  // Reject a pending import receipt (Admin only)
+  rejectImportReceipt: async (
+    id: string,
+    reason: string
+  ): Promise<ApiResponse<ImportReceipt>> => {
+    const response = await apiClient.post(`/api/inventory/import-receipts/${id}/reject`, { reason })
+    return unwrapReceiptResponse(response.data)
   },
 }
