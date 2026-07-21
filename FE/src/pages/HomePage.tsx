@@ -293,9 +293,8 @@ const RecommendedCard = ({ product, onAddToCart }: { product: any; onAddToCart?:
         {hasFavorite ? (
           <button
             onClick={handleFavoriteClick}
-            className={`absolute bottom-2 right-2 p-2 rounded-full shadow-md transition-all translate-y-2 group-hover:translate-y-0 group-hover:opacity-100 ${
-              favorited ? 'bg-error text-white opacity-100 translate-y-0' : 'bg-white/90 text-primary opacity-0'
-            }`}
+            className={`absolute bottom-2 right-2 p-2 rounded-full shadow-md transition-all translate-y-2 group-hover:translate-y-0 group-hover:opacity-100 ${favorited ? 'bg-error text-white opacity-100 translate-y-0' : 'bg-white/90 text-primary opacity-0'
+              }`}
             type="button"
             aria-label={`Favorite ${title}`}
           >
@@ -899,14 +898,33 @@ export const HomePage = () => {
             </a>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-gutter-md">
-            {!activeFlashSale || !activeFlashSale.products || activeFlashSale.products.length === 0 ? (
-              <div className="col-span-full text-center py-12 text-on-surface-variant bg-surface-container-low rounded-xl border border-outline-variant/30">
-                <p className="text-sm font-bold">Không có sản phẩm Flash Sale nào đang hoạt động tại chi nhánh này</p>
-              </div>
-            ) : (
-              activeFlashSale.products.slice(0, 5).map((fp: any) => {
+            {(() => {
+              if (!activeFlashSale || !activeFlashSale.products || activeFlashSale.products.length === 0) {
+                return (
+                  <div className="col-span-full text-center py-12 text-on-surface-variant bg-surface-container-low rounded-xl border border-outline-variant/30">
+                    <p className="text-sm font-bold">Không có sản phẩm Flash Sale nào đang hoạt động tại chi nhánh này</p>
+                  </div>
+                )
+              }
+
+              // Lọc các sản phẩm có tồn kho tại chi nhánh hiện tại (hoặc hiển thị toàn bộ nếu chọn Tất cả chi nhánh)
+              const availableFlashProducts = activeFlashSale.products.filter((fp: any) => {
                 const product = fp.productId
-                if (!product) return null
+                if (!product) return false
+                const productIdStr = typeof product === 'object' && product !== null ? product._id : product
+                return selectedBranch?._id === '' || dbProducts.some((p) => p._id === productIdStr)
+              })
+
+              if (availableFlashProducts.length === 0) {
+                return (
+                  <div className="col-span-full text-center py-12 text-on-surface-variant bg-surface-container-low rounded-xl border border-outline-variant/30">
+                    <p className="text-sm font-bold">Không có sản phẩm Flash Sale nào đang hoạt động tại chi nhánh này</p>
+                  </div>
+                )
+              }
+
+              return availableFlashProducts.slice(0, 5).map((fp: any) => {
+                const product = fp.productId
                 const productIdStr = typeof product === 'object' && product !== null ? product._id : product
 
                 return (
@@ -928,7 +946,7 @@ export const HomePage = () => {
                   />
                 )
               })
-            )}
+            })()}
           </div>
         </section>
 
@@ -1214,6 +1232,11 @@ export const HomePage = () => {
                           <p className="text-primary font-bold text-body-md mt-1">
                             {formatVND(item.product.price)}
                           </p>
+                          {item.product.isAvailable === false && (
+                            <span className="text-[10px] font-bold text-error bg-error-container/20 border border-error/10 px-2 py-0.5 rounded-full mt-1.5 inline-block">
+                              Hết hàng tại chi nhánh này
+                            </span>
+                          )}
                         </div>
                         <div className="flex flex-col items-end gap-2">
                           <button
@@ -1267,25 +1290,41 @@ export const HomePage = () => {
               </div>
 
               {/* Footer */}
-              {cart && cart.items.length > 0 && (
-                <div className="px-6 py-5 border-t border-outline-variant bg-surface-container-low space-y-4">
-                  <div className="flex justify-between items-center text-body-lg font-bold">
-                    <span>Tổng tiền</span>
-                    <span className="text-primary text-headline-sm">{formatVND(cart.totalAmount)}</span>
+              {cart && cart.items.length > 0 && (() => {
+                const hasUnavailableItems = cart.items.some(item => item.product.isAvailable === false);
+                return (
+                  <div className="px-6 py-5 border-t border-outline-variant bg-surface-container-low space-y-4">
+                    {hasUnavailableItems && (
+                      <div className="bg-error-container/20 text-error p-3 rounded-xl flex items-start gap-2 text-xs font-bold border border-error/15 leading-relaxed">
+                        <Icon className="text-sm shrink-0 mt-0.5">error</Icon>
+                        <span>Giỏ hàng có sản phẩm hết hàng hoặc không đủ tồn kho tại chi nhánh này. Vui lòng gỡ bỏ để tiếp tục thanh toán.</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center text-body-lg font-bold">
+                      <span>Tổng tiền</span>
+                      <span className="text-primary text-headline-sm">{formatVND(cart.totalAmount)}</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (!hasUnavailableItems) {
+                          setIsCartOpen(false)
+                          navigate('/checkout')
+                        }
+                      }}
+                      disabled={hasUnavailableItems}
+                      className={`w-full py-4 rounded-xl font-bold text-body-md transition-all flex items-center justify-center gap-2 shadow-lg ${
+                        hasUnavailableItems
+                          ? 'bg-outline-variant/40 text-on-surface-variant/40 cursor-not-allowed shadow-none'
+                          : 'bg-primary hover:bg-on-primary-fixed-variant text-white cursor-pointer'
+                      }`}
+                      type="button"
+                    >
+                      Tiến hành thanh toán
+                      <Icon>arrow_forward</Icon>
+                    </button>
                   </div>
-                  <button
-                    onClick={() => {
-                      setIsCartOpen(false)
-                      navigate('/checkout')
-                    }}
-                    className="w-full bg-primary hover:bg-on-primary-fixed-variant text-white py-4 rounded-xl font-bold text-body-md transition-all flex items-center justify-center gap-2 shadow-lg"
-                    type="button"
-                  >
-                    Tiến hành thanh toán
-                    <Icon>arrow_forward</Icon>
-                  </button>
-                </div>
-              )}
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -1342,17 +1381,15 @@ export const HomePage = () => {
                   {/* Option: Tất cả chi nhánh */}
                   <div
                     onClick={() => handleSelectBranch(ALL_BRANCH)}
-                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 flex items-center justify-between gap-4 mb-3 ${
-                      selectedBranch?._id === ''
+                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 flex items-center justify-between gap-4 mb-3 ${selectedBranch?._id === ''
                         ? 'border-primary bg-primary/5'
                         : 'border-outline-variant/40 hover:border-primary/30 hover:bg-surface-container-low'
-                    }`}
+                      }`}
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
-                          selectedBranch?._id === '' ? 'bg-primary text-white' : 'bg-surface-container-highest text-on-surface-variant'
-                        }`}>
+                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${selectedBranch?._id === '' ? 'bg-primary text-white' : 'bg-surface-container-highest text-on-surface-variant'
+                          }`}>
                           ALL
                         </span>
                         <h4 className="font-black text-sm truncate text-on-surface">Tất cả chi nhánh</h4>
@@ -1361,48 +1398,47 @@ export const HomePage = () => {
                         Hiển thị sản phẩm từ tất cả chi nhánh thuộc hệ thống siêu thị PMAN-Mart
                       </p>
                     </div>
-                    <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${
-                      selectedBranch?._id === '' ? 'border-primary bg-primary' : 'border-outline'
-                    }`}>
+                    <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${selectedBranch?._id === '' ? 'border-primary bg-primary' : 'border-outline'
+                      }`}>
                       {selectedBranch?._id === '' && <div className="w-2 h-2 rounded-full bg-white" />}
                     </div>
                   </div>
 
                   {filteredBranches.map((branch) => {
-                  const isSelected = selectedBranch?._id === branch._id
-                  return (
-                    <div
-                      key={branch._id}
-                      onClick={() => handleSelectBranch(branch)}
-                      className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 flex items-center justify-between gap-4 ${isSelected
+                    const isSelected = selectedBranch?._id === branch._id
+                    return (
+                      <div
+                        key={branch._id}
+                        onClick={() => handleSelectBranch(branch)}
+                        className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 flex items-center justify-between gap-4 ${isSelected
                           ? 'border-primary bg-primary/5'
                           : 'border-outline-variant/40 hover:border-primary/30 hover:bg-surface-container-low'
-                        }`}
-                    >
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${isSelected ? 'bg-primary text-white' : 'bg-surface-container-highest text-on-surface-variant'
-                            }`}>
-                            {branch.code}
-                          </span>
-                          <h4 className="font-black text-sm truncate text-on-surface">{branch.name}</h4>
-                        </div>
-                        <p className="text-xs text-on-surface-variant mt-1.5 line-clamp-2 leading-relaxed">
-                          Địa chỉ: {branch.address}
-                        </p>
-                        {branch.phone && (
-                          <p className="text-[10px] text-on-surface-variant mt-1">
-                            SĐT: {branch.phone}
+                          }`}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${isSelected ? 'bg-primary text-white' : 'bg-surface-container-highest text-on-surface-variant'
+                              }`}>
+                              {branch.code}
+                            </span>
+                            <h4 className="font-black text-sm truncate text-on-surface">{branch.name}</h4>
+                          </div>
+                          <p className="text-xs text-on-surface-variant mt-1.5 line-clamp-2 leading-relaxed">
+                            Địa chỉ: {branch.address}
                           </p>
-                        )}
+                          {branch.phone && (
+                            <p className="text-[10px] text-on-surface-variant mt-1">
+                              SĐT: {branch.phone}
+                            </p>
+                          )}
+                        </div>
+                        <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${isSelected ? 'border-primary bg-primary' : 'border-outline'
+                          }`}>
+                          {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                        </div>
                       </div>
-                      <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${isSelected ? 'border-primary bg-primary' : 'border-outline'
-                        }`}>
-                        {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
-                      </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
                 </>
               )}
             </div>
