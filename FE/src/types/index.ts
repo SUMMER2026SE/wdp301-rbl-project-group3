@@ -81,6 +81,8 @@ export interface CartProduct {
   price: number
   unit?: string
   imageUrl?: string
+  isAvailable?: boolean
+  availableQuantity?: number
 }
 
 export interface CartItem {

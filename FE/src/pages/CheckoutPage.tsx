@@ -46,6 +46,10 @@ export const CheckoutPage = () => {
   const navigate = useNavigate()
   const { cart, clearCart, refreshCart } = useCart()
 
+  const hasUnavailableItems = useMemo(() => {
+    return cart?.items?.some(item => item.product.isAvailable === false) ?? false;
+  }, [cart])
+
   const [fullName, setFullName] = useState('')
   const [phoneNumber, setPhoneNumber] = useState('')
   const [shippingAddress, setShippingAddress] = useState('')
@@ -317,6 +321,11 @@ export const CheckoutPage = () => {
     e.preventDefault()
     if (!cart || cart.items.length === 0) return
 
+    if (hasUnavailableItems) {
+      setError('Vui lòng gỡ các sản phẩm hết hàng hoặc không đủ tồn kho tại chi nhánh này trước.')
+      return
+    }
+
     const minOrderVal = Number(publicSettings.min_order_amount ?? 0)
     if (cart.totalAmount < minOrderVal) {
       setError(`Giá trị đơn hàng tối thiểu phải từ ${formatVND(minOrderVal)} trở lên.`)
@@ -453,6 +462,15 @@ export const CheckoutPage = () => {
                 <div className="bg-error-container text-on-error-container p-4 rounded-xl flex items-center gap-3 text-sm font-bold">
                   <AlertCircle className="w-5 h-5 shrink-0" />
                   <span>{error}</span>
+                </div>
+              )}
+
+              {hasUnavailableItems && (
+                <div className="bg-error-container text-on-error-container p-4 rounded-xl flex items-start gap-3 text-sm font-bold border border-error/20">
+                  <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                  <span>
+                    Đơn hàng của bạn chứa sản phẩm hết hàng hoặc không đủ tồn kho tại chi nhánh {selectedBranch?.name || 'đã chọn'}. Vui lòng quay lại trang chủ, mở giỏ hàng và xóa các sản phẩm hết hàng để tiếp tục thanh toán.
+                  </span>
                 </div>
               )}
 
@@ -682,6 +700,11 @@ export const CheckoutPage = () => {
                           <p className="text-[12px] text-on-surface-variant mt-0.5">
                             SL {item.quantity} x {formatVND(item.product.price)}
                           </p>
+                          {item.product.isAvailable === false && (
+                            <span className="text-[10px] font-bold text-error bg-error-container/20 border border-error/10 px-2 py-0.5 rounded-full mt-1.5 inline-block">
+                              Hết hàng tại chi nhánh này
+                            </span>
+                          )}
                         </div>
                         <span className="font-bold text-sm text-on-surface">
                           {formatVND(item.subtotal)}
@@ -802,7 +825,7 @@ export const CheckoutPage = () => {
 
                 <button
                   onClick={handleSubmit}
-                  disabled={isSubmitting || cart.totalAmount < Number(publicSettings.min_order_amount ?? 0)}
+                  disabled={isSubmitting || hasUnavailableItems || cart.totalAmount < Number(publicSettings.min_order_amount ?? 0)}
                   className="w-full bg-primary hover:bg-on-primary-fixed-variant disabled:bg-primary/50 text-white py-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer"
                   type="button"
                 >

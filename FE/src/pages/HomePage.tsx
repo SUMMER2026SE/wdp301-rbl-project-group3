@@ -1238,6 +1238,11 @@ export const HomePage = () => {
                           <p className="text-primary font-bold text-body-md mt-1">
                             {formatVND(item.product.price)}
                           </p>
+                          {item.product.isAvailable === false && (
+                            <span className="text-[10px] font-bold text-error bg-error-container/20 border border-error/10 px-2 py-0.5 rounded-full mt-1.5 inline-block">
+                              Hết hàng tại chi nhánh này
+                            </span>
+                          )}
                         </div>
                         <div className="flex flex-col items-end gap-2">
                           <button
@@ -1301,25 +1306,41 @@ export const HomePage = () => {
               </div>
 
               {/* Footer */}
-              {cart && cart.items.length > 0 && (
-                <div className="px-6 py-5 border-t border-outline-variant bg-surface-container-low space-y-4">
-                  <div className="flex justify-between items-center text-body-lg font-bold">
-                    <span>Tổng tiền</span>
-                    <span className="text-primary text-headline-sm">{formatVND(cart.totalAmount)}</span>
+              {cart && cart.items.length > 0 && (() => {
+                const hasUnavailableItems = cart.items.some(item => item.product.isAvailable === false);
+                return (
+                  <div className="px-6 py-5 border-t border-outline-variant bg-surface-container-low space-y-4">
+                    {hasUnavailableItems && (
+                      <div className="bg-error-container/20 text-error p-3 rounded-xl flex items-start gap-2 text-xs font-bold border border-error/15 leading-relaxed">
+                        <Icon className="text-sm shrink-0 mt-0.5">error</Icon>
+                        <span>Giỏ hàng có sản phẩm hết hàng hoặc không đủ tồn kho tại chi nhánh này. Vui lòng gỡ bỏ để tiếp tục thanh toán.</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center text-body-lg font-bold">
+                      <span>Tổng tiền</span>
+                      <span className="text-primary text-headline-sm">{formatVND(cart.totalAmount)}</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (!hasUnavailableItems) {
+                          setIsCartOpen(false)
+                          navigate('/checkout')
+                        }
+                      }}
+                      disabled={hasUnavailableItems}
+                      className={`w-full py-4 rounded-xl font-bold text-body-md transition-all flex items-center justify-center gap-2 shadow-lg ${
+                        hasUnavailableItems
+                          ? 'bg-outline-variant/40 text-on-surface-variant/40 cursor-not-allowed shadow-none'
+                          : 'bg-primary hover:bg-on-primary-fixed-variant text-white cursor-pointer'
+                      }`}
+                      type="button"
+                    >
+                      Tiến hành thanh toán
+                      <Icon>arrow_forward</Icon>
+                    </button>
                   </div>
-                  <button
-                    onClick={() => {
-                      setIsCartOpen(false)
-                      navigate('/checkout')
-                    }}
-                    className="w-full bg-primary hover:bg-on-primary-fixed-variant text-white py-4 rounded-xl font-bold text-body-md transition-all flex items-center justify-center gap-2 shadow-lg"
-                    type="button"
-                  >
-                    Tiến hành thanh toán
-                    <Icon>arrow_forward</Icon>
-                  </button>
-                </div>
-              )}
+                );
+              })()}
             </div>
           </div>
         </div>
