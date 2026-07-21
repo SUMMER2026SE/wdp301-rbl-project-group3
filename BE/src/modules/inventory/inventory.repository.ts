@@ -297,7 +297,7 @@ export class InventoryRepository {
     existing.updatedBy = new Types.ObjectId(params.updatedBy);
 
     const savedInventory = await existing.save();
-    
+
     // Đề xuất A: Tự động đồng bộ Giá vốn (Cost Sync)
     // Khi nhập kho, cập nhật costPrice của Product bằng averageCost để AI Pricing chính xác
     await Product.findByIdAndUpdate(params.productId, { costPrice: savedInventory.averageCost });
@@ -348,6 +348,7 @@ export class InventoryRepository {
     items: IImportReceiptItem[];
     totalCost: number;
     createdBy: string;
+    status: 'pending_approval' | 'active';
   }): Promise<IImportReceipt> {
     return new ImportReceipt(data).save();
   }
@@ -358,15 +359,20 @@ export class InventoryRepository {
   }): Promise<IImportReceipt[]> {
     const query: Record<string, unknown> = {};
     if (filters.branchId) query.branchId = filters.branchId;
+
     if (filters.status === 'active') query.status = { $nin: ['adjusting', 'cancelled'] };
-    if (filters.status === 'cancelled') query.status = 'cancelled';
-    if (!filters.status) query.status = { $ne: 'adjusting' };
+    else if (filters.status === 'cancelled') query.status = 'cancelled';
+    else if (filters.status === 'pending_approval') query.status = 'pending_approval';
+    else if (filters.status === 'rejected') query.status = 'rejected';
+    else query.status = { $ne: 'adjusting' };
 
     return ImportReceipt.find(query)
       .populate('branchId', 'name code')
       .populate('createdBy', 'fullName email')
       .populate('updatedBy', 'fullName email')
       .populate('cancelledBy', 'fullName email')
+      .populate('approvedBy', 'fullName email')
+      .populate('rejectedBy', 'fullName email')
       .populate('verifiedBy', 'fullName email')
       .populate('items.productId', 'name sku unit')
       .sort({ createdAt: -1 })
@@ -382,7 +388,7 @@ export class InventoryRepository {
     return ImportReceipt.findOneAndUpdate(
       {
         _id: id,
-        status: { $ne: 'cancelled' },
+        status: { $nin: ['cancelled', 'rejected'] },
         $or: [
           { status: { $ne: 'adjusting' } },
           { mutationLockedAt: { $lt: staleLockThreshold } },
@@ -399,11 +405,14 @@ export class InventoryRepository {
     ).exec();
   }
 
-  async releaseImportReceiptMutation(id: string): Promise<void> {
+  async releaseImportReceiptMutation(
+    id: string,
+    restoreStatus: 'active' | 'pending_approval' = 'active'
+  ): Promise<void> {
     await ImportReceipt.findOneAndUpdate(
       { _id: id, status: 'adjusting' },
       {
-        $set: { status: 'active' },
+        $set: { status: restoreStatus },
         $unset: { mutationLockedAt: 1 },
       }
     ).exec();
@@ -415,6 +424,8 @@ export class InventoryRepository {
       .populate('createdBy', 'fullName email')
       .populate('updatedBy', 'fullName email')
       .populate('cancelledBy', 'fullName email')
+      .populate('approvedBy', 'fullName email')
+      .populate('rejectedBy', 'fullName email')
       .populate('verifiedBy', 'fullName email')
       .populate('items.productId', 'name sku unit salePrice imageUrl')
       .exec();
@@ -483,6 +494,42 @@ export class InventoryRepository {
           updatedBy: new Types.ObjectId(cancelledBy),
         },
         $unset: { mutationLockedAt: 1 },
+      },
+      { new: true }
+    ).exec();
+  }
+
+  async approveImportReceipt(
+    id: string,
+    approvedBy: string
+  ): Promise<IImportReceipt | null> {
+    return ImportReceipt.findOneAndUpdate(
+      { _id: id, status: 'pending_approval' },
+      {
+        $set: {
+          status: 'active',
+          approvedBy: new Types.ObjectId(approvedBy),
+          approvedAt: new Date(),
+        },
+      },
+      { new: true }
+    ).exec();
+  }
+
+  async rejectImportReceipt(
+    id: string,
+    rejectedBy: string,
+    reason: string
+  ): Promise<IImportReceipt | null> {
+    return ImportReceipt.findOneAndUpdate(
+      { _id: id, status: 'pending_approval' },
+      {
+        $set: {
+          status: 'rejected',
+          rejectedBy: new Types.ObjectId(rejectedBy),
+          rejectedAt: new Date(),
+          rejectionReason: reason,
+        },
       },
       { new: true }
     ).exec();

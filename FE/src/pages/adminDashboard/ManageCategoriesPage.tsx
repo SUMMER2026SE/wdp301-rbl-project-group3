@@ -45,6 +45,7 @@ export const ManageCategoriesPage = () => {
   // Modal states
   const [modalOpen, setModalOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+  const [confirmDeleteCategory, setConfirmDeleteCategory] = useState<Category | null>(null)
   
   // Form states
   const [name, setName] = useState('')
@@ -177,31 +178,33 @@ export const ManageCategoriesPage = () => {
   // Delete/Deactivate category handler
   const handleDeleteCategory = async (category: Category) => {
     if (!isAdmin) return
+    setConfirmDeleteCategory(category)
+  }
 
-    const confirmText = `Bạn có chắc chắn muốn ngưng hoạt động danh mục "${category.name}" (Mã: ${category.code})?\nLưu ý: Thao tác này sẽ chuyển đổi trạng thái của danh mục sang "Ngừng hoạt động".`
-    
-    if (window.confirm(confirmText)) {
-      try {
-        setLoading(true)
-        setError(null)
-        
-        const res = await categoryService.deleteCategory(category._id)
-        if (res.success) {
-          notify.success(`Đã chuyển trạng thái danh mục "${category.name}" sang ngừng hoạt động thành công.`)
-          fetchCategories()
-        } else {
-          setError(res.message || 'Xóa danh mục thất bại.')
-        }
-      } catch (err: any) {
-        // Catch 409 Conflict when category is in use
-        if (err.response?.status === 409 || err.status === 409 || err.message?.includes('409') || err.response?.data?.message?.includes('in use')) {
-          setError(`Không thể xóa danh mục này vì hiện tại có sản phẩm đang thuộc danh mục "${category.name}". Vui lòng xóa hoặc chuyển các sản phẩm đó sang danh mục khác trước.`)
-        } else {
-          setError(err.response?.data?.message || err.message || 'Lỗi khi xóa danh mục.')
-        }
-      } finally {
-        setLoading(false)
+  const confirmDeleteAction = async () => {
+    if (!confirmDeleteCategory) return
+
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const res = await categoryService.deleteCategory(confirmDeleteCategory._id)
+      if (res.success) {
+        notify.success(`Đã xóa danh mục "${confirmDeleteCategory.name}" thành công.`)
+        fetchCategories()
+      } else {
+        setError(res.message || 'Xóa danh mục thất bại.')
       }
+    } catch (err: any) {
+      // Catch 409 Conflict when category is in use
+      if (err.response?.status === 409 || err.status === 409 || err.message?.includes('409') || err.response?.data?.message?.includes('in use')) {
+        setError(`Không thể xóa danh mục này vì hiện tại có sản phẩm đang thuộc danh mục "${confirmDeleteCategory.name}". Vui lòng xóa hoặc chuyển các sản phẩm đó sang danh mục khác trước.`)
+      } else {
+        setError(err.response?.data?.message || err.message || 'Lỗi khi xóa danh mục.')
+      }
+    } finally {
+      setLoading(false)
+      setConfirmDeleteCategory(null)
     }
   }
 
@@ -229,7 +232,56 @@ export const ManageCategoriesPage = () => {
           <p className="mt-1 text-sm text-on-surface-variant">
             Tạo lập và quản lý các danh mục phân loại hàng hóa trong hệ thống siêu thị.
           </p>
+          {/* Confirm Delete Category Modal */}
+      {confirmDeleteCategory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm transition-all">
+          <div className="bg-surface-container-lowest max-w-sm w-full rounded-2xl border border-outline-variant shadow-2xl overflow-hidden flex flex-col text-on-surface">
+            <div className="p-5 flex items-center justify-between border-b border-outline-variant bg-error-container text-on-error-container">
+              <h3 className="text-lg font-black flex items-center gap-2">
+                <Trash2 className="w-5 h-5" />
+                Xóa danh mục
+              </h3>
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteCategory(null)}
+                className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-black/10 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 text-sm">
+              <p className="mb-2">Bạn có chắc chắn muốn xóa danh mục này không?</p>
+              <div className="rounded-xl border border-outline-variant bg-surface-container-low p-3 mb-4">
+                <p className="font-bold text-on-surface">{confirmDeleteCategory.name}</p>
+                <p className="text-on-surface-variant text-xs mt-1">Mã: {confirmDeleteCategory.code}</p>
+              </div>
+              <p className="text-xs text-error font-semibold">
+                Lưu ý: Thao tác này sẽ xóa vĩnh viễn danh mục khỏi hệ thống.
+              </p>
+            </div>
+            <div className="p-4 bg-surface-container-low border-t border-outline-variant flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteCategory(null)}
+                disabled={loading}
+                className="px-4 py-2 rounded-xl text-sm font-bold bg-surface hover:bg-surface-container-highest transition-colors disabled:opacity-50 cursor-pointer text-on-surface border border-outline-variant"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteAction}
+                disabled={loading}
+                className="px-4 py-2 rounded-xl text-sm font-bold text-white transition-colors disabled:opacity-50 cursor-pointer flex items-center gap-2 shadow-sm bg-error hover:bg-error/90"
+              >
+                {loading && <Loader2 size={16} className="animate-spin" />}
+                Xác nhận
+              </button>
+            </div>
+          </div>
         </div>
+      )}
+    </div>
 
         {isAdmin && (
           <button
@@ -545,6 +597,55 @@ export const ManageCategoriesPage = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Confirm Delete Category Modal */}
+      {confirmDeleteCategory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm transition-all">
+          <div className="bg-surface-container-lowest max-w-sm w-full rounded-2xl border border-outline-variant shadow-2xl overflow-hidden flex flex-col text-on-surface">
+            <div className="p-5 flex items-center justify-between border-b border-outline-variant bg-error-container text-on-error-container">
+              <h3 className="text-lg font-black flex items-center gap-2">
+                <Trash2 className="w-5 h-5" />
+                Xóa danh mục
+              </h3>
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteCategory(null)}
+                className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-black/10 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 text-sm">
+              <p className="mb-2">Bạn có chắc chắn muốn xóa danh mục này không?</p>
+              <div className="rounded-xl border border-outline-variant bg-surface-container-low p-3 mb-4">
+                <p className="font-bold text-on-surface">{confirmDeleteCategory.name}</p>
+                <p className="text-on-surface-variant text-xs mt-1">Mã: {confirmDeleteCategory.code}</p>
+              </div>
+              <p className="text-xs text-error font-semibold">
+                Lưu ý: Thao tác này sẽ xóa vĩnh viễn danh mục này khỏi hệ thống.
+              </p>
+            </div>
+            <div className="p-4 bg-surface-container-low border-t border-outline-variant flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteCategory(null)}
+                disabled={loading}
+                className="px-4 py-2 rounded-xl text-sm font-bold bg-surface hover:bg-surface-container-highest transition-colors disabled:opacity-50 cursor-pointer text-on-surface border border-outline-variant"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteAction}
+                disabled={loading}
+                className="px-4 py-2 rounded-xl text-sm font-bold text-white transition-colors disabled:opacity-50 cursor-pointer flex items-center gap-2 shadow-sm bg-error hover:bg-error/90"
+              >
+                {loading && <Loader2 size={16} className="animate-spin" />}
+                Xác nhận
+              </button>
+            </div>
           </div>
         </div>
       )}

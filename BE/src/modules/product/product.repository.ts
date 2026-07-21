@@ -44,11 +44,7 @@ export class ProductRepository {
     }
     
     if (filters.keyword) {
-      query.$or = [
-        { name: { $regex: filters.keyword, $options: 'i' } },
-        { sku: { $regex: filters.keyword, $options: 'i' } },
-        { description: { $regex: filters.keyword, $options: 'i' } },
-      ];
+      query.name = { $regex: filters.keyword, $options: 'i' };
     }
 
     if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {

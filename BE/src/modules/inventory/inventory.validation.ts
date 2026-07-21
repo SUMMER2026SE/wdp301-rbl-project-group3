@@ -39,7 +39,7 @@ export const listInventorySchema = z.object({
 export const listImportReceiptsSchema = z.object({
   query: z.object({
     branchId: objectId.optional(),
-    status: z.enum(['active', 'cancelled']).optional(),
+    status: z.enum(['pending_approval', 'active', 'rejected', 'cancelled']).optional(),
   }),
 });
 
@@ -109,6 +109,21 @@ export const verifyImportReceiptSchema = z.object({
       })
     ),
     note: z.string().max(500).optional(),
+  }),
+});
+
+export const approveImportReceiptSchema = z.object({
+  params: z.object({
+    id: objectId,
+  }),
+});
+
+export const rejectImportReceiptSchema = z.object({
+  params: z.object({
+    id: objectId,
+  }),
+  body: z.object({
+    reason: z.string().min(1, 'Rejection reason is required').max(500),
   }),
 });
 

@@ -21,10 +21,15 @@ export interface IImportReceipt extends Document {
   totalCost: number;
   createdBy: Types.ObjectId;
   updatedBy?: Types.ObjectId;
-  status: 'active' | 'adjusting' | 'cancelled';
+  status: 'pending_approval' | 'active' | 'adjusting' | 'rejected' | 'cancelled';
   mutationLockedAt?: Date;
   cancelledBy?: Types.ObjectId;
   cancelledAt?: Date;
+  approvedBy?: Types.ObjectId;
+  approvedAt?: Date;
+  rejectedBy?: Types.ObjectId;
+  rejectedAt?: Date;
+  rejectionReason?: string;
   verificationStatus?: 'pending' | 'verified' | 'partially_verified';
   verifiedBy?: Types.ObjectId;
   verifiedAt?: Date;
@@ -59,12 +64,17 @@ const ImportReceiptSchema = new Schema<IImportReceipt>(
     updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     status: {
       type: String,
-      enum: ['active', 'adjusting', 'cancelled'],
-      default: 'active',
+      enum: ['pending_approval', 'active', 'adjusting', 'rejected', 'cancelled'],
+      default: 'pending_approval',
     },
     mutationLockedAt: { type: Date },
     cancelledBy: { type: Schema.Types.ObjectId, ref: 'User' },
     cancelledAt: { type: Date },
+    approvedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    approvedAt: { type: Date },
+    rejectedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    rejectedAt: { type: Date },
+    rejectionReason: { type: String, trim: true },
     verificationStatus: {
       type: String,
       enum: ['pending', 'verified', 'partially_verified'],
