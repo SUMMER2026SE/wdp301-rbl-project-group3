@@ -4,6 +4,7 @@ import { AppError } from '../../middlewares/errorHandler.middleware';
 import { systemSettingRepository } from './system-setting.repository';
 import { DEFAULT_SYSTEM_SETTINGS } from './system-setting.defaults';
 import { invalidateMaintenanceCache } from '../../middlewares/maintenanceMode.middleware';
+import { emitGlobal } from '../../config/socket.config';
 
 export interface ListSettingsQuery {
   page: number;
@@ -182,7 +183,11 @@ export class SystemSettingService {
     if (!updated) throw new AppError('Setting not found', 404);
 
     // Immediately invalidate maintenance cache when that key changes
-    if (key === 'maintenance_mode') invalidateMaintenanceCache();
+    if (key === 'maintenance_mode') {
+      invalidateMaintenanceCache();
+      emitGlobal('maintenance:updated', { enabled: Boolean(updated.value) });
+    }
+    emitGlobal('settings:updated', { key, value: updated.value });
 
     return toSettingResponse(updated);
   }
@@ -216,7 +221,12 @@ export class SystemSettingService {
 
     // Invalidate maintenance cache if that key was part of the bulk update
     const hasMaintenance = items.some((i) => i.key === 'maintenance_mode');
-    if (hasMaintenance) invalidateMaintenanceCache();
+    if (hasMaintenance) {
+      invalidateMaintenanceCache();
+      const mItem = items.find((i) => i.key === 'maintenance_mode');
+      emitGlobal('maintenance:updated', { enabled: mItem ? Boolean(mItem.value) : false });
+    }
+    emitGlobal('settings:updated', { updated: items });
 
     return { settings: updated };
   }

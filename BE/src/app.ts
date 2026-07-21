@@ -2,6 +2,7 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import http from 'http';
 
 import { env } from './config/env.config';
 import { connectDatabase } from './config/database.config';
@@ -9,6 +10,7 @@ import apiRoutes from './routes/index';
 import { errorHandler } from './middlewares/errorHandler.middleware';
 import { initCrawlerCron } from './modules/crawler/crawler.cron';
 import { maintenanceModeMiddleware } from './middlewares/maintenanceMode.middleware';
+import { initSocket } from './config/socket.config';
 
 const app = express();
 
@@ -51,8 +53,12 @@ app.use(errorHandler);
 const start = async () => {
   await connectDatabase();
   initCrawlerCron();
-  app.listen(env.port, () => {
-    console.log(`Server running on port ${env.port} [${env.nodeEnv}]`);
+  
+  const httpServer = http.createServer(app);
+  initSocket(httpServer);
+
+  httpServer.listen(env.port, () => {
+    console.log(`Server running on port ${env.port} [${env.nodeEnv}] with Socket.io`);
   });
 };
 

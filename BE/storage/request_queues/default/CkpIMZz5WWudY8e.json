@@ -1,9 +1,0 @@
-{
-	"id": "CkpIMZz5WWudY8e",
-	"json": "{\"id\":\"CkpIMZz5WWudY8e\",\"url\":\"https://winmart.vn/products/haribo-keo-deo-goldbears-80g--s10014412?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/haribo-keo-deo-goldbears-80g--s10014412?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
-	"method": "GET",
-	"orderNo": 1783969312907,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/products/haribo-keo-deo-goldbears-80g--s10014412?storeCode=1535&storeGroupCode=1998",
-	"url": "https://winmart.vn/products/haribo-keo-deo-goldbears-80g--s10014412?storeGroupCode=1998&storeCode=1535"
-}

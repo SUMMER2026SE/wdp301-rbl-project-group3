@@ -38,6 +38,7 @@ import { competitorProductService } from '@services/competitorProductService'
 import { useAuth } from '@hooks/useAuth'
 import type { Inventory, ImportReceipt, Branch, Product, Category, CompetitorProduct } from '@/types'
 import { notify } from '../../utils/toast';
+import { useSocket } from '../../contexts/SocketContext';
 
 const formatVND = (num: number) => {
   return new Intl.NumberFormat('vi-VN', {
@@ -48,6 +49,7 @@ const formatVND = (num: number) => {
 
 export const ManageInventoryPage = () => {
   const { user, loading: authLoading } = useAuth()
+  const { socket } = useSocket()
   const isManagerOrStaff = user?.role === 'branch_manager' || user?.role === 'staff'
   const userBranchId = user?.branchId || ''
   const isAdmin = user?.role === 'admin'
@@ -156,6 +158,8 @@ export const ManageInventoryPage = () => {
 
   // Crawler states
   const [isCrawling, setIsCrawling] = useState(false);
+  const [crawledCount, setCrawledCount] = useState<number>(0);
+  const [lastCrawledProduct, setLastCrawledProduct] = useState<string>('');
   const [showCrawlerStopConfirm, setShowCrawlerStopConfirm] = useState(false);
 
   // Tab 4: Crawled Products states
@@ -243,27 +247,46 @@ export const ManageInventoryPage = () => {
   }, [catalogSearch])
 
 
-  // Poll Crawler Status
+  // Lắng nghe sự kiện cào dữ liệu thời gian thực từ Socket.io
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (activeTab === 'catalog') {
-      const fetchStatus = async () => {
-        try {
-          const res = await apiClient.get('/api/crawler/status');
-          if (res.data?.success) {
-            setIsCrawling(res.data.data.isRunning);
-          }
-        } catch (err) {
-          console.error('Failed to fetch crawler status', err);
-        }
+    if (!socket) return
+
+    const handleCrawlerStatus = (data: { isRunning: boolean; crawledCount: number; error?: string }) => {
+      console.log('Realtime crawler status:', data)
+      setIsCrawling(data.isRunning)
+      if (data.crawledCount !== undefined) {
+        setCrawledCount(data.crawledCount)
       }
-      fetchStatus();
-      interval = setInterval(fetchStatus, 5000);
+      if (data.error) {
+        notify.error(`Lỗi Bot Cào: ${data.error}`)
+      } else if (!data.isRunning) {
+        notify.success('Bot cào dữ liệu đã hoàn thành nhiệm vụ!')
+      }
+      
+      if (activeTab === 'crawled') {
+        fetchCrawledProducts(1, crawledKeyword)
+      }
     }
+
+    const handleCrawlerProgress = (data: { isRunning: boolean; crawledCount: number; lastCrawledProduct: string }) => {
+      console.log('Realtime crawler progress:', data)
+      setIsCrawling(data.isRunning)
+      setCrawledCount(data.crawledCount)
+      setLastCrawledProduct(data.lastCrawledProduct)
+      
+      if (activeTab === 'crawled') {
+        fetchCrawledProducts(1, crawledKeyword)
+      }
+    }
+
+    socket.on('crawler:status', handleCrawlerStatus)
+    socket.on('crawler:progress', handleCrawlerProgress)
+
     return () => {
-      if (interval) clearInterval(interval);
+      socket.off('crawler:status', handleCrawlerStatus)
+      socket.off('crawler:progress', handleCrawlerProgress)
     }
-  }, [activeTab]);
+  }, [socket, activeTab, crawledKeyword]);
 
   const handleToggleCrawler = async () => {
     try {
@@ -2206,6 +2229,15 @@ export const ManageInventoryPage = () => {
               <p className="text-on-surface-variant text-sm mt-1">
                 Quản lý danh sách sản phẩm thô cào được từ đối thủ Winmart và đưa vào danh mục hệ thống.
               </p>
+              {isCrawling && lastCrawledProduct && (
+                <p className="text-xs text-primary font-bold animate-pulse mt-1.5 flex items-center gap-1.5 bg-primary/5 px-2.5 py-1 rounded-lg w-fit border border-primary/10">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                  </span>
+                  Đang cào: {lastCrawledProduct}
+                </p>
+              )}
             </div>
 
             {/* Crawler Status Box */}
@@ -2218,7 +2250,7 @@ export const ManageInventoryPage = () => {
                   <span className={`relative inline-flex rounded-full h-3.5 w-3.5 ${isCrawling ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
                 </span>
                 <span className="text-sm font-semibold text-on-surface">
-                  Bot Cào: {isCrawling ? 'Đang hoạt động' : 'Tắt'}
+                  Bot Cào: {isCrawling ? `Đang hoạt động (${crawledCount})` : 'Tắt'}
                 </span>
               </div>
 

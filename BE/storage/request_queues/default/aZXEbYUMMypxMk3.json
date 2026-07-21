@@ -1,9 +1,0 @@
-{
-	"id": "aZXEbYUMMypxMk3",
-	"json": "{\"id\":\"aZXEbYUMMypxMk3\",\"url\":\"https://winmart.vn/info/payment-policy\",\"loadedUrl\":\"https://winmart.vn/info/payment-policy\",\"uniqueKey\":\"https://winmart.vn/info/payment-policy\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-07-13T19:13:44.163Z\"}",
-	"method": "GET",
-	"orderNo": null,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/info/payment-policy",
-	"url": "https://winmart.vn/info/payment-policy"
-}

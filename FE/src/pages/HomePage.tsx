@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@hooks/useAuth'
 import { useCart } from '@/contexts/CartContext'
 import { useFavorites } from '@/contexts/FavoritesContext'
+import { useSocket } from '@/contexts/SocketContext'
 import { productService } from '@services/productService'
 import { branchService } from '@services/branchService'
 import { categoryService } from '@services/categoryService'
@@ -333,6 +334,7 @@ export const HomePage = () => {
   const navigate = useNavigate()
   const { user, isAuthenticated, logout } = useAuth()
   const { cart, addToCart, updateQuantity, removeItem, clearCart, refreshCart } = useCart()
+  const { socket } = useSocket()
   const [activeFlashSale, setActiveFlashSale] = useState<any | null>(null)
   const [countdown, setCountdown] = useState<CountdownTime>({ hours: '00', minutes: '00', seconds: '00' })
   const heroImageRef = useRef<HTMLImageElement | null>(null)
@@ -467,6 +469,43 @@ export const HomePage = () => {
     fetchActiveBanners()
     fetchPublicSettings()
   }, [])
+
+  // Đăng ký lắng nghe các thay đổi thời gian thực
+  useEffect(() => {
+    if (!socket) return
+
+    const handleProductChange = () => {
+      fetchDbProducts(searchQuery, selectedBranch?._id)
+    }
+
+    const handleBannerChange = () => {
+      fetchActiveBanners()
+    }
+
+    const handleFlashSaleChange = () => {
+      fetchActiveFlashSale(selectedBranch?._id)
+    }
+
+    const handleCategoryChange = () => {
+      fetchCategories()
+    }
+
+    socket.on('product:created', handleProductChange)
+    socket.on('product:updated', handleProductChange)
+    socket.on('product:deleted', handleProductChange)
+    socket.on('banner:updated', handleBannerChange)
+    socket.on('flash_sale:updated', handleFlashSaleChange)
+    socket.on('category:updated', handleCategoryChange)
+
+    return () => {
+      socket.off('product:created', handleProductChange)
+      socket.off('product:updated', handleProductChange)
+      socket.off('product:deleted', handleProductChange)
+      socket.off('banner:updated', handleBannerChange)
+      socket.off('flash_sale:updated', handleFlashSaleChange)
+      socket.off('category:updated', handleCategoryChange)
+    }
+  }, [socket, selectedBranch, searchQuery])
 
   useEffect(() => {
     if (activeBanners.length <= 1) return

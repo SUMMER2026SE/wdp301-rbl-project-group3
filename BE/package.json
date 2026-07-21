@@ -38,6 +38,7 @@
     "node-cron": "^4.5.0",
     "nodemailer": "^8.0.8",
     "playwright": "^1.61.1",
+    "socket.io": "^4.8.3",
     "uuid": "^14.0.0",
     "zod": "^4.4.3"
   },

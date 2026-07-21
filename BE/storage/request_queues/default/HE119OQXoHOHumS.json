@@ -1,9 +1,0 @@
-{
-	"id": "HE119OQXoHOHumS",
-	"json": "{\"id\":\"HE119OQXoHOHumS\",\"url\":\"https://winmart.vn/products/colgate-bcdr-cushion-clean-bo-2--s10161646?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/colgate-bcdr-cushion-clean-bo-2--s10161646?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
-	"method": "GET",
-	"orderNo": 1783969327827,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/products/colgate-bcdr-cushion-clean-bo-2--s10161646?storeCode=1535&storeGroupCode=1998",
-	"url": "https://winmart.vn/products/colgate-bcdr-cushion-clean-bo-2--s10161646?storeGroupCode=1998&storeCode=1535"
-}

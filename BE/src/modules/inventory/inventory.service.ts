@@ -11,6 +11,7 @@ import { Inventory, IInventory } from '../../models/inventory.model';
 import { AppError } from '../../middlewares/errorHandler.middleware';
 import { User } from '../../models/user.model';
 import { UserRole } from '../../types/common.types';
+import { emitGlobal } from '../../config/socket.config';
 
 type ImportItemInput = {
   productId: string;
@@ -493,7 +494,7 @@ export class InventoryService {
       throw new AppError('Product already exists in this branch\'s inventory', 409);
     }
 
-    return new Inventory({
+    const result = await new Inventory({
       branchId: data.branchId,
       productId: data.productId,
       quantity: data.quantity,
@@ -502,6 +503,14 @@ export class InventoryService {
       lowStockThreshold: data.lowStockThreshold,
       updatedBy: new Types.ObjectId(data.createdBy),
     }).save();
+
+    emitGlobal('inventory:updated', {
+      branchId: data.branchId,
+      productId: data.productId,
+      quantity: data.quantity,
+    });
+
+    return result;
   }
 
   async updateInventory(
@@ -526,7 +535,15 @@ export class InventoryService {
     if (data.lowStockThreshold !== undefined) existing.lowStockThreshold = data.lowStockThreshold;
     existing.updatedBy = new Types.ObjectId(data.updatedBy);
 
-    return existing.save();
+    const result = await existing.save();
+
+    emitGlobal('inventory:updated', {
+      branchId: result.branchId.toString(),
+      productId: result.productId.toString(),
+      quantity: result.quantity,
+    });
+
+    return result;
   }
 
   async deleteInventory(
@@ -541,6 +558,12 @@ export class InventoryService {
     await this.resolveAccessibleBranch(actor, existing.branchId.toString());
 
     await Inventory.deleteOne({ _id: id }).exec();
+
+    emitGlobal('inventory:updated', {
+      branchId: existing.branchId.toString(),
+      productId: existing.productId.toString(),
+      quantity: 0,
+    });
   }
 
   async verifyImportReceipt(
@@ -618,6 +641,16 @@ export class InventoryService {
 
     const detailed = await inventoryRepository.findImportReceiptDetail(id);
     if (!detailed) throw new AppError('Import receipt detail not found', 500);
+
+    // Phát tin cập nhật tồn kho realtime
+    for (const item of updatedItems) {
+      emitGlobal('inventory:updated', {
+        branchId,
+        productId: item.productId.toString(),
+        quantity: item.appliedInventoryQuantity || 0,
+      });
+    }
+
     return detailed;
   }
 }

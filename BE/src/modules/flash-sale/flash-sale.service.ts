@@ -3,6 +3,7 @@ import { flashSaleRepository, FlashSaleFilter } from './flash-sale.repository';
 import { IFlashSale } from '../../models/flash-sale.model';
 import { User } from '../../models/user.model';
 import { AppError } from '../../middlewares/errorHandler.middleware';
+import { emitGlobal } from '../../config/socket.config';
 
 export interface CallerContext {
   userId: string;
@@ -59,7 +60,9 @@ export class FlashSaleService {
       createdBy: new Types.ObjectId(caller.userId),
     };
 
-    return flashSaleRepository.createFlashSale(payload);
+    const result = await flashSaleRepository.createFlashSale(payload);
+    emitGlobal('flashsale:updated', { action: 'created', id: result._id.toString() });
+    return result;
   }
 
   async listFlashSales(caller: CallerContext, filterParams: any): Promise<{ data: IFlashSale[]; total: number }> {
@@ -135,7 +138,9 @@ export class FlashSaleService {
     }
     payload.updatedBy = new Types.ObjectId(caller.userId);
 
-    return flashSaleRepository.updateFlashSale(id, payload);
+    const result = await flashSaleRepository.updateFlashSale(id, payload);
+    emitGlobal('flashsale:updated', { action: 'updated', id });
+    return result;
   }
 
   async deleteFlashSale(caller: CallerContext, id: string): Promise<void> {
@@ -156,6 +161,7 @@ export class FlashSaleService {
     }
 
     await flashSaleRepository.deleteFlashSale(id);
+    emitGlobal('flashsale:updated', { action: 'deleted', id });
   }
 
   async getActiveFlashSale(branchId?: string): Promise<IFlashSale | null> {
