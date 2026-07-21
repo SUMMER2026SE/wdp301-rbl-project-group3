@@ -12,11 +12,14 @@ import {
   createInventorySchema,
   updateInventorySchema,
   inventoryIdParamSchema,
+  approveImportReceiptSchema,
+  rejectImportReceiptSchema,
   validate,
 } from './inventory.validation';
 
 const router = Router();
 const backOfficeRoles = ['admin', 'branch_manager', 'staff'] as const;
+const adminOnly = authorize('admin');
 
 router.use(authenticate);
 router.use(authorize(...backOfficeRoles));
@@ -49,6 +52,19 @@ router.post(
   '/import-receipts/:id/verify',
   validate(verifyImportReceiptSchema),
   inventoryController.verifyImportReceipt
+);
+
+router.post(
+  '/import-receipts/:id/approve',
+  adminOnly,
+  validate(approveImportReceiptSchema),
+  inventoryController.approveImportReceipt
+);
+router.post(
+  '/import-receipts/:id/reject',
+  adminOnly,
+  validate(rejectImportReceiptSchema),
+  inventoryController.rejectImportReceipt
 );
 
 export default router;

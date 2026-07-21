@@ -68,6 +68,9 @@ export class InventoryService {
     }
     const totalCost = items.reduce((sum, item) => sum + item.subtotal, 0);
 
+    const initialStatus: 'pending_approval' | 'active' =
+      data.actor.role === 'admin' ? 'active' : 'pending_approval';
+
     return await inventoryRepository.createImportReceipt({
       code: this.generateReceiptCode(),
       branchId: data.branchId,
@@ -76,6 +79,7 @@ export class InventoryService {
       items,
       totalCost,
       createdBy: data.createdBy,
+      status: initialStatus,
     });
   }
 
@@ -107,6 +111,63 @@ export class InventoryService {
     return receipt;
   }
 
+  async approveImportReceipt(
+    id: string,
+    approvedBy: string,
+    actor: InventoryActor
+  ): Promise<IImportReceipt> {
+    if (actor.role !== 'admin') {
+      throw new AppError('Only admin can approve import receipts', 403);
+    }
+
+    const existing = await inventoryRepository.findImportReceiptById(id);
+    if (!existing) throw new AppError('Import receipt not found', 404);
+
+    if (existing.status !== 'pending_approval') {
+      throw new AppError(
+        `Cannot approve a receipt with status "${existing.status}". Only pending_approval receipts can be approved.`,
+        409
+      );
+    }
+
+    const approved = await inventoryRepository.approveImportReceipt(id, approvedBy);
+    if (!approved) {
+      throw new AppError('Import receipt approval conflict. Please reload and try again.', 409);
+    }
+
+    const detailed = await inventoryRepository.findImportReceiptDetail(id);
+    return detailed || approved;
+  }
+
+  async rejectImportReceipt(
+    id: string,
+    rejectedBy: string,
+    reason: string,
+    actor: InventoryActor
+  ): Promise<IImportReceipt> {
+    if (actor.role !== 'admin') {
+      throw new AppError('Only admin can reject import receipts', 403);
+    }
+
+    const existing = await inventoryRepository.findImportReceiptById(id);
+    if (!existing) throw new AppError('Import receipt not found', 404);
+
+    if (existing.status !== 'pending_approval') {
+      throw new AppError(
+        `Cannot reject a receipt with status "${existing.status}". Only pending_approval receipts can be rejected.`,
+        409
+      );
+    }
+
+    const rejected = await inventoryRepository.rejectImportReceipt(id, rejectedBy, reason);
+    if (!rejected) {
+      throw new AppError('Import receipt rejection conflict. Please reload and try again.', 409);
+    }
+
+    const detailed = await inventoryRepository.findImportReceiptDetail(id);
+    return detailed || rejected;
+  }
+
   async updateImportReceipt(
     id: string,
     data: {
@@ -127,6 +188,9 @@ export class InventoryService {
     if (data.branchId) {
       await this.resolveAccessibleBranch(data.actor, data.branchId);
     }
+
+    const restoreStatus: 'active' | 'pending_approval' =
+      existingReceipt.status === 'pending_approval' ? 'pending_approval' : 'active';
 
     const receipt = await inventoryRepository.acquireImportReceiptForMutation(id);
     if (!receipt) {
@@ -185,7 +249,7 @@ export class InventoryService {
             items: preparedItems,
             totalCost: preparedItems.reduce((sum, item) => sum + item.subtotal, 0),
             updatedBy: new Types.ObjectId(data.updatedBy),
-            status: 'active',
+            status: restoreStatus,
             verificationStatus: 'pending',
           },
           $unset: {
@@ -204,7 +268,7 @@ export class InventoryService {
       if (snapshots.size > 0) {
         await this.restoreInventorySnapshots(snapshots, data.updatedBy);
       }
-      await inventoryRepository.releaseImportReceiptMutation(id);
+      await inventoryRepository.releaseImportReceiptMutation(id, restoreStatus);
       throw error;
     }
   }
@@ -221,6 +285,9 @@ export class InventoryService {
       existingReceipt.branchId.toString()
     );
 
+    const restoreStatus: 'active' | 'pending_approval' =
+      existingReceipt.status === 'pending_approval' ? 'pending_approval' : 'active';
+
     const receipt = await inventoryRepository.acquireImportReceiptForMutation(id);
     if (!receipt) {
       await this.throwImportReceiptMutationError(id);
@@ -233,7 +300,7 @@ export class InventoryService {
 
     try {
       await this.resolveAccessibleBranch(actor, branchId);
-      
+
       if (isVerified) {
         await this.ensureReceiptStockUnchanged(lockedReceipt);
         const verifiedItems = lockedReceipt.items.filter(it => it.verifiedQuantity && it.verifiedQuantity > 0);
@@ -250,7 +317,7 @@ export class InventoryService {
       if (snapshots.size > 0) {
         await this.restoreInventorySnapshots(snapshots, cancelledBy);
       }
-      await inventoryRepository.releaseImportReceiptMutation(id);
+      await inventoryRepository.releaseImportReceiptMutation(id, restoreStatus);
       throw error;
     }
   }
@@ -394,6 +461,9 @@ export class InventoryService {
     if (!existing) throw new AppError('Import receipt not found', 404);
     if (existing.status === 'cancelled') {
       throw new AppError('Cancelled import receipts cannot be modified', 409);
+    }
+    if (existing.status === 'rejected') {
+      throw new AppError('Rejected import receipts cannot be modified', 409);
     }
     throw new AppError('Import receipt is being modified by another request', 409);
   }
@@ -557,12 +627,24 @@ export class InventoryService {
 
     await this.resolveAccessibleBranch(data.actor, receipt.branchId.toString());
 
-    if (receipt.verificationStatus && receipt.verificationStatus !== 'pending') {
-      throw new AppError('This import receipt has already been verified', 400);
+    if (receipt.status === 'pending_approval') {
+      throw new AppError(
+        'This import receipt is awaiting admin approval and cannot be verified yet',
+        400
+      );
+    }
+    if (receipt.status === 'rejected') {
+      throw new AppError('This import receipt was rejected and cannot be verified', 400);
+    }
+    if (receipt.status !== 'active') {
+      throw new AppError(
+        `This import receipt must be approved (status "active") before it can be verified. Current status: "${receipt.status}"`,
+        400
+      );
     }
 
-    if (receipt.status === 'cancelled') {
-      throw new AppError('Cannot verify a cancelled import receipt', 400);
+    if (receipt.verificationStatus && receipt.verificationStatus !== 'pending') {
+      throw new AppError('This import receipt has already been verified', 400);
     }
 
     const branchId = receipt.branchId.toString();

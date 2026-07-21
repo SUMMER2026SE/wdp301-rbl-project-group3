@@ -257,7 +257,12 @@ export interface ImportReceipt {
   createdBy: { _id: string; fullName: string; email: string }
   createdAt: string
   updatedAt?: string
-  status: 'active' | 'adjusting' | 'cancelled'
+  status: 'pending_approval' | 'active' | 'adjusting' | 'rejected' | 'cancelled'
+  approvedBy?: { _id: string; fullName: string; email: string }
+  approvedAt?: string
+  rejectedBy?: { _id: string; fullName: string; email: string }
+  rejectedAt?: string
+  rejectionReason?: string
   verificationStatus?: 'pending' | 'verified' | 'partially_verified'
   verifiedBy?: { _id: string; fullName: string; email: string }
   verifiedAt?: string
