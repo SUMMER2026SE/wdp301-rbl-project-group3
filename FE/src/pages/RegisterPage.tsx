@@ -43,27 +43,27 @@ export const RegisterPage = () => {
     setError('')
 
     if (!fullName || !email || !password || !confirmPassword) {
-      setError('Please fill in all required fields')
+      setError('Vui lòng điền đầy đủ thông tin các trường bắt buộc')
       return
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match')
+      setError('Mật khẩu xác nhận không trùng khớp')
       return
     }
 
     if (password.length < 8) {
-      setError('Password must be at least 8 characters')
+      setError('Mật khẩu phải chứa ít nhất 8 ký tự')
       return
     }
 
     if (!/[A-Z]/.test(password)) {
-      setError('Password must contain at least one uppercase letter')
+      setError('Mật khẩu phải chứa ít nhất một chữ cái in hoa')
       return
     }
 
     if (!/[0-9]/.test(password)) {
-      setError('Password must contain at least one number')
+      setError('Mật khẩu phải chứa ít nhất một chữ số')
       return
     }
 
@@ -71,7 +71,7 @@ export const RegisterPage = () => {
       await register({ fullName, email, password, phone: phone || undefined })
       setShowOtp(true)
     } catch (err) {
-      setError(getErrorMessage(err, 'Registration failed'))
+      setError(getErrorMessage(err, 'Đăng ký thất bại'))
     }
   }
 
@@ -89,7 +89,7 @@ export const RegisterPage = () => {
         navigate('/login')
       }, 3000)
     } catch (err) {
-      setError(getErrorMessage(err, 'Invalid or expired OTP'))
+      setError(getErrorMessage(err, 'Mã OTP không hợp lệ hoặc đã hết hạn'))
     } finally {
       setOtpLoading(false)
     }
@@ -99,7 +99,7 @@ export const RegisterPage = () => {
     try {
       setError('')
       if (!credentialResponse.credential) {
-        setError('Google login failed')
+        setError('Đăng nhập Google thất bại')
         return
       }
 
@@ -111,12 +111,12 @@ export const RegisterPage = () => {
         navigate('/login')
       }, 3000)
     } catch (err) {
-      setError(getErrorMessage(err, 'Google login failed'))
+      setError(getErrorMessage(err, 'Đăng nhập Google thất bại'))
     }
   }
 
   const handleGoogleError = () => {
-    setError('Google login failed. Please try again.')
+    setError('Đăng nhập Google thất bại. Vui lòng thử lại.')
   }
 
   if (success) {
@@ -128,13 +128,13 @@ export const RegisterPage = () => {
               <CheckCircle className="text-primary" size={32} />
             </div>
             <h2 className="font-headline-md text-headline-md text-primary mb-2">
-              Registration Successful!
+              Đăng ký thành công!
             </h2>
             <p className="text-body-md text-on-surface-variant mb-4">
-              Your account has been verified. You can now sign in.
+              Tài khoản của bạn đã được xác thực. Hiện tại bạn đã có thể đăng nhập.
             </p>
             <p className="text-label-sm text-on-surface-variant">
-              Redirecting to login page...
+              Đang chuyển hướng đến trang đăng nhập...
             </p>
           </div>
         </div>
@@ -147,9 +147,9 @@ export const RegisterPage = () => {
       <div className="min-h-screen bg-surface flex items-center justify-center px-4">
         <div className="w-full max-w-md">
           <div className="bg-surface-container-lowest rounded-2xl shadow-xl p-8 text-center">
-            <h2 className="font-headline-md text-headline-md text-primary mb-2">Verify Email</h2>
+            <h2 className="font-headline-md text-headline-md text-primary mb-2">Xác thực Email</h2>
             <p className="text-body-md text-on-surface-variant mb-6">
-              Please enter the 6-digit OTP sent to <span className="font-bold">{email}</span>.
+              Vui lòng nhập mã OTP gồm 6 chữ số đã được gửi tới <span className="font-bold">{email}</span>.
             </p>
 
             {error && (
@@ -178,10 +178,10 @@ export const RegisterPage = () => {
                 {otpLoading ? (
                   <>
                     <Loader className="animate-spin" size={20} />
-                    Verifying...
+                    Đang xác thực...
                   </>
                 ) : (
-                  'Verify Account'
+                  'Xác thực tài khoản'
                 )}
               </button>
             </form>
@@ -197,10 +197,10 @@ export const RegisterPage = () => {
         <div className="bg-surface-container-lowest rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
             <h1 className="font-headline-lg text-headline-lg text-primary mb-2">
-              Create Account
+              Tạo tài khoản
             </h1>
             <p className="text-body-md text-on-surface-variant">
-              Join WinMart+ today
+              Tham gia PMAN-Mart ngay hôm nay
             </p>
           </div>
 
@@ -217,7 +217,7 @@ export const RegisterPage = () => {
                 htmlFor="fullName"
                 className="block text-label-md font-label-md text-on-surface mb-2"
               >
-                Full Name *
+                Họ và tên *
               </label>
               <div className="relative">
                 <UserIcon
@@ -230,7 +230,7 @@ export const RegisterPage = () => {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   className="w-full bg-surface-container-low border-none rounded-lg py-3 px-12 focus:ring-2 focus:ring-primary transition-all"
-                  placeholder="John Doe"
+                  placeholder="Ví dụ: Nguyễn Văn A"
                   disabled={loading}
                 />
               </div>
@@ -254,7 +254,7 @@ export const RegisterPage = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-surface-container-low border-none rounded-lg py-3 px-12 focus:ring-2 focus:ring-primary transition-all"
-                  placeholder="your@email.com"
+                  placeholder="email@example.com"
                   disabled={loading}
                 />
               </div>
@@ -265,7 +265,7 @@ export const RegisterPage = () => {
                 htmlFor="phone"
                 className="block text-label-md font-label-md text-on-surface mb-2"
               >
-                Phone (Optional)
+                Số điện thoại (Tùy chọn)
               </label>
               <div className="relative">
                 <Phone
@@ -278,7 +278,7 @@ export const RegisterPage = () => {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   className="w-full bg-surface-container-low border-none rounded-lg py-3 px-12 focus:ring-2 focus:ring-primary transition-all"
-                  placeholder="+1 234 567 8900"
+                  placeholder="Ví dụ: 0912345678"
                   disabled={loading}
                 />
               </div>
@@ -289,7 +289,7 @@ export const RegisterPage = () => {
                 htmlFor="password"
                 className="block text-label-md font-label-md text-on-surface mb-2"
               >
-                Password *
+                Mật khẩu *
               </label>
               <div className="relative">
                 <Lock
@@ -311,7 +311,7 @@ export const RegisterPage = () => {
                   onClick={() => setShowPassword(!showPassword)}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowPassword(!showPassword); }}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors cursor-pointer flex items-center justify-center h-full w-10"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? "Ẩn mật khẩu" : "Hiển thị mật khẩu"}
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </div>
@@ -323,7 +323,7 @@ export const RegisterPage = () => {
                 htmlFor="confirmPassword"
                 className="block text-label-md font-label-md text-on-surface mb-2"
               >
-                Confirm Password *
+                Nhập lại mật khẩu *
               </label>
               <div className="relative">
                 <Lock
@@ -345,7 +345,7 @@ export const RegisterPage = () => {
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowConfirmPassword(!showConfirmPassword); }}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors cursor-pointer flex items-center justify-center h-full w-10"
-                  aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                  aria-label={showConfirmPassword ? "Ẩn xác nhận mật khẩu" : "Hiển thị xác nhận mật khẩu"}
                 >
                   {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </div>
@@ -360,10 +360,10 @@ export const RegisterPage = () => {
               {loading ? (
                 <>
                   <Loader className="animate-spin" size={20} />
-                  Creating account...
+                  Đang tạo tài khoản...
                 </>
               ) : (
-                'Create Account'
+                'Tạo tài khoản'
               )}
             </button>
           </form>
@@ -375,7 +375,7 @@ export const RegisterPage = () => {
               </div>
               <div className="relative flex justify-center text-label-sm">
                 <span className="px-4 bg-surface-container-lowest text-on-surface-variant">
-                  Or continue with
+                  Hoặc tiếp tục bằng
                 </span>
               </div>
             </div>
@@ -394,9 +394,9 @@ export const RegisterPage = () => {
           </div>
 
           <div className="mt-6 text-center text-label-md text-on-surface-variant">
-            Already have an account?{' '}
+            Đã có tài khoản?{' '}
             <Link to="/login" className="text-primary font-bold hover:underline">
-              Sign in
+              Đăng nhập
             </Link>
           </div>
         </div>

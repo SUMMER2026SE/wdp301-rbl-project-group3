@@ -79,10 +79,10 @@ export const DashboardProfilePage = () => {
       await userService.updateProfile({ fullName, phone: phone || undefined })
       await refreshUser()
 
-      setSuccess('Profile updated successfully.')
+      setSuccess('Cập nhật thông tin tài khoản thành công.')
       setAvatarFile(null)
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to update profile.'))
+      setError(getErrorMessage(err, 'Cập nhật thông tin thất bại.'))
     } finally {
       setLoading(false)
     }
@@ -96,9 +96,9 @@ export const DashboardProfilePage = () => {
     try {
       await authService.requestEmailVerificationOtp()
       setShowOtpModal(true)
-      setSuccess('OTP sent to your email.')
+      setSuccess('Mã OTP đã được gửi về email của bạn.')
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to send OTP.'))
+      setError(getErrorMessage(err, 'Yêu cầu gửi mã OTP thất bại.'))
     } finally {
       setLoading(false)
     }
@@ -113,10 +113,10 @@ export const DashboardProfilePage = () => {
       await authService.verifyEmailOtp(otp)
       setShowOtpModal(false)
       setOtp('')
-      setSuccess('Email verified successfully.')
+      setSuccess('Xác thực email thành công.')
       await refreshUser()
     } catch (err) {
-      setOtpError(getErrorMessage(err, 'Invalid OTP.'))
+      setOtpError(getErrorMessage(err, 'Mã OTP không chính xác.'))
     } finally {
       setOtpLoading(false)
     }
@@ -127,7 +127,7 @@ export const DashboardProfilePage = () => {
       <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-6">
         <div className="flex items-center gap-3 text-on-surface-variant">
           <Loader className="animate-spin" size={20} />
-          Loading profile...
+          Đang tải thông tin tài khoản...
         </div>
       </div>
     )
@@ -136,12 +136,12 @@ export const DashboardProfilePage = () => {
   return (
     <div className="max-w-4xl space-y-6">
       <section>
-        <p className="text-sm font-bold uppercase tracking-wide text-primary">Profile</p>
+        <p className="text-sm font-bold uppercase tracking-wide text-primary">Hồ sơ</p>
         <h1 className="mt-1 text-2xl font-black text-on-surface sm:text-3xl">
-          Personal information
+          Thông tin cá nhân
         </h1>
         <p className="mt-2 text-sm text-on-surface-variant">
-          Keep your contact details current for smoother deliveries and account recovery.
+          Cập nhật chi tiết liên lạc của bạn để quá trình nhận hàng và bảo mật tài khoản tốt hơn.
         </p>
       </section>
 
@@ -168,7 +168,7 @@ export const DashboardProfilePage = () => {
             <div className="relative mx-auto h-32 w-32 lg:mx-0">
               <div className="h-full w-full overflow-hidden rounded-full bg-surface-container-high">
                 {avatarPreview ? (
-                  <img src={avatarPreview} alt="Avatar preview" className="h-full w-full object-cover" />
+                  <img src={avatarPreview} alt="Xem trước ảnh đại diện" className="h-full w-full object-cover" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-on-surface-variant">
                     <UserIcon size={46} />
@@ -183,19 +183,19 @@ export const DashboardProfilePage = () => {
                   accept="image/*"
                   onChange={handleAvatarChange}
                   disabled={loading}
-                  title="Upload avatar"
-                  aria-label="Upload avatar"
+                  title="Tải ảnh đại diện lên"
+                  aria-label="Tải ảnh đại diện lên"
                 />
               </label>
             </div>
             <p className="mt-3 text-center text-xs text-on-surface-variant lg:text-left">
-              JPG or PNG recommended.
+              Khuyên dùng ảnh định dạng JPG hoặc PNG.
             </p>
           </div>
 
           <div className="space-y-5">
             <div>
-              <label htmlFor="fullName" className="mb-1 block text-sm font-bold text-on-surface">Full Name</label>
+              <label htmlFor="fullName" className="mb-1 block text-sm font-bold text-on-surface">Họ và tên</label>
               <div className="relative">
                 <UserIcon
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant"
@@ -232,7 +232,7 @@ export const DashboardProfilePage = () => {
                 {user.isEmailVerified ? (
                   <div className="inline-flex items-center justify-center gap-1 rounded-lg bg-primary-container px-3 py-2 text-sm font-bold text-on-primary-container">
                     <ShieldCheck size={18} />
-                    Verified
+                    Đã xác thực
                   </div>
                 ) : (
                   <button
@@ -241,7 +241,7 @@ export const DashboardProfilePage = () => {
                     disabled={loading}
                     className="rounded-lg bg-secondary px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-secondary-container hover:text-on-secondary-container disabled:opacity-50"
                   >
-                    Verify Email
+                    Xác thực Email
                   </button>
                 )}
               </div>
@@ -249,7 +249,7 @@ export const DashboardProfilePage = () => {
 
             <div>
               <label htmlFor="phone" className="mb-1 block text-sm font-bold text-on-surface">
-                Phone Number
+                Số điện thoại
               </label>
               <div className="relative">
                 <Phone
@@ -262,7 +262,7 @@ export const DashboardProfilePage = () => {
                   value={phone}
                   onChange={(event) => setPhone(event.target.value)}
                   disabled={loading}
-                  placeholder="Add your phone number"
+                  placeholder="Nhập số điện thoại của bạn"
                   className="w-full rounded-lg border border-transparent bg-surface-container-low py-3 pl-10 pr-4 text-sm outline-none transition focus:border-primary/30 focus:ring-2 focus:ring-primary/20"
                 />
               </div>
@@ -277,12 +277,12 @@ export const DashboardProfilePage = () => {
                 {loading ? (
                   <>
                     <Loader className="animate-spin" size={18} />
-                    Saving...
+                    Đang lưu...
                   </>
                 ) : (
                   <>
                     <Save size={18} />
-                    Save Changes
+                    Lưu thay đổi
                   </>
                 )}
               </button>
@@ -294,9 +294,9 @@ export const DashboardProfilePage = () => {
       {showOtpModal ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-xl bg-surface-container-lowest p-6 shadow-xl">
-            <h2 className="text-xl font-black text-on-surface">Verify Email</h2>
+            <h2 className="text-xl font-black text-on-surface">Xác thực Email</h2>
             <p className="mt-2 text-sm text-on-surface-variant">
-              Enter the 6-digit OTP sent to <span className="font-bold">{user.email}</span>.
+              Nhập mã OTP gồm 6 chữ số đã được gửi tới <span className="font-bold">{user.email}</span>.
             </p>
 
             {otpError ? (
@@ -323,14 +323,14 @@ export const DashboardProfilePage = () => {
                   onClick={() => setShowOtpModal(false)}
                   className="rounded-lg px-4 py-2.5 text-sm font-bold text-on-surface-variant transition-colors hover:bg-surface-container-low"
                 >
-                  Cancel
+                  Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={otpLoading || otp.length !== 6}
                   className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-on-primary-fixed-variant disabled:opacity-50"
                 >
-                  {otpLoading ? <Loader className="animate-spin" size={18} /> : 'Verify'}
+                  {otpLoading ? <Loader className="animate-spin" size={18} /> : 'Xác thực'}
                 </button>
               </div>
             </form>

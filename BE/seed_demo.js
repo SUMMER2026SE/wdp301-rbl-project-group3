@@ -39,20 +39,20 @@ async function seed() {
   // 1. SYSTEM SETTINGS — Đảm bảo tất cả cài đặt hệ thống tồn tại
   // ──────────────────────────────────────────────────────────────────────────────
   const settings = [
-    { key: 'store_name',                 label: 'Tên cửa hàng',              group: 'general',      value: 'PMAN-Mart',  valueType: 'string',  isPublic: true,  description: 'Tên hiển thị của cửa hàng' },
-    { key: 'hotline',                    label: 'Hotline',                    group: 'general',      value: '1900 1234',  valueType: 'string',  isPublic: true,  description: 'Số điện thoại hỗ trợ khách hàng' },
-    { key: 'support_email',              label: 'Email hỗ trợ',               group: 'general',      value: 'support@pmanmart.vn', valueType: 'string', isPublic: true, description: 'Email liên hệ hỗ trợ' },
-    { key: 'maintenance_mode',           label: 'Chế độ bảo trì',             group: 'general',      value: false,        valueType: 'boolean', isPublic: true,  description: 'Bật để chặn truy cập khách hàng' },
-    { key: 'min_order_amount',           label: 'Giá trị đơn tối thiểu',      group: 'order',        value: 50000,        valueType: 'number',  isPublic: true,  description: 'Đơn hàng tối thiểu để đặt (VNĐ)' },
-    { key: 'order_cancel_timeout_minutes', label: 'Thời gian hủy đơn (phút)', group: 'order',        value: 30,           valueType: 'number',  isPublic: false, description: 'Thời gian tối đa khách được hủy đơn' },
-    { key: 'free_shipping_threshold',    label: 'Ngưỡng miễn phí vận chuyển', group: 'delivery',     value: 300000,       valueType: 'number',  isPublic: true,  description: 'Đơn từ mức này sẽ miễn phí ship (VNĐ)' },
-    { key: 'default_delivery_fee',       label: 'Phí giao hàng mặc định',     group: 'delivery',     value: 25000,        valueType: 'number',  isPublic: true,  description: 'Phí ship khi đơn dưới ngưỡng miễn phí (VNĐ)' },
-    { key: 'vat_rate',                   label: 'Thuế suất VAT (%)',           group: 'payment',      value: 10,           valueType: 'number',  isPublic: true,  description: 'Thuế VAT cộng vào hóa đơn' },
-    { key: 'loyalty_points_per_10k',     label: 'Điểm thưởng mỗi 10.000đ',   group: 'loyalty',      value: 1,            valueType: 'number',  isPublic: true,  description: 'Số điểm tích lũy cho mỗi 10.000đ chi tiêu' },
-    { key: 'loyalty_bronze_threshold',   label: 'Ngưỡng hạng Đồng (điểm)',    group: 'loyalty',      value: 100,          valueType: 'number',  isPublic: true,  description: 'Điểm trọn đời để lên hạng Đồng' },
-    { key: 'loyalty_silver_threshold',   label: 'Ngưỡng hạng Bạc (điểm)',     group: 'loyalty',      value: 300,          valueType: 'number',  isPublic: true,  description: 'Điểm trọn đời để lên hạng Bạc' },
-    { key: 'loyalty_gold_threshold',     label: 'Ngưỡng hạng Vàng (điểm)',    group: 'loyalty',      value: 600,          valueType: 'number',  isPublic: true,  description: 'Điểm trọn đời để lên hạng Vàng' },
-    { key: 'loyalty_diamond_threshold',  label: 'Ngưỡng hạng Kim Cương (điểm)', group: 'loyalty',    value: 1000,         valueType: 'number',  isPublic: true,  description: 'Điểm trọn đời để lên hạng Kim Cương' },
+    { key: 'store_name', label: 'Tên cửa hàng', group: 'general', value: 'PMAN-Mart', valueType: 'string', isPublic: true, description: 'Tên hiển thị của cửa hàng' },
+    { key: 'hotline', label: 'Hotline', group: 'general', value: '1900 1234', valueType: 'string', isPublic: true, description: 'Số điện thoại hỗ trợ khách hàng' },
+    { key: 'support_email', label: 'Email hỗ trợ', group: 'general', value: 'support@pmanmart.vn', valueType: 'string', isPublic: true, description: 'Email liên hệ hỗ trợ' },
+    { key: 'maintenance_mode', label: 'Chế độ bảo trì', group: 'general', value: false, valueType: 'boolean', isPublic: true, description: 'Bật để chặn truy cập khách hàng' },
+    { key: 'min_order_amount', label: 'Giá trị đơn tối thiểu', group: 'order', value: 50000, valueType: 'number', isPublic: true, description: 'Đơn hàng tối thiểu để đặt (VNĐ)' },
+    { key: 'order_cancel_timeout_minutes', label: 'Thời gian hủy đơn (phút)', group: 'order', value: 30, valueType: 'number', isPublic: false, description: 'Thời gian tối đa khách được hủy đơn' },
+    { key: 'free_shipping_threshold', label: 'Ngưỡng miễn phí vận chuyển', group: 'delivery', value: 300000, valueType: 'number', isPublic: true, description: 'Đơn từ mức này sẽ miễn phí ship (VNĐ)' },
+    { key: 'default_delivery_fee', label: 'Phí giao hàng mặc định', group: 'delivery', value: 25000, valueType: 'number', isPublic: true, description: 'Phí ship khi đơn dưới ngưỡng miễn phí (VNĐ)' },
+    { key: 'vat_rate', label: 'Thuế suất VAT (%)', group: 'payment', value: 10, valueType: 'number', isPublic: true, description: 'Thuế VAT cộng vào hóa đơn' },
+    { key: 'loyalty_points_per_10k', label: 'Điểm thưởng mỗi 10.000đ', group: 'loyalty', value: 1, valueType: 'number', isPublic: true, description: 'Số điểm tích lũy cho mỗi 10.000đ chi tiêu' },
+    { key: 'loyalty_bronze_threshold', label: 'Ngưỡng hạng Đồng (điểm)', group: 'loyalty', value: 100, valueType: 'number', isPublic: true, description: 'Điểm trọn đời để lên hạng Đồng' },
+    { key: 'loyalty_silver_threshold', label: 'Ngưỡng hạng Bạc (điểm)', group: 'loyalty', value: 300, valueType: 'number', isPublic: true, description: 'Điểm trọn đời để lên hạng Bạc' },
+    { key: 'loyalty_gold_threshold', label: 'Ngưỡng hạng Vàng (điểm)', group: 'loyalty', value: 600, valueType: 'number', isPublic: true, description: 'Điểm trọn đời để lên hạng Vàng' },
+    { key: 'loyalty_diamond_threshold', label: 'Ngưỡng hạng Kim Cương (điểm)', group: 'loyalty', value: 1000, valueType: 'number', isPublic: true, description: 'Điểm trọn đời để lên hạng Kim Cương' },
   ];
 
   for (const s of settings) {
@@ -146,12 +146,12 @@ async function seed() {
   // 3. CATEGORIES — Các danh mục sản phẩm
   // ──────────────────────────────────────────────────────────────────────────────
   const categories = [
-    { name: 'Thực phẩm tươi sống',  code: 'TUOISONG',  description: 'Rau củ, thịt, hải sản tươi sống', minMargin: 20, status: 'active' },
-    { name: 'Đồ uống',              code: 'DOUONG',    description: 'Nước ngọt, nước ép, trà sữa',      minMargin: 25, status: 'active' },
-    { name: 'Bánh kẹo & Snack',     code: 'BANHKEO',  description: 'Bánh kẹo, snack, đồ ngọt',         minMargin: 30, status: 'active' },
-    { name: 'Gia vị & Nước chấm',   code: 'GIAVI',    description: 'Nước mắm, tương, gia vị nấu ăn',   minMargin: 20, status: 'active' },
-    { name: 'Chăm sóc cá nhân',     code: 'CHAMSOCC', description: 'Sữa tắm, dầu gội, kem đánh răng',  minMargin: 35, status: 'active' },
-    { name: 'Đồ dùng gia đình',     code: 'DODUONG',  description: 'Giấy ăn, túi nilon, đồ dùng bếp',  minMargin: 25, status: 'active' },
+    { name: 'Thực phẩm tươi sống', code: 'TUOISONG', description: 'Rau củ, thịt, hải sản tươi sống', minMargin: 20, status: 'active' },
+    { name: 'Đồ uống', code: 'DOUONG', description: 'Nước ngọt, nước ép, trà sữa', minMargin: 25, status: 'active' },
+    { name: 'Bánh kẹo & Snack', code: 'BANHKEO', description: 'Bánh kẹo, snack, đồ ngọt', minMargin: 30, status: 'active' },
+    { name: 'Gia vị & Nước chấm', code: 'GIAVI', description: 'Nước mắm, tương, gia vị nấu ăn', minMargin: 20, status: 'active' },
+    { name: 'Chăm sóc cá nhân', code: 'CHAMSOCC', description: 'Sữa tắm, dầu gội, kem đánh răng', minMargin: 35, status: 'active' },
+    { name: 'Đồ dùng gia đình', code: 'DODUONG', description: 'Giấy ăn, túi nilon, đồ dùng bếp', minMargin: 25, status: 'active' },
   ];
 
   const catIds = {};
@@ -171,9 +171,9 @@ async function seed() {
   // 4. BRANCHES — Chi nhánh
   // ──────────────────────────────────────────────────────────────────────────────
   const branches = [
-    { name: 'Chi nhánh Hải Châu',      code: 'HAICHAU',    address: '12 Trần Phú, Q.Hải Châu, Đà Nẵng',            phone: '0236 1234 5678', status: 'active', openingTime: '07:00', closingTime: '22:00' },
-    { name: 'Chi nhánh Thanh Khê',     code: 'THANHKHE',   address: '88 Điện Biên Phủ, Q.Thanh Khê, Đà Nẵng',      phone: '0236 2345 6789', status: 'active', openingTime: '07:00', closingTime: '22:00' },
-    { name: 'Chi nhánh Ngũ Hành Sơn',  code: 'NGUHANSON',  address: '45 Trường Sa, Q.Ngũ Hành Sơn, Đà Nẵng',       phone: '0236 3456 7890', status: 'active', openingTime: '07:00', closingTime: '22:00' },
+    { name: 'Chi nhánh Hải Châu', code: 'HAICHAU', address: '12 Trần Phú, Q.Hải Châu, Đà Nẵng', phone: '0236 1234 5678', status: 'active', openingTime: '07:00', closingTime: '22:00' },
+    { name: 'Chi nhánh Thanh Khê', code: 'THANHKHE', address: '88 Điện Biên Phủ, Q.Thanh Khê, Đà Nẵng', phone: '0236 2345 6789', status: 'active', openingTime: '07:00', closingTime: '22:00' },
+    { name: 'Chi nhánh Ngũ Hành Sơn', code: 'NGUHANSON', address: '45 Trường Sa, Q.Ngũ Hành Sơn, Đà Nẵng', phone: '0236 3456 7890', status: 'active', openingTime: '07:00', closingTime: '22:00' },
   ];
 
   const branchIds = [];
@@ -205,7 +205,7 @@ async function seed() {
   // ──────────────────────────────────────────────────────────────────────────────
   const products = [
     // Thực phẩm tươi sống
-    { name: 'Rau cải xanh', description: 'Rau cải xanh hữu cơ, tươi ngon', unit: 'bó', costPrice: 8000,  salePrice: 12000, categoryName: 'Thực phẩm tươi sống', imageUrl: 'https://via.placeholder.com/300?text=Rau+Cải', status: 'active' },
+    { name: 'Rau cải xanh', description: 'Rau cải xanh hữu cơ, tươi ngon', unit: 'bó', costPrice: 8000, salePrice: 12000, categoryName: 'Thực phẩm tươi sống', imageUrl: 'https://via.placeholder.com/300?text=Rau+Cải', status: 'active' },
     { name: 'Thịt ba chỉ heo', description: 'Thịt ba chỉ tươi, nhập hàng ngày', unit: 'kg', costPrice: 90000, salePrice: 125000, categoryName: 'Thực phẩm tươi sống', imageUrl: 'https://via.placeholder.com/300?text=Thịt+Heo', status: 'active' },
     { name: 'Trứng gà ta 10 quả', description: 'Trứng gà ta sạch, 10 quả/khay', unit: 'khay', costPrice: 30000, salePrice: 42000, categoryName: 'Thực phẩm tươi sống', imageUrl: 'https://via.placeholder.com/300?text=Trứng+Gà', status: 'active' },
 
@@ -291,9 +291,9 @@ async function seed() {
   // 7. SHIFT TEMPLATES — Ca làm việc mẫu
   // ──────────────────────────────────────────────────────────────────────────────
   const shifts = [
-    { name: 'Ca sáng',   startTime: '07:00', endTime: '13:00', branchId, description: 'Ca làm buổi sáng 7h-13h',   isActive: true },
-    { name: 'Ca chiều',  startTime: '13:00', endTime: '19:00', branchId, description: 'Ca làm buổi chiều 13h-19h', isActive: true },
-    { name: 'Ca tối',    startTime: '19:00', endTime: '23:00', branchId, description: 'Ca làm buổi tối 19h-23h',   isActive: true },
+    { name: 'Ca sáng', startTime: '07:00', endTime: '13:00', branchId, description: 'Ca làm buổi sáng 7h-13h', isActive: true },
+    { name: 'Ca chiều', startTime: '13:00', endTime: '19:00', branchId, description: 'Ca làm buổi chiều 13h-19h', isActive: true },
+    { name: 'Ca tối', startTime: '19:00', endTime: '23:00', branchId, description: 'Ca làm buổi tối 19h-23h', isActive: true },
   ];
 
   for (const s of shifts) {
@@ -475,14 +475,14 @@ async function seed() {
   // 11. COMPETITOR PRODUCTS — Dữ liệu đối thủ mẫu
   // ──────────────────────────────────────────────────────────────────────────────
   const competitors = [
-    { name: 'Coca-Cola 330ml',           sku: 'WM-COCA330',   unit: 'lon',  price: 13000, source: 'Winmart', sourceUrl: 'https://winmart.vn/coca-cola-330ml', scrapedAt: new Date() },
-    { name: 'Nước suối Aquafina 500ml',  sku: 'WM-AQUA500',   unit: 'chai', price: 8000,  source: 'Winmart', sourceUrl: 'https://winmart.vn/aquafina-500ml',   scrapedAt: new Date() },
-    { name: 'Bánh Oreo chocolate',       sku: 'WM-OREO133',   unit: 'hộp',  price: 30000, source: 'Winmart', sourceUrl: 'https://winmart.vn/oreo-chocolate',   scrapedAt: new Date() },
-    { name: 'Dầu gội Clear Men 380ml',   sku: 'WM-CLEAR380',  unit: 'chai', price: 85000, source: 'Winmart', sourceUrl: 'https://winmart.vn/clear-men-380ml',   scrapedAt: new Date() },
-    { name: 'Nước mắm Phú Quốc 500ml',  sku: 'WM-MAMM500',   unit: 'chai', price: 45000, source: 'Winmart', sourceUrl: 'https://winmart.vn/nuoc-mam-phu-quoc', scrapedAt: new Date() },
-    { name: 'Trứng gà ta 10 quả',        sku: 'WM-TRUNG10',   unit: 'khay', price: 46000, source: 'Winmart', sourceUrl: 'https://winmart.vn/trung-ga-ta',       scrapedAt: new Date() },
-    { name: 'Sữa tắm Dove 530ml',        sku: 'WM-DOVE530',   unit: 'chai', price: 98000, source: 'Winmart', sourceUrl: 'https://winmart.vn/sua-tam-dove-530ml', scrapedAt: new Date() },
-    { name: 'Snack Pringles 165g',       sku: 'WM-PRING165',  unit: 'lon',  price: 69000, source: 'Winmart', sourceUrl: 'https://winmart.vn/pringles-165g',      scrapedAt: new Date() },
+    { name: 'Coca-Cola 330ml', sku: 'WM-COCA330', unit: 'lon', price: 13000, source: 'Winmart', sourceUrl: 'https://winmart.vn/coca-cola-330ml', scrapedAt: new Date() },
+    { name: 'Nước suối Aquafina 500ml', sku: 'WM-AQUA500', unit: 'chai', price: 8000, source: 'Winmart', sourceUrl: 'https://winmart.vn/aquafina-500ml', scrapedAt: new Date() },
+    { name: 'Bánh Oreo chocolate', sku: 'WM-OREO133', unit: 'hộp', price: 30000, source: 'Winmart', sourceUrl: 'https://winmart.vn/oreo-chocolate', scrapedAt: new Date() },
+    { name: 'Dầu gội Clear Men 380ml', sku: 'WM-CLEAR380', unit: 'chai', price: 85000, source: 'Winmart', sourceUrl: 'https://winmart.vn/clear-men-380ml', scrapedAt: new Date() },
+    { name: 'Nước mắm Phú Quốc 500ml', sku: 'WM-MAMM500', unit: 'chai', price: 45000, source: 'Winmart', sourceUrl: 'https://winmart.vn/nuoc-mam-phu-quoc', scrapedAt: new Date() },
+    { name: 'Trứng gà ta 10 quả', sku: 'WM-TRUNG10', unit: 'khay', price: 46000, source: 'Winmart', sourceUrl: 'https://winmart.vn/trung-ga-ta', scrapedAt: new Date() },
+    { name: 'Sữa tắm Dove 530ml', sku: 'WM-DOVE530', unit: 'chai', price: 98000, source: 'Winmart', sourceUrl: 'https://winmart.vn/sua-tam-dove-530ml', scrapedAt: new Date() },
+    { name: 'Snack Pringles 165g', sku: 'WM-PRING165', unit: 'lon', price: 69000, source: 'Winmart', sourceUrl: 'https://winmart.vn/pringles-165g', scrapedAt: new Date() },
   ];
 
   for (const c of competitors) {
