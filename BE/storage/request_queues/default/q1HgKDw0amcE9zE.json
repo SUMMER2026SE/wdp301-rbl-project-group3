@@ -1,9 +1,0 @@
-{
-	"id": "q1HgKDw0amcE9zE",
-	"json": "{\"id\":\"q1HgKDw0amcE9zE\",\"url\":\"https://winmart.vn/products/kiaora-thit-bo-hamburger-200g--s10601378?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/kiaora-thit-bo-hamburger-200g--s10601378?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
-	"method": "GET",
-	"orderNo": 1783969311096,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/products/kiaora-thit-bo-hamburger-200g--s10601378?storeCode=1535&storeGroupCode=1998",
-	"url": "https://winmart.vn/products/kiaora-thit-bo-hamburger-200g--s10601378?storeGroupCode=1998&storeCode=1535"
-}

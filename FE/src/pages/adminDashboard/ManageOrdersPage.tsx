@@ -24,6 +24,7 @@ import { branchService } from '@services/branchService'
 import { useAuth } from '@hooks/useAuth'
 import type { AdminOrder, AdminOrderStatus, Branch } from '@/types'
 import { notify } from '../../utils/toast';
+import { useSocket } from '../../contexts/SocketContext';
 
 // Format currency in VND
 const formatVND = (num: number) => {
@@ -124,6 +125,83 @@ export const ManageOrdersPage = () => {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
+
+  const { socket } = useSocket()
+
+  // Bíp báo hiệu đơn hàng mới bằng AudioContext nội bộ
+  const playNotificationSound = () => {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+      const osc1 = ctx.createOscillator()
+      const gain1 = ctx.createGain()
+      osc1.frequency.setValueAtTime(659.25, ctx.currentTime) // E5
+      osc1.connect(gain1)
+      gain1.connect(ctx.destination)
+      gain1.gain.setValueAtTime(0.15, ctx.currentTime)
+      osc1.start()
+      osc1.stop(ctx.currentTime + 0.1)
+
+      setTimeout(() => {
+        const osc2 = ctx.createOscillator()
+        const gain2 = ctx.createGain()
+        osc2.frequency.setValueAtTime(880, ctx.currentTime) // A5
+        osc2.connect(gain2)
+        gain2.connect(ctx.destination)
+        gain2.gain.setValueAtTime(0.15, ctx.currentTime)
+        osc2.start()
+        osc2.stop(ctx.currentTime + 0.2)
+      }, 120)
+    } catch (e) {
+      console.warn('AudioContext not allowed or not supported yet', e)
+    }
+  }
+
+  // Đăng ký lắng nghe sự kiện Realtime từ Socket.io
+  useEffect(() => {
+    if (!socket) return
+
+    const handleNewOrder = (newOrder: AdminOrder) => {
+      console.log('Realtime new order received:', newOrder)
+      
+      // Kiểm tra xem đơn hàng thuộc chi nhánh đang hiển thị hay không (hoặc đang xem tất cả)
+      const orderBranchId = typeof newOrder.branchId === 'object' ? newOrder.branchId?._id : newOrder.branchId
+      if (!selectedBranch || selectedBranch === orderBranchId) {
+        playNotificationSound()
+        notify.success(`🔔 Có đơn hàng mới: #${newOrder.code}!`)
+        
+        // Cập nhật danh sách đơn hàng lập tức
+        setOrders((prev) => {
+          const exists = prev.some((o) => o._id === newOrder._id)
+          if (exists) return prev
+          return [newOrder, ...prev]
+        })
+        setTotalItems((prev) => prev + 1)
+      }
+    }
+
+    const handleOrderUpdated = (updatedOrder: AdminOrder) => {
+      console.log('Realtime order update received:', updatedOrder)
+      
+      setOrders((prev) =>
+        prev.map((o) => (o._id === updatedOrder._id ? { ...o, ...updatedOrder } : o))
+      )
+
+      setSelectedOrder((prevSelected) => {
+        if (prevSelected && prevSelected._id === updatedOrder._id) {
+          return { ...prevSelected, ...updatedOrder }
+        }
+        return prevSelected
+      })
+    }
+
+    socket.on('order:new', handleNewOrder)
+    socket.on('order:updated', handleOrderUpdated)
+
+    return () => {
+      socket.off('order:new', handleNewOrder)
+      socket.off('order:updated', handleOrderUpdated)
+    }
+  }, [socket, selectedBranch])
 
   // Sync selected branch when user info loads and user is manager/staff
   useEffect(() => {

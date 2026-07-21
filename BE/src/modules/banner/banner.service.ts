@@ -3,6 +3,7 @@ import { bannerRepository, BannerFilters, PaginatedBanners } from './banner.repo
 import { IBanner } from '../../models/banner.model';
 import { cloudinary } from '../../config/cloudinary.config';
 import { AppError } from '../../middlewares/errorHandler.middleware';
+import { emitGlobal } from '../../config/socket.config';
 
 export class BannerService {
   private uploadBannerImage(buffer: Buffer, publicId: string): Promise<string> {
@@ -54,11 +55,13 @@ export class BannerService {
 
     const createdBy = creatorId ? new Types.ObjectId(creatorId) : undefined;
 
-    return bannerRepository.create({
+    const result = await bannerRepository.create({
       ...data,
       imageUrl,
       createdBy,
     });
+    emitGlobal('banner:updated', result);
+    return result;
   }
 
   async updateBanner(id: string, data: any, file?: { buffer: Buffer; mimetype: string }): Promise<IBanner | null> {
@@ -72,12 +75,14 @@ export class BannerService {
 
     const updated = await bannerRepository.updateById(id, updateData);
     if (!updated) throw new AppError('Banner not found', 404);
+    emitGlobal('banner:updated', updated);
     return updated;
   }
 
   async deleteBanner(id: string): Promise<IBanner | null> {
     const banner = await bannerRepository.deleteById(id);
     if (!banner) throw new AppError('Banner not found', 404);
+    emitGlobal('banner:updated', banner);
     return banner;
   }
 }

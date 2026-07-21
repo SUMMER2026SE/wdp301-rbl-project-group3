@@ -1,9 +1,0 @@
-{
-	"id": "7ic2DT0OmGArEK3",
-	"json": "{\"id\":\"7ic2DT0OmGArEK3\",\"url\":\"https://winmart.vn/products/aji-mayo-sot-mayonnaise-chai-1kg--s10008609?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/aji-mayo-sot-mayonnaise-chai-1kg--s10008609?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"crawlDepth\":2,\"enqueueStrategy\":\"same-hostname\"}}}",
-	"method": "GET",
-	"orderNo": 1783969351151,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/products/aji-mayo-sot-mayonnaise-chai-1kg--s10008609?storeCode=1535&storeGroupCode=1998",
-	"url": "https://winmart.vn/products/aji-mayo-sot-mayonnaise-chai-1kg--s10008609?storeGroupCode=1998&storeCode=1535"
-}

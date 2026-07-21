@@ -1,9 +1,0 @@
-{
-	"id": "B9pVlAy4wDYnT1T",
-	"json": "{\"id\":\"B9pVlAy4wDYnT1T\",\"url\":\"https://winmart.vn/search/vinacafe\",\"uniqueKey\":\"https://winmart.vn/search/vinacafe\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
-	"method": "GET",
-	"orderNo": 1783969318865,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/search/vinacafe",
-	"url": "https://winmart.vn/search/vinacafe"
-}

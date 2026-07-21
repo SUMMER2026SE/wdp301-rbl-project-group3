@@ -2,6 +2,7 @@ import { categoryRepository } from './category.repository';
 import { AppError } from '../../middlewares/errorHandler.middleware';
 import { ICategory } from '../../models/category.model';
 import { Product } from '../../models/product.model';
+import { emitGlobal } from '../../config/socket.config';
 
 export class CategoryService {
   async createCategory(data: Partial<ICategory>): Promise<ICategory> {
@@ -9,10 +10,12 @@ export class CategoryService {
     const existing = await categoryRepository.findByCode(code);
     if (existing) throw new AppError('Category code already exists', 409);
 
-    return categoryRepository.create({
+    const result = await categoryRepository.create({
       ...data,
       code,
     });
+    emitGlobal('category:updated', result);
+    return result;
   }
 
   async getCategories(filters: {
@@ -57,6 +60,7 @@ export class CategoryService {
 
     const updated = await categoryRepository.updateById(id, data);
     if (!updated) throw new AppError('Category not found', 404);
+    emitGlobal('category:updated', updated);
     return updated;
   }
 
@@ -70,6 +74,7 @@ export class CategoryService {
 
     const updated = await categoryRepository.updateById(id, { status: 'inactive' });
     if (!updated) throw new AppError('Category not found', 404);
+    emitGlobal('category:updated', updated);
     return updated;
   }
 }

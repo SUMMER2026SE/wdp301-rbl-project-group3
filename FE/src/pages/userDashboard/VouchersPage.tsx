@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Clock, Ticket, AlertCircle, Check, Lock, Crown, Sparkles } from 'lucide-react'
 import { promotionService } from '@/services/promotionService'
 import { useAuth } from '@/hooks/useAuth'
+import { useSocket } from '@/contexts/SocketContext'
 import type { Promotion } from '@/types'
 import { notify } from '../../utils/toast';
 
@@ -96,28 +97,52 @@ export const VouchersPage = () => {
 
   const levelInfo = user ? getLevelInfo(user.memberLevel, user.lifetimePoints || 0) : null
 
-  useEffect(() => {
-    const fetchPromotions = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        const res = await promotionService.getActivePromotions({ limit: 50 })
-        if (res.success && res.data) {
-          // The backend returns { success: true, data: { data: Promotion[], pagination: ... } }
-          const list = res.data.data || []
-          setPromotions(list)
-        } else {
-          setError(res.message || 'Không thể tải danh sách khuyến mãi.')
-        }
-      } catch (err: any) {
-        setError(err.response?.data?.message || err.message || 'Đã có lỗi xảy ra.')
-      } finally {
-        setLoading(false)
-      }
-    }
+  const { socket } = useSocket()
 
+  const fetchPromotions = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const res = await promotionService.getActivePromotions({ limit: 50 })
+      if (res.success && res.data) {
+        const list = res.data.data || []
+        setPromotions(list)
+      } else {
+        setError(res.message || 'Không thể tải danh sách khuyến mãi.')
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Đã có lỗi xảy ra.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
     fetchPromotions()
   }, [])
+
+  // Lắng nghe điểm thưởng và khuyến mãi thời gian thực
+  useEffect(() => {
+    if (!socket) return
+
+    const handlePointsUpdated = () => {
+      console.log('Realtime user points updated')
+      refreshUser().catch(console.error)
+    }
+
+    const handlePromotionUpdated = () => {
+      console.log('Realtime active promotions updated')
+      fetchPromotions()
+    }
+
+    socket.on('user:points_updated', handlePointsUpdated)
+    socket.on('promotion:updated', handlePromotionUpdated)
+
+    return () => {
+      socket.off('user:points_updated', handlePointsUpdated)
+      socket.off('promotion:updated', handlePromotionUpdated)
+    }
+  }, [socket, refreshUser])
 
   const [claimLoadingId, setClaimLoadingId] = useState<string | null>(null)
 

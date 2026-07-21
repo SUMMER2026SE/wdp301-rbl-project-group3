@@ -16,6 +16,7 @@ import { branchService } from '@services/branchService'
 import { useAuth } from '@hooks/useAuth'
 import type { FlashSale, Product, Branch } from '@/types'
 import { notify } from '../../utils/toast';
+import { useSocket } from '../../contexts/SocketContext';
 
 const formatVND = (num: number) => {
   return new Intl.NumberFormat('vi-VN', {
@@ -26,6 +27,7 @@ const formatVND = (num: number) => {
 
 export const ManageFlashSalesPage = () => {
   const { user } = useAuth()
+  const { socket } = useSocket()
 
   // State lists
   const [flashSales, setFlashSales] = useState<FlashSale[]>([])
@@ -144,6 +146,22 @@ export const ManageFlashSalesPage = () => {
   useEffect(() => {
     loadFlashSales()
   }, [page, filterStatus, filterScope])
+
+  // Lắng nghe sự kiện Flash Sale thay đổi thời gian thực
+  useEffect(() => {
+    if (!socket) return
+
+    const handleFlashSaleUpdated = () => {
+      console.log('Realtime flash sale update received')
+      loadFlashSales()
+    }
+
+    socket.on('flash_sale:updated', handleFlashSaleUpdated)
+
+    return () => {
+      socket.off('flash_sale:updated', handleFlashSaleUpdated)
+    }
+  }, [socket])
 
   useEffect(() => {
     loadBranches()

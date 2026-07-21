@@ -19,6 +19,7 @@ import {
 import { orderService } from '@/services/orderService'
 import type { Order, OrderStatus } from '@/types'
 import { notify } from '../../utils/toast';
+import { useSocket } from '@/contexts/SocketContext'
 
 const formatVND = (num: number) => {
   return new Intl.NumberFormat('vi-VN', {
@@ -85,6 +86,8 @@ export const OrdersPage = () => {
   const [selectedStatusTab, setSelectedStatusTab] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
+  const { socket } = useSocket()
+
   // Pagination states
   const [page, setPage] = useState(1)
   const limit = 5
@@ -105,6 +108,40 @@ export const OrdersPage = () => {
   const [orderToCancel, setOrderToCancel] = useState<Order | null>(null)
   const [cancelReason, setCancelReason] = useState('')
   const [cancelling, setCancelling] = useState(false)
+
+  // Lắng nghe sự kiện trạng thái đơn hàng thay đổi realtime
+  useEffect(() => {
+    if (!socket) return
+
+    const handleOrderStatusUpdated = (updatedOrder: any) => {
+      console.log('Realtime order status updated:', updatedOrder)
+      
+      setOrders((prevOrders) =>
+        prevOrders.map((o) => (o.orderId === updatedOrder.orderId ? updatedOrder : o))
+      )
+
+      setSelectedOrder((prevSelected) => {
+        if (prevSelected && prevSelected.orderId === updatedOrder.orderId) {
+          orderService.trackOrder(updatedOrder.orderId)
+            .then(res => {
+              if (res.success) setTrackingList(res.data.tracking || [])
+            })
+            .catch(console.error)
+          return updatedOrder
+        }
+        return prevSelected
+      })
+
+      const meta = statusMeta[updatedOrder.status as OrderStatus] || statusMeta.pending
+      notify.success(`Đơn hàng #${updatedOrder.code || updatedOrder.orderId.substring(updatedOrder.orderId.length - 8).toUpperCase()} đã được chuyển sang: ${meta.label}`)
+    }
+
+    socket.on('order:status_updated', handleOrderStatusUpdated)
+
+    return () => {
+      socket.off('order:status_updated', handleOrderStatusUpdated)
+    }
+  }, [socket])
 
   // Fetch orders from API
   const fetchOrders = async () => {

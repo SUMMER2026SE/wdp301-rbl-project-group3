@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@hooks/useAuth'
+import { useSocket } from '@/contexts/SocketContext'
 import { orderService } from '@/services/orderService'
 import type { Order } from '@/types'
 import {
@@ -79,25 +80,46 @@ export const DashboardOverview = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        const response = await orderService.getOrders({ page: 1, limit: 100 })
-        if (response.success && response.data) {
-          setOrders(response.data.orders || [])
-        } else {
-          setError(response.message || 'Không thể tải thông tin đơn hàng.')
-        }
-      } catch (err: any) {
-        setError(err.response?.data?.message || err.message || 'Không thể kết nối dữ liệu đơn hàng.')
-      } finally {
-        setLoading(false)
+  const { socket } = useSocket()
+
+  const loadData = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const response = await orderService.getOrders({ page: 1, limit: 100 })
+      if (response.success && response.data) {
+        setOrders(response.data.orders || [])
+      } else {
+        setError(response.message || 'Không thể tải thông tin đơn hàng.')
       }
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Không thể kết nối dữ liệu đơn hàng.')
+    } finally {
+      setLoading(false)
     }
+  }
+
+  useEffect(() => {
     loadData()
   }, [])
+
+  // Lắng nghe các thay đổi đơn hàng thời gian thực
+  useEffect(() => {
+    if (!socket) return
+
+    const handleOrderChange = () => {
+      console.log('Realtime order update received in dashboard overview')
+      loadData()
+    }
+
+    socket.on('order:status_updated', handleOrderChange)
+    socket.on('order:new', handleOrderChange)
+
+    return () => {
+      socket.off('order:status_updated', handleOrderChange)
+      socket.off('order:new', handleOrderChange)
+    }
+  }, [socket])
 
   // Calculate live statistics
   const statsData = useMemo(() => {

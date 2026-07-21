@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { cartService } from '@services/cartService'
 import type { CartResponse } from '@/types'
+import { useSocket } from './SocketContext'
 
 interface CartContextType {
   cart: CartResponse | null
@@ -19,6 +20,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [cart, setCart] = useState<CartResponse | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
+
+  const { socket } = useSocket()
 
   const refreshCart = useCallback(async () => {
     const token = localStorage.getItem('accessToken')
@@ -60,6 +63,81 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     refreshCart()
   }, [refreshCart])
+
+  // Lắng nghe thay đổi tồn kho thời gian thực để cập nhật giỏ hàng
+  useEffect(() => {
+    if (!socket) return
+
+    const handleInventoryUpdated = (data: { branchId: string; productId: string; quantity: number }) => {
+      console.log('Realtime inventory update received in cart:', data)
+      
+      let currentBranchId: string | undefined
+      const savedBranchStr = localStorage.getItem('selectedBranch')
+      if (savedBranchStr) {
+        try {
+          const branch = JSON.parse(savedBranchStr)
+          currentBranchId = branch._id
+        } catch {}
+      }
+
+      if (currentBranchId && currentBranchId === data.branchId) {
+        setCart((prevCart) => {
+          if (!prevCart) return null
+
+          let cartChanged = false
+          const updatedItems = prevCart.items.map((item) => {
+            const itemProdId = item.product.id
+            if (itemProdId === data.productId) {
+              if (item.quantity > data.quantity) {
+                cartChanged = true
+                
+                const prodName = item.product.name
+                import('../utils/toast').then(({ notify }) => {
+                  notify.error(
+                    `Sản phẩm "${prodName}" chỉ còn ${data.quantity} sản phẩm trong kho. Giỏ hàng đã tự động cập nhật!`
+                  )
+                })
+                
+                return {
+                  ...item,
+                  quantity: data.quantity,
+                  subtotal: data.quantity * (item.product.price ?? 0),
+                }
+              }
+            }
+            return item
+          })
+
+          if (cartChanged) {
+            const totalItems = updatedItems.reduce((sum, item) => sum + item.quantity, 0)
+            const totalAmount = updatedItems.reduce((sum, item) => sum + item.subtotal, 0)
+            
+            const changedItem = updatedItems.find(
+              (item, idx) => item.quantity !== prevCart.items[idx].quantity
+            )
+            if (changedItem) {
+              cartService.updateItem(changedItem.itemId, changedItem.quantity, currentBranchId).catch(console.error)
+            }
+
+            return {
+              ...prevCart,
+              items: updatedItems,
+              totalItems,
+              totalAmount,
+            }
+          }
+
+          return prevCart
+        })
+      }
+    }
+
+    socket.on('inventory:updated', handleInventoryUpdated)
+
+    return () => {
+      socket.off('inventory:updated', handleInventoryUpdated)
+    }
+  }, [socket])
 
   const addToCart = useCallback(async (productId: string, quantity: number) => {
     try {

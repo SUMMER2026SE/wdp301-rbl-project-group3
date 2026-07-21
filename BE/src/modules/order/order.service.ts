@@ -3,6 +3,7 @@ import { AppError } from '../../middlewares/errorHandler.middleware';
 import { IOrder, Order, OrderStatus } from '../../models/order.model';
 import { TrackingStatus } from '../../models/deliveryTracking.model';
 import { inventoryRepository } from '../inventory/inventory.repository';
+import { emitToRoom, emitGlobal } from '../../config/socket.config';
 import { orderRepository } from './order.repository';
 import { cartRepository } from '../cart/cart.repository';
 import { promotionValidationService } from '../promotion/services/validation.service';
@@ -91,6 +92,7 @@ export class OrderService {
       actor.userId,
       'Order confirmed by back-office staff'
     );
+    this.emitOrderUpdate(updated);
     return updated;
   }
 
@@ -192,6 +194,12 @@ export class OrderService {
 
             user.memberLevel = newLevel;
             await user.save();
+
+            emitToRoom(`customer:${user._id.toString()}`, 'user:points_updated', {
+              points: user.points,
+              lifetimePoints: user.lifetimePoints,
+              memberLevel: user.memberLevel,
+            });
           }
         } catch (err) {
           console.error('[LOYALTY_POINTS_AWARD_FAILED]', err);
@@ -199,6 +207,7 @@ export class OrderService {
       }
     }
 
+    this.emitOrderUpdate(updated);
     return updated;
   }
 
@@ -220,6 +229,12 @@ export class OrderService {
         if (!result.inventory) {
           throw new AppError(`Insufficient stock for product ${productId}`, 400);
         }
+
+        emitGlobal('inventory:updated', {
+          branchId,
+          productId,
+          quantity: result.inventory.quantity,
+        });
 
       } catch (error) {
         await this.increaseOrderStock(order, staffId, false);
@@ -255,6 +270,11 @@ export class OrderService {
         if (result.restored) {
           restoredItems.push({ productId, quantity: item.quantity });
         }
+        emitGlobal('inventory:updated', {
+          branchId,
+          productId,
+          quantity: result.inventory.quantity,
+        });
       } catch (error) {
         for (const restored of restoredItems.reverse()) {
           await inventoryRepository.applyOrderStockDeduction({
@@ -460,6 +480,7 @@ export class OrderService {
       customerId,
       reason ?? 'Cancelled by customer'
     );
+    this.emitOrderUpdate(updatedOrder);
     return this.buildCustomerOrderResponse(updatedOrder);
   }
 
@@ -632,7 +653,13 @@ export class OrderService {
     // 8. Xóa sạch giỏ hàng
     await cartRepository.clearCart(customerId);
 
-    return this.buildCustomerOrderResponse(order);
+    const orderResponse = this.buildCustomerOrderResponse(order);
+    // Phát tin realtime cho chi nhánh được chọn và cho toàn bộ Admin/Staff
+    emitToRoom(`branch:${data.branchId}`, 'order:new', orderResponse);
+    emitToRoom('role:admin', 'order:created', orderResponse);
+    emitToRoom('role:branch_manager', 'order:created', orderResponse);
+
+    return orderResponse;
   }
 
   private buildTrackingActor(value: unknown) {
@@ -677,6 +704,16 @@ export class OrderService {
     } catch (err) {
       console.error('[RESTORE_FLASH_SALE_QUANTITIES_FAILED]', err);
     }
+  }
+  private emitOrderUpdate(order: any) {
+    const customerId = this.getObjectIdString(order.customerId);
+    const branchId = this.getObjectIdString(order.branchId);
+    const orderResponse = this.buildCustomerOrderResponse(order);
+
+    emitToRoom(`customer:${customerId}`, 'order:status_updated', orderResponse);
+    emitToRoom(`branch:${branchId}`, 'order:updated', orderResponse);
+    emitToRoom('role:admin', 'order:updated', orderResponse);
+    emitToRoom('role:branch_manager', 'order:updated', orderResponse);
   }
 }
 

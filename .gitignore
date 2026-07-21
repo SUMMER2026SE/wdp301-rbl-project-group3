@@ -2,3 +2,10 @@ DEVELOPMENT_RULES.md
 integration_plan.md
 FE/.env
 BE/.env
+BE/storage/
+BE/scratch/
+BE/check_active_branches.js
+system_settings_audit_report.md
+node_modules/
+BE/node_modules/
+FE/node_modules/
