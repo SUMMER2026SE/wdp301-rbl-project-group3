@@ -4,6 +4,7 @@ import { cloudinary } from '../../config/cloudinary.config';
 import { productRepository } from './product.repository';
 import { generateUniqueSku } from '../../utils/sku.util';
 import { normalizeString } from '../../utils/string.util';
+import { emitGlobal } from '../../config/socket.config';
 
 export interface ListProductsQuery {
   page: number;
@@ -87,7 +88,7 @@ export class ProductService {
       imageUrl = await this.uploadProductImage(file.buffer, `sku_${sku}`);
     }
 
-    return productRepository.create({
+    const result = await productRepository.create({
       ...data,
       sku,
       unit: data.unit || 'item',
@@ -98,6 +99,9 @@ export class ProductService {
       normalizedBrand: data.brand ? normalizeString(data.brand) : undefined,
       normalizedUnit: normalizeString(data.unit || 'item'),
     });
+
+    emitGlobal('product:created', result);
+    return result;
   }
 
   async getProductById(id: string): Promise<IProduct> {
@@ -145,12 +149,14 @@ export class ProductService {
 
     const updated = await productRepository.updateById(id, updateData);
     if (!updated) throw new AppError('Product not found', 404);
+    emitGlobal('product:updated', updated);
     return updated;
   }
 
   async deleteProduct(id: string): Promise<IProduct> {
     const updated = await productRepository.updateById(id, { status: 'inactive' });
     if (!updated) throw new AppError('Product not found', 404);
+    emitGlobal('product:deleted', updated);
     return updated;
   }
 

@@ -1,9 +1,0 @@
-{
-	"id": "PEYlVWBX3JYKZOp",
-	"json": "{\"id\":\"PEYlVWBX3JYKZOp\",\"url\":\"https://winmart.vn/tuan-le-thuong-hieu\",\"loadedUrl\":\"https://winmart.vn/tuan-le-thuong-hieu\",\"uniqueKey\":\"https://winmart.vn/tuan-le-thuong-hieu\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-07-22T13:36:31.676Z\"}",
-	"method": "GET",
-	"orderNo": null,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/tuan-le-thuong-hieu",
-	"url": "https://winmart.vn/tuan-le-thuong-hieu"
-}

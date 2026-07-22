@@ -5,6 +5,7 @@ import { Voucher } from '../../../models/voucher.model';
 import { User } from '../../../models/user.model';
 import { AppError } from '../../../middlewares/errorHandler.middleware';
 import { CallerContext } from '../types';
+import { emitGlobal } from '../../../config/socket.config';
 
 function toPromotionResponse(p: IPromotion) {
   return {
@@ -101,7 +102,9 @@ export class PromotionService {
       createdBy: new Types.ObjectId(caller.userId),
     });
 
-    return toPromotionResponse(promotion);
+    const promoRes = toPromotionResponse(promotion);
+    emitGlobal('promotion:updated', { action: 'created', promotion: promoRes });
+    return promoRes;
   }
 
   async listPromotions(
@@ -306,7 +309,9 @@ export class PromotionService {
     });
 
     if (!updated) throw new AppError('Promotion not found', 404);
-    return toPromotionResponse(updated);
+    const promoRes = toPromotionResponse(updated);
+    emitGlobal('promotion:updated', { action: 'updated', promotion: promoRes });
+    return promoRes;
   }
 
   async deletePromotion(promotionId: string, caller: CallerContext) {
@@ -321,6 +326,8 @@ export class PromotionService {
 
     await promotionRepository.disableManyVouchersByPromotion(promotionId);
     await promotionRepository.deletePromotion(promotionId);
+
+    emitGlobal('promotion:updated', { action: 'deleted', id: promotionId });
 
     return { message: 'Promotion deleted successfully' };
   }
@@ -340,7 +347,9 @@ export class PromotionService {
       updatedBy: new Types.ObjectId(caller.userId),
     });
 
-    return toPromotionResponse(updated!);
+    const promoRes = toPromotionResponse(updated!);
+    emitGlobal('promotion:updated', { action: 'activated', promotion: promoRes });
+    return promoRes;
   }
 
   async deactivatePromotion(promotionId: string, caller: CallerContext) {
@@ -358,7 +367,9 @@ export class PromotionService {
       updatedBy: new Types.ObjectId(caller.userId),
     });
 
-    return toPromotionResponse(updated!);
+    const promoRes = toPromotionResponse(updated!);
+    emitGlobal('promotion:updated', { action: 'deactivated', promotion: promoRes });
+    return promoRes;
   }
 }
 

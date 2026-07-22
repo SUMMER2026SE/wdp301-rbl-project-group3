@@ -21,9 +21,12 @@ import shiftService, { ShiftTemplate, ShiftRegistration } from '@services/shiftS
 import { branchService } from '@services/branchService'
 import { employeeService } from '@services/employeeService'
 import type { Branch, Employee } from '@/types'
+import { useSocket } from '../../contexts/SocketContext'
+import { notify } from '../../utils/toast'
 
 export const ManageShiftsPage = () => {
   const { user } = useAuth()
+  const { socket } = useSocket()
   const isStaff = user?.role === 'staff'
   const isBranchManager = user?.role === 'branch_manager'
   const isAdmin = user?.role === 'admin'
@@ -258,6 +261,30 @@ export const ManageShiftsPage = () => {
       loadRegistrations()
     }
   }, [selectedBranchId, mondayDateStr, filterEmployeeId, filterStatus, activeTab])
+
+  // Lắng nghe sự kiện ca trực thay đổi thời gian thực
+  useEffect(() => {
+    if (!socket) return
+
+    const handleShiftUpdated = (data: any) => {
+      console.log('Realtime shift update received:', data)
+      loadRegistrations()
+      
+      if (data.action === 'reviewed') {
+        notify.success('🔔 Một đơn đăng ký ca làm đã được duyệt mới!')
+      } else if (data.action === 'created') {
+        notify.success('🔔 Có yêu cầu đăng ký ca làm mới từ nhân viên!')
+      } else if (data.action === 'cancelled') {
+        notify.success('🔔 Một ca đăng ký đã được hủy bỏ.')
+      }
+    }
+
+    socket.on('shift:updated', handleShiftUpdated)
+
+    return () => {
+      socket.off('shift:updated', handleShiftUpdated)
+    }
+  }, [socket, selectedBranchId])
 
   // --- SUBMISSIONS ---
   // Registration Form

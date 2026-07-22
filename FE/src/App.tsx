@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import { GoogleOAuthProvider } from '@react-oauth/google'
+import { SocketProvider } from './contexts/SocketContext'
 import { CartProvider } from './contexts/CartContext'
 import { FavoritesProvider } from './contexts/FavoritesContext'
 import { useEffect, useState } from 'react'
@@ -137,14 +138,16 @@ function AppRoutes() {
 function App() {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <CartProvider>
-        <FavoritesProvider>
-          <Router>
-            <AppRoutes />
-            <Toaster />
-          </Router>
-        </FavoritesProvider>
-      </CartProvider>
+      <SocketProvider>
+        <CartProvider>
+          <FavoritesProvider>
+            <Router>
+              <AppRoutes />
+              <Toaster />
+            </Router>
+          </FavoritesProvider>
+        </CartProvider>
+      </SocketProvider>
     </GoogleOAuthProvider>
   )
 }

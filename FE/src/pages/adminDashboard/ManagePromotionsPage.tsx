@@ -22,6 +22,7 @@ import { branchService } from '@services/branchService'
 import type { Promotion, Voucher, Branch } from '@/types'
 import { useAuth } from '@hooks/useAuth'
 import { notify } from '../../utils/toast';
+import { useSocket } from '../../contexts/SocketContext';
 
 const formatVND = (num: number) => {
   return new Intl.NumberFormat('vi-VN', {
@@ -145,9 +146,29 @@ export const ManagePromotionsPage = () => {
     }
   }
 
+  const { socket } = useSocket()
+
   useEffect(() => {
     loadPromotions()
   }, [page, filterStatus, filterScope])
+
+  // Lắng nghe sự kiện khuyến mãi thay đổi thời gian thực
+  useEffect(() => {
+    if (!socket) return
+
+    const handlePromotionUpdated = () => {
+      console.log('Realtime promotion update received')
+      loadPromotions()
+    }
+
+    socket.on('promotion:updated', handlePromotionUpdated)
+    socket.on('voucher:claimed', handlePromotionUpdated)
+
+    return () => {
+      socket.off('promotion:updated', handlePromotionUpdated)
+      socket.off('voucher:claimed', handlePromotionUpdated)
+    }
+  }, [socket])
 
   useEffect(() => {
     loadBranches()

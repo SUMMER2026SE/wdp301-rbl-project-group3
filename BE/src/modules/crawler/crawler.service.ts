@@ -5,13 +5,15 @@ import { crawlerImageService } from './image.service';
 import { CompetitorProduct } from '../../models/competitor-product.model';
 import { Category } from '../../models/category.model';
 import { normalizeString } from '../../utils/string.util';
+import { emitToRoom, emitGlobal } from '../../config/socket.config';
 
 export class CrawlerService {
   private isRunning = false;
   private crawlerInstance: PlaywrightCrawler | null = null;
+  private crawledCount = 0;
 
   public getStatus() {
-    return { isRunning: this.isRunning };
+    return { isRunning: this.isRunning, crawledCount: this.crawledCount };
   }
 
   public async stopCrawl(): Promise<void> {
@@ -21,6 +23,7 @@ export class CrawlerService {
       this.isRunning = false;
       this.crawlerInstance = null;
       console.log('--- Web Crawler Stopped ---');
+      emitGlobal('crawler:status', { isRunning: false, crawledCount: this.crawledCount });
     }
   }
 
@@ -29,8 +32,11 @@ export class CrawlerService {
       console.log('Crawler is already running. Skipping this trigger.');
       return;
     }
+    const self = this;
     this.isRunning = true;
+    this.crawledCount = 0;
     console.log('--- Starting Web Crawler ---');
+    emitGlobal('crawler:status', { isRunning: true, crawledCount: 0 });
 
     try {
       this.crawlerInstance = new PlaywrightCrawler({
@@ -144,6 +150,14 @@ export class CrawlerService {
                 rawParsed: parsedData,
                 dbStatus: existingProduct ? 'updated' : 'created',
               });
+
+              // Cập nhật tiến độ cào realtime
+              self.crawledCount++;
+              emitGlobal('crawler:progress', {
+                isRunning: self.isRunning,
+                crawledCount: self.crawledCount,
+                lastCrawledProduct: parsedData.name,
+              });
             } else {
               log.warning(`AI failed to parse product at ${request.url}`);
             }
@@ -158,8 +172,10 @@ export class CrawlerService {
       // Bắt đầu cào
       await this.crawlerInstance.run(crawlerConfig.startUrls);
       console.log('--- Web Crawler Finished ---');
+      emitGlobal('crawler:status', { isRunning: false, crawledCount: this.crawledCount });
     } catch (error) {
       console.error('Crawler Error:', error);
+      emitGlobal('crawler:status', { isRunning: false, crawledCount: this.crawledCount, error: String(error) });
     } finally {
       this.isRunning = false;
     }
