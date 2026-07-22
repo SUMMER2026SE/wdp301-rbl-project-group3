@@ -1,9 +1,9 @@
 {
 	"id": "Obw2qKCG4bNblaN",
-	"json": "{\"id\":\"Obw2qKCG4bNblaN\",\"url\":\"https://winmart.vn/products/president-bo-nhat-hop-10gx10--s10005780?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/president-bo-nhat-hop-10gx10--s10005780?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
+	"json": "{\"id\":\"Obw2qKCG4bNblaN\",\"url\":\"https://winmart.vn/products/president-bo-nhat-hop-10gx10--s10005780?storeGroupCode=1998&storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/products/president-bo-nhat-hop-10gx10--s10005780?storeCode=1535&storeGroupCode=1998\",\"uniqueKey\":\"https://winmart.vn/products/president-bo-nhat-hop-10gx10--s10005780?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":1,\"errorMessages\":[\"Error: Failed to parse product data using AI\\n    at AiService.parseProductData (C:\\\\Users\\\\ADMIN\\\\Desktop\\\\wdp301-rbl-project-group3\\\\BE\\\\src\\\\modules\\\\crawler\\\\ai.service.ts:76:13)\\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\\n    at PlaywrightCrawler.requestHandler [as userProvidedRequestHandler] (C:\\\\Users\\\\ADMIN\\\\Desktop\\\\wdp301-rbl-project-group3\\\\BE\\\\src\\\\modules\\\\crawler\\\\crawler.service.ts:88:32)\\n    at wrap (C:\\\\Users\\\\ADMIN\\\\Desktop\\\\wdp301-rbl-project-group3\\\\BE\\\\node_modules\\\\@apify\\\\src\\\\index.ts:78:27)\"],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-07-22T13:43:46.193Z\"}",
 	"method": "GET",
-	"orderNo": 1783969214646,
-	"retryCount": 0,
+	"orderNo": null,
+	"retryCount": 1,
 	"uniqueKey": "https://winmart.vn/products/president-bo-nhat-hop-10gx10--s10005780?storeCode=1535&storeGroupCode=1998",
 	"url": "https://winmart.vn/products/president-bo-nhat-hop-10gx10--s10005780?storeGroupCode=1998&storeCode=1535"
 }

@@ -1,9 +1,9 @@
 {
 	"id": "aKZISqkq2Vcn6dB",
-	"json": "{\"id\":\"aKZISqkq2Vcn6dB\",\"url\":\"https://winmart.vn/products/closeup-kdr-whitenow-bluesapphire-100g--s10171343?storeGroupCode=1998&storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/products/closeup-kdr-whitenow-bluesapphire-100g--s10171343?storeCode=1535&storeGroupCode=1998\",\"uniqueKey\":\"https://winmart.vn/products/closeup-kdr-whitenow-bluesapphire-100g--s10171343?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":1,\"errorMessages\":[\"Error: Failed to parse product data using AI\\n    at AiService.parseProductData (C:\\\\Users\\\\ADMIN\\\\Desktop\\\\wdp301-rbl-project-group3\\\\BE\\\\src\\\\modules\\\\crawler\\\\ai.service.ts:76:13)\\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\\n    at PlaywrightCrawler.requestHandler [as userProvidedRequestHandler] (C:\\\\Users\\\\ADMIN\\\\Desktop\\\\wdp301-rbl-project-group3\\\\BE\\\\src\\\\modules\\\\crawler\\\\crawler.service.ts:88:32)\\n    at wrap (C:\\\\Users\\\\ADMIN\\\\Desktop\\\\wdp301-rbl-project-group3\\\\BE\\\\node_modules\\\\@apify\\\\src\\\\index.ts:78:27)\"],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":5}}}",
+	"json": "{\"id\":\"aKZISqkq2Vcn6dB\",\"url\":\"https://winmart.vn/products/closeup-kdr-whitenow-bluesapphire-100g--s10171343?storeGroupCode=1998&storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/products/closeup-kdr-whitenow-bluesapphire-100g--s10171343?storeCode=1535&storeGroupCode=1998\",\"uniqueKey\":\"https://winmart.vn/products/closeup-kdr-whitenow-bluesapphire-100g--s10171343?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2,\"state\":4}},\"handledAt\":\"2026-07-22T13:44:28.968Z\"}",
 	"method": "GET",
-	"orderNo": 1783970600250,
-	"retryCount": 1,
+	"orderNo": null,
+	"retryCount": 0,
 	"uniqueKey": "https://winmart.vn/products/closeup-kdr-whitenow-bluesapphire-100g--s10171343?storeCode=1535&storeGroupCode=1998",
 	"url": "https://winmart.vn/products/closeup-kdr-whitenow-bluesapphire-100g--s10171343?storeGroupCode=1998&storeCode=1535"
 }

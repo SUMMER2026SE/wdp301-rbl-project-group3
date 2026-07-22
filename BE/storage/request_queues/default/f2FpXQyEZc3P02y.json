@@ -1,6 +1,6 @@
 {
 	"id": "f2FpXQyEZc3P02y",
-	"json": "{\"id\":\"f2FpXQyEZc3P02y\",\"url\":\"https://winmart.vn/bo-sua-pho-mai--c0138?storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/bo-sua-pho-mai--c0138?storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/bo-sua-pho-mai--c0138?storeCode=1535\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-07-13T19:00:14.678Z\"}",
+	"json": "{\"id\":\"f2FpXQyEZc3P02y\",\"url\":\"https://winmart.vn/bo-sua-pho-mai--c0138?storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/bo-sua-pho-mai--c0138?storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/bo-sua-pho-mai--c0138?storeCode=1535\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-07-22T13:28:41.347Z\"}",
 	"method": "GET",
 	"orderNo": null,
 	"retryCount": 0,

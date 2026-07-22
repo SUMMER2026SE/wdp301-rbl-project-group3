@@ -1,13 +1,13 @@
 {
-	"url": "https://winmart.vn/products/chante-ng-chante-h.hoa-hong-phap-3.1kg--s10274187?storeGroupCode=1998&storeCode=1535",
+	"url": "https://winmart.vn/products/meizan-hat-nem-thit-xotcr-heo-1kg--s10141530?storeGroupCode=1998&storeCode=1535",
 	"rawParsed": {
-		"name": "CHANTE NG Chante h.hoa hồng Pháp 3.1kg",
-		"sku": "10274187",
-		"brand": "CHANTE NG",
-		"price": 119000,
+		"name": "Hạt Nêm Meizan Vị Heo 1kg",
+		"sku": "10141530",
+		"brand": "Meizan",
+		"price": 39900,
 		"unit": "kg",
-		"description": "CHANTE NG Chante h.hoa hồng Pháp 3.1kg",
-		"categoryName": "Nước giặt"
+		"description": "Hạt nêm Meizan thịt - xương ống - tủy - cà rốt - vị heo 1kg. Từ 4 nguyên liệu 100% tươi ngon, chọn lọc gồm thịt heo, xương ống, tủy và cà rốt được hầm chiết trực tiếp trong ngày cho nước dùng vị thanh, ngon ngọt tự nhiên. Dành cho đầu bếp chuyên nghiệp.",
+		"categoryName": "Gia vị"
 	},
-	"dbStatus": "updated"
+	"dbStatus": "created"
 }

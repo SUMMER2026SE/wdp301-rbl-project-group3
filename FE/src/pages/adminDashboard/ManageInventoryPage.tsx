@@ -181,7 +181,13 @@ export const ManageInventoryPage = () => {
 
   const [crawledSelectedIds, setCrawledSelectedIds] = useState<string[]>([])
   const [crawledImporting, setCrawledImporting] = useState(false)
+  const [crawledDeleting, setCrawledDeleting] = useState(false)
   const [crawledImportSuccessMsg, setCrawledImportSuccessMsg] = useState<string | null>(null)
+  
+  // Custom Delete Modal states
+  const [showCrawledDeleteConfirm, setShowCrawledDeleteConfirm] = useState(false)
+  const [crawledProductToDelete, setCrawledProductToDelete] = useState<CompetitorProduct | null>(null)
+  const [crawledIsBulkDelete, setCrawledIsBulkDelete] = useState(false)
 
   // Bulk price suggestion states
   const [selectedCatalogIds, setSelectedCatalogIds] = useState<string[]>([])
@@ -1270,6 +1276,47 @@ export const ManageInventoryPage = () => {
       setCatalogError('❌ ' + msg)
     } finally {
       setCatalogLoading(false)
+    }
+  }
+
+  const handleConfirmDeleteCrawled = async () => {
+    setCrawledDeleting(true);
+    setCrawledError(null);
+    setShowCrawledDeleteConfirm(false);
+    
+    try {
+      const idsToDelete = crawledIsBulkDelete 
+        ? crawledSelectedIds 
+        : (crawledProductToDelete ? [crawledProductToDelete._id] : []);
+        
+      if (idsToDelete.length === 0) {
+        setCrawledDeleting(false);
+        return;
+      }
+
+      const res = await competitorProductService.deleteCompetitorProducts(idsToDelete);
+      
+      if (res.success) {
+        if (crawledIsBulkDelete) {
+          setCrawledImportSuccessMsg(`Đã xóa thành công ${res.data?.deletedCount} sản phẩm.`);
+          setCrawledSelectedIds([]);
+        } else if (crawledProductToDelete) {
+          setCrawledImportSuccessMsg(`Đã xóa thành công "${crawledProductToDelete.name}".`);
+        }
+        
+        fetchCrawledProducts(crawledPage, crawledKeyword);
+        setTimeout(() => setCrawledImportSuccessMsg(null), 5000);
+      } else {
+        setCrawledError(res.message || 'Có lỗi xảy ra khi xóa.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      const msg = err.response?.data?.message || err.message || 'Có lỗi xảy ra khi xóa.';
+      setCrawledError('❌ ' + msg);
+    } finally {
+      setCrawledDeleting(false);
+      setCrawledProductToDelete(null);
+      setCrawledIsBulkDelete(false);
     }
   }
 
@@ -2419,18 +2466,36 @@ export const ManageInventoryPage = () => {
                 </button>
 
                 {crawledSelectedIds.length > 0 && (
-                  <button
-                    onClick={handleCrawledImport}
-                    disabled={crawledImporting}
-                    className="flex items-center gap-1.5 rounded-xl bg-primary hover:bg-opacity-90 active:scale-95 px-4 py-2 text-sm font-bold text-white shadow transition disabled:opacity-50"
-                  >
-                    {crawledImporting ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Plus className="h-4 w-4" />
-                    )}
-                    Đưa vào hệ thống ({crawledSelectedIds.length})
-                  </button>
+                  <>
+                    <button
+                      onClick={() => {
+                        setCrawledIsBulkDelete(true);
+                        setShowCrawledDeleteConfirm(true);
+                      }}
+                      disabled={crawledImporting || crawledDeleting}
+                      className="flex items-center gap-1.5 rounded-xl bg-error-container hover:bg-opacity-90 active:scale-95 px-4 py-2 text-sm font-bold text-error shadow transition disabled:opacity-50"
+                    >
+                      {crawledDeleting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                      Xóa đã chọn ({crawledSelectedIds.length})
+                    </button>
+
+                    <button
+                      onClick={handleCrawledImport}
+                      disabled={crawledImporting || crawledDeleting}
+                      className="flex items-center gap-1.5 rounded-xl bg-primary hover:bg-opacity-90 active:scale-95 px-4 py-2 text-sm font-bold text-white shadow transition disabled:opacity-50"
+                    >
+                      {crawledImporting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Plus className="h-4 w-4" />
+                      )}
+                      Đưa vào hệ thống ({crawledSelectedIds.length})
+                    </button>
+                  </>
                 )}
               </div>
             </div>
@@ -2521,31 +2586,44 @@ export const ManageInventoryPage = () => {
                             {formatVND(p.price)}
                           </td>
                           <td className="p-4" onClick={(e) => e.stopPropagation()}>
-                            <button
-                              onClick={async () => {
-                                setCrawledImporting(true)
-                                setCrawledImportSuccessMsg(null)
-                                setCrawledError(null)
-                                try {
-                                  const res = await competitorProductService.importToCatalog([p._id])
-                                  if (res.success) {
-                                    setCrawledImportSuccessMsg(`Đã đưa thành công "${p.name}" vào danh mục hệ thống.`);
-                                    setTimeout(() => setCrawledImportSuccessMsg(null), 5000)
-                                  } else {
-                                    setCrawledError(res.message || 'Có lỗi xảy ra.')
+                            <div className="flex flex-col gap-2">
+                              <button
+                                onClick={async () => {
+                                  setCrawledImporting(true)
+                                  setCrawledImportSuccessMsg(null)
+                                  setCrawledError(null)
+                                  try {
+                                    const res = await competitorProductService.importToCatalog([p._id])
+                                    if (res.success) {
+                                      setCrawledImportSuccessMsg(`Đã đưa thành công "${p.name}" vào danh mục hệ thống.`);
+                                      setTimeout(() => setCrawledImportSuccessMsg(null), 5000)
+                                    } else {
+                                      setCrawledError(res.message || 'Có lỗi xảy ra.')
+                                    }
+                                  } catch (err: any) {
+                                    console.error(err)
+                                    setCrawledError(err.response?.data?.message || 'Có lỗi xảy ra.')
+                                  } finally {
+                                    setCrawledImporting(false)
                                   }
-                                } catch (err: any) {
-                                  console.error(err)
-                                  setCrawledError(err.response?.data?.message || 'Có lỗi xảy ra.')
-                                } finally {
-                                  setCrawledImporting(false)
-                                }
-                              }}
-                              disabled={crawledImporting}
-                              className="text-primary hover:text-primary-hover hover:underline text-xs font-bold transition flex items-center gap-1"
-                            >
-                              Đưa vào hệ thống
-                            </button>
+                                }}
+                                disabled={crawledImporting || crawledDeleting}
+                                className="text-primary hover:text-primary-hover hover:underline text-xs font-bold transition flex items-center gap-1"
+                              >
+                                Đưa vào hệ thống
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setCrawledProductToDelete(p);
+                                  setCrawledIsBulkDelete(false);
+                                  setShowCrawledDeleteConfirm(true);
+                                }}
+                                disabled={crawledImporting || crawledDeleting}
+                                className="text-error hover:text-error/80 hover:underline text-xs font-bold transition flex items-center gap-1"
+                              >
+                                Xóa
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       )
@@ -4217,6 +4295,65 @@ export const ManageInventoryPage = () => {
                   )}
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal for Crawled Products */}
+      {showCrawledDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-surface-container-lowest max-w-sm w-full rounded-2xl border border-outline-variant shadow-2xl overflow-hidden flex flex-col text-on-surface">
+            <div className="p-5 flex items-center justify-between border-b border-outline-variant bg-error-container text-on-error-container">
+              <h3 className="text-lg font-black flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5" />
+                Xác nhận xóa
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCrawledDeleteConfirm(false);
+                  setCrawledProductToDelete(null);
+                  setCrawledIsBulkDelete(false);
+                }}
+                className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-black/10 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 text-sm">
+              <p className="mb-2">
+                {crawledIsBulkDelete 
+                  ? `Bạn có chắc chắn muốn xóa ${crawledSelectedIds.length} sản phẩm đã chọn?` 
+                  : `Bạn có chắc chắn muốn xóa "${crawledProductToDelete?.name}" không?`
+                }
+              </p>
+              <p className="text-xs text-on-surface-variant mt-2">
+                Hành động này không thể hoàn tác. Sản phẩm cào sẽ bị xóa vĩnh viễn.
+              </p>
+            </div>
+            <div className="p-4 bg-surface-container-low border-t border-outline-variant flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCrawledDeleteConfirm(false);
+                  setCrawledProductToDelete(null);
+                  setCrawledIsBulkDelete(false);
+                }}
+                disabled={crawledDeleting}
+                className="px-4 py-2 rounded-xl text-sm font-bold bg-surface hover:bg-surface-container-highest transition-colors disabled:opacity-50 cursor-pointer text-on-surface border border-outline-variant"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteCrawled}
+                disabled={crawledDeleting}
+                className="px-4 py-2 rounded-xl text-sm font-bold text-white transition-colors disabled:opacity-50 cursor-pointer flex items-center gap-2 shadow-sm bg-error hover:bg-error/90"
+              >
+                {crawledDeleting && <RefreshCw size={16} className="animate-spin" />}
+                Xác nhận xóa
+              </button>
             </div>
           </div>
         </div>

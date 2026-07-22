@@ -1,6 +1,6 @@
 {
 	"id": "bE8F2LpXA05gsly",
-	"json": "{\"id\":\"bE8F2LpXA05gsly\",\"url\":\"https://winmart.vn/products/chante-nuoc-giat-xa-huong-cao-cap-34kg--s10171315?storeGroupCode=1998&storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/products/chante-nuoc-giat-xa-huong-cao-cap-34kg--s10171315?storeCode=1535&storeGroupCode=1998\",\"uniqueKey\":\"https://winmart.vn/products/chante-nuoc-giat-xa-huong-cao-cap-34kg--s10171315?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-07-13T19:10:16.355Z\"}",
+	"json": "{\"id\":\"bE8F2LpXA05gsly\",\"url\":\"https://winmart.vn/products/chante-nuoc-giat-xa-huong-cao-cap-34kg--s10171315?storeGroupCode=1998&storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/products/chante-nuoc-giat-xa-huong-cao-cap-34kg--s10171315?storeCode=1535&storeGroupCode=1998\",\"uniqueKey\":\"https://winmart.vn/products/chante-nuoc-giat-xa-huong-cao-cap-34kg--s10171315?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2,\"state\":4}},\"handledAt\":\"2026-07-22T13:41:02.629Z\"}",
 	"method": "GET",
 	"orderNo": null,
 	"retryCount": 0,

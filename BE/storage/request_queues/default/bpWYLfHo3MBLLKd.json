@@ -1,8 +1,8 @@
 {
 	"id": "bpWYLfHo3MBLLKd",
-	"json": "{\"id\":\"bpWYLfHo3MBLLKd\",\"url\":\"https://winmart.vn/products/calbee-ngu-coc-trai-cay-it-duong-600g--s10140909?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/calbee-ngu-coc-trai-cay-it-duong-600g--s10140909?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
+	"json": "{\"id\":\"bpWYLfHo3MBLLKd\",\"url\":\"https://winmart.vn/products/calbee-ngu-coc-trai-cay-it-duong-600g--s10140909?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/calbee-ngu-coc-trai-cay-it-duong-600g--s10140909?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"crawlDepth\":2,\"enqueueStrategy\":\"same-hostname\"}}}",
 	"method": "GET",
-	"orderNo": 1783969333421,
+	"orderNo": 1784727096949,
 	"retryCount": 0,
 	"uniqueKey": "https://winmart.vn/products/calbee-ngu-coc-trai-cay-it-duong-600g--s10140909?storeCode=1535&storeGroupCode=1998",
 	"url": "https://winmart.vn/products/calbee-ngu-coc-trai-cay-it-duong-600g--s10140909?storeGroupCode=1998&storeCode=1535"

@@ -1,13 +1,13 @@
 {
-	"url": "https://winmart.vn/products/sunlight-nrc-huong-que-tui-2kg--s10334912?storeGroupCode=1998&storeCode=1535",
+	"url": "https://winmart.vn/products/closeup-kdr-whitenow-khoang-tu-nhien100g--s10171342?storeGroupCode=1998&storeCode=1535",
 	"rawParsed": {
-		"name": "SUNLIGHT NRC Hương Quế túi 2Kg",
-		"sku": "10334912",
-		"brand": "Sunlight",
-		"price": 57000,
-		"unit": "Gói",
-		"description": "Nước Rửa Chén Sunlight Khử Mùi Tanh Hương Quế Túi 2kg Sunlight ra mắt Nước rửa chén bát Sunlight Bio-care Mới với công nghệ độc quyền Rhamno Clean chứa 100% hoạt chất làm sạch gốc thực vật. Với cải tiến trong công thức, Sunlight Bio-care Mới mang đến chuẩn mực an toàn mới, đảm bảo an toàn cho chén dĩa trẻ em và cũng rất thân thiện với môi trường. Sunlight cam kết 0% hóa chất độc hại đến gần gia đình bạn, đảm bảo an toàn & lành tính.",
-		"categoryName": "Nước rửa chén"
+		"name": "CLOSEUP KDR WhiteNow khoáng tự nhiên100g",
+		"sku": "10171342",
+		"brand": "CLOSEUP",
+		"price": 46900,
+		"unit": "g",
+		"description": "Kem Đánh Răng Closeup White Now Trắng 3X Khoáng Trắng 100g. Kem đánh răng Closeup White Now với công nghệ Ánh Sáng Xanh giúp răng Trắng Bật Tông 3X tức thì.",
+		"categoryName": "Kem đánh răng"
 	},
-	"dbStatus": "updated"
+	"dbStatus": "created"
 }

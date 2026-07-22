@@ -1,13 +1,13 @@
 {
-	"url": "https://winmart.vn/products/meizan-dau-dau-nanh-chai-2l--s10010076?storeGroupCode=1998&storeCode=1535",
+	"url": "https://winmart.vn/products/wineco-rau-mam-cai-ngot-l1-100gr--s10281839?storeGroupCode=1998&storeCode=1535",
 	"rawParsed": {
-		"name": "Dầu đậu nành Meizan 2L",
-		"sku": "10010076",
-		"brand": "Meizan",
-		"price": 100900,
-		"unit": "Chai",
-		"description": "Dầu đậu nành Meizan chai 2L. Được chiết xuất từ 100% hạt đậu nành được chọn lọc kỹ lưỡng, dầu Đậu Nành nguyên chất Meizan dồi dào các dưỡng chất tự nhiên giúp bảo vệ sức khỏe tim mạch và mang đến những món ăn ngon cho gia đình bạn. Tốt cho trái tim: đa dạng các dưỡng chất tự nhiên Vitamin A, E, Omega 3-6-9 và chất béo không bão hòa giúp giảm nguy cơ mắc các bệnh tim mạch.",
-		"categoryName": "Dầu ăn"
+		"name": "Rau mầm cải ngọt WinEco 100g",
+		"sku": "10281839",
+		"brand": "WinEco",
+		"price": 14800,
+		"unit": "Hộp",
+		"description": "Rau mầm cải ngọt WinEco 100g có màu xanh, lá thật mới nhú. Vị ngọt và giòn. Dinh dưỡng: Rau mầm cải ngọt giàu vitamin K (còn gọi là Phylloquinone), vitamin C, lutein/zeaxanthin, β-Carotene, α-tocopherol, và γ-tocopherol (Vitamin E) có lợi cho sức khỏe. Công dụng: 1. Tăng cường miễn dịch cơ thể; 2. Hạn chế bệnh loãng xương 3. Tăng cường sức khỏe cho làn da, răng, và mạch máu. Hướng dẫn sử dụng: - Thích hợp với các món salad, ăn kèm cùng các loại bánh, các món xào, lẩu, nấu canh, các món cháo dinh dưỡng - Ngon hơn khi dùng với dầu olive, muối, giấm hoặc sốt mayonaise.",
+		"categoryName": "Rau củ quả"
 	},
-	"dbStatus": "updated"
+	"dbStatus": "created"
 }

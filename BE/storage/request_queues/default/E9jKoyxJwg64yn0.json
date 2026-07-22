@@ -1,9 +1,9 @@
 {
 	"id": "E9jKoyxJwg64yn0",
-	"json": "{\"id\":\"E9jKoyxJwg64yn0\",\"url\":\"https://winmart.vn/products/green-ace-dau-dau-nanh-2l--s10198354?storeGroupCode=1998&storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/products/green-ace-dau-dau-nanh-2l--s10198354?storeCode=1535&storeGroupCode=1998\",\"uniqueKey\":\"https://winmart.vn/products/green-ace-dau-dau-nanh-2l--s10198354?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2,\"state\":4}},\"handledAt\":\"2026-07-13T19:14:34.859Z\"}",
+	"json": "{\"id\":\"E9jKoyxJwg64yn0\",\"url\":\"https://winmart.vn/products/green-ace-dau-dau-nanh-2l--s10198354?storeGroupCode=1998&storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/products/green-ace-dau-dau-nanh-2l--s10198354?storeCode=1535&storeGroupCode=1998\",\"uniqueKey\":\"https://winmart.vn/products/green-ace-dau-dau-nanh-2l--s10198354?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":1,\"errorMessages\":[\"Error: requestHandler timed out after 60 seconds.\\n    at Timeout._onTimeout (C:\\\\Users\\\\ADMIN\\\\Desktop\\\\wdp301-rbl-project-group3\\\\BE\\\\node_modules\\\\@apify\\\\src\\\\index.ts:89:74)\\n    at listOnTimeout (node:internal/timers:588:17)\\n    at processTimers (node:internal/timers:523:7)\"],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2,\"state\":5}}}",
 	"method": "GET",
-	"orderNo": null,
-	"retryCount": 0,
+	"orderNo": 1784727990840,
+	"retryCount": 1,
 	"uniqueKey": "https://winmart.vn/products/green-ace-dau-dau-nanh-2l--s10198354?storeCode=1535&storeGroupCode=1998",
 	"url": "https://winmart.vn/products/green-ace-dau-dau-nanh-2l--s10198354?storeGroupCode=1998&storeCode=1535"
 }

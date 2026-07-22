@@ -1,6 +1,6 @@
 {
 	"id": "r2e6rAbtJYIB90q",
-	"json": "{\"id\":\"r2e6rAbtJYIB90q\",\"url\":\"https://winmart.vn/info/privacy-policy\",\"loadedUrl\":\"https://winmart.vn/info/privacy-policy\",\"uniqueKey\":\"https://winmart.vn/info/privacy-policy\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-07-13T19:13:41.257Z\"}",
+	"json": "{\"id\":\"r2e6rAbtJYIB90q\",\"url\":\"https://winmart.vn/info/privacy-policy\",\"loadedUrl\":\"https://winmart.vn/info/privacy-policy\",\"uniqueKey\":\"https://winmart.vn/info/privacy-policy\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-07-22T13:40:13.178Z\"}",
 	"method": "GET",
 	"orderNo": null,
 	"retryCount": 0,

@@ -1,0 +1,9 @@
+{
+	"id": "E0UB7AO34YcCXN0",
+	"json": "{\"id\":\"E0UB7AO34YcCXN0\",\"url\":\"https://winmart.vn/products/pasta-zara-mi-y-spaghetti-so-3-goi-500g--s10007919?storeGroupCode=1998&storeCode=1535\",\"uniqueKey\":\"https://winmart.vn/products/pasta-zara-mi-y-spaghetti-so-3-goi-500g--s10007919?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2}}}",
+	"method": "GET",
+	"orderNo": 1784727054739,
+	"retryCount": 0,
+	"uniqueKey": "https://winmart.vn/products/pasta-zara-mi-y-spaghetti-so-3-goi-500g--s10007919?storeCode=1535&storeGroupCode=1998",
+	"url": "https://winmart.vn/products/pasta-zara-mi-y-spaghetti-so-3-goi-500g--s10007919?storeGroupCode=1998&storeCode=1535"
+}
