@@ -13,6 +13,7 @@ import { invoiceRepository } from '../invoice/invoice.repository';
 import { User } from '../../models/user.model';
 import { systemSettingRepository } from '../system-setting/system-setting.repository';
 import { flashSaleRepository } from '../flash-sale/flash-sale.repository';
+import { sendOrderRefundEmail } from '../../utils/mail.util';
 import {
   BackOfficeActor,
   assertBackOfficeBranchAccess,
@@ -178,8 +179,8 @@ export class OrderService {
 
             const bronzeMin = Number(bronze?.value ?? 100);
             const silverMin = Number(silver?.value ?? 300);
-            const goldMin   = Number(gold?.value   ?? 600);
-            const diamondMin= Number(diamond?.value ?? 1000);
+            const goldMin = Number(gold?.value ?? 600);
+            const diamondMin = Number(diamond?.value ?? 1000);
 
             // Tính toán lại hạng thành viên dựa trên điểm trọn đời
             const lp = user.lifetimePoints;
@@ -398,6 +399,8 @@ export class OrderService {
       deliveryAddress: order.deliveryAddress ?? null,
       phoneNumber: order.phoneNumber ?? null,
       paymentMethod: order.paymentMethod ?? 'COD',
+      paymentStatus: order.paymentStatus ?? 'pending',
+      payosOrderCode: order.payosOrderCode ?? null,
       note: order.note ?? null,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
@@ -420,6 +423,33 @@ export class OrderService {
     const { orders, total } = await orderRepository.findByCustomerId(
       customerId, page, limit, status
     );
+
+    // Tự động kiểm tra và cập nhật trạng thái đơn hàng PayOS chưa thanh toán với máy chủ PayOS
+    for (const order of orders) {
+      if (order.paymentMethod === 'payos' && order.paymentStatus !== 'paid' && order.payosOrderCode && payOSClient) {
+        try {
+          const info = await payOSClient.paymentRequests.get(order.payosOrderCode);
+          if (info && info.status === 'PAID') {
+            order.paymentStatus = 'paid';
+            if (order.status === 'pending') {
+              order.status = 'confirmed';
+              order.confirmedAt = new Date();
+            }
+            await order.save();
+            await orderRepository.addTrackingEvent(
+              order._id.toString(),
+              'confirmed',
+              order.customerId.toString(),
+              'Thanh toán thành công qua cổng PayOS.'
+            );
+            this.emitOrderUpdate(order);
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+    }
+
     const totalPages = Math.ceil(total / limit);
 
     return {
@@ -453,9 +483,7 @@ export class OrderService {
   }
 
   async getCustomerOrderById(orderId: string, customerId: string) {
-    const order = await orderRepository.findByIdAndCustomerId(orderId, customerId);
-    if (!order) throw new AppError('Order not found', 404);
-    return this.buildCustomerOrderResponse(order);
+    return this.syncPayOSStatus(orderId, customerId);
   }
 
   async cancelCustomerOrder(orderId: string, customerId: string, reason?: string) {
@@ -660,6 +688,8 @@ export class OrderService {
       try {
         if (payOSClient) {
           const numericCode = Number(Date.now().toString().slice(-6) + Math.floor(100 + Math.random() * 900));
+          order.payosOrderCode = numericCode;
+          await order.save();
           const paymentLink = await payOSClient.paymentRequests.create({
             orderCode: numericCode,
             amount: Math.round(totalAmount),
@@ -752,6 +782,45 @@ export class OrderService {
       console.error('[PAYOS_WEBHOOK_ERROR]', err);
       return { success: false };
     }
+  }
+
+  async syncPayOSStatus(orderId: string, customerId?: string): Promise<any> {
+    const order: any = customerId
+      ? await orderRepository.findByIdAndCustomerId(orderId, customerId)
+      : await orderRepository.findById(orderId);
+
+    if (!order) throw new AppError('Order not found', 404);
+
+    if (order.paymentMethod === 'payos' && order.paymentStatus !== 'paid' && payOSClient) {
+      try {
+        let paymentLinkInfo: any = null;
+        if (order.payosOrderCode) {
+          paymentLinkInfo = await payOSClient.paymentRequests.get(order.payosOrderCode);
+        }
+
+        if (paymentLinkInfo && paymentLinkInfo.status === 'PAID') {
+          order.paymentStatus = 'paid';
+          if (order.status === 'pending') {
+            order.status = 'confirmed';
+            order.confirmedAt = new Date();
+          }
+          await order.save();
+
+          await orderRepository.addTrackingEvent(
+            order._id.toString(),
+            'confirmed',
+            order.customerId.toString(),
+            'Thanh toán thành công qua cổng PayOS.'
+          );
+
+          this.emitOrderUpdate(order);
+        }
+      } catch (payosErr) {
+        console.error('[PAYOS_SYNC_STATUS_FAILED]', payosErr);
+      }
+    }
+
+    return this.buildCustomerOrderResponse(order);
   }
 
   private buildTrackingActor(value: unknown) {

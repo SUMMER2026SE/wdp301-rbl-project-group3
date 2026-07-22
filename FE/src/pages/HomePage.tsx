@@ -735,7 +735,7 @@ export const HomePage = () => {
                             </div>
                           </div>
                           <span className="text-primary font-bold whitespace-nowrap text-body-md">
-                            {formatVND(product.salePrice || product.costPrice || 0)}
+                            {formatVND(product.salePrice || 0)}
                           </span>
                         </button>
                       </li>

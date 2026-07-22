@@ -330,6 +330,8 @@ export interface AdminOrder {
   items: AdminOrderItem[]
   totalAmount: number
   status: AdminOrderStatus
+  paymentMethod?: 'COD' | 'payos'
+  paymentStatus?: 'pending' | 'paid' | 'failed' | 'refunded'
   deliveryAddress?: string
   note?: string
   confirmedBy?: {

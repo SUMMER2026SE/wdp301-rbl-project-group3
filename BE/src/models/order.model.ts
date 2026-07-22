@@ -28,6 +28,8 @@ export interface IOrder extends Document {
   deliveryAddress?: string;
   phoneNumber?: string;
   paymentMethod?: PaymentMethod;
+  paymentStatus?: 'pending' | 'paid' | 'failed' | 'refunded';
+  payosOrderCode?: number;
   note?: string;
   confirmedBy?: Types.ObjectId;
   confirmedAt?: Date;
@@ -69,6 +71,12 @@ const OrderSchema = new Schema<IOrder>(
       enum: ['COD', 'payos'],
       default: 'COD',
     },
+    paymentStatus: {
+      type: String,
+      enum: ['pending', 'paid', 'failed', 'refunded'],
+      default: 'pending',
+    },
+    payosOrderCode: { type: Number },
     note: { type: String, trim: true },
     confirmedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     confirmedAt: { type: Date },

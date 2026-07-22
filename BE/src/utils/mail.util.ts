@@ -77,3 +77,33 @@ export const sendOtpEmail = async (email: string, otp: string): Promise<void> =>
     `,
   });
 };
+
+export const sendOrderRefundEmail = async (
+  email: string,
+  orderCode: string,
+  amount: number,
+  reason: string
+): Promise<void> => {
+  const formatVND = (num: number) =>
+    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(num);
+
+  await transporter.sendMail({
+    from: env.email.from,
+    to: email,
+    subject: `[PMAN-Mart] Thông báo Hủy đơn & Hoàn tiền cho đơn hàng #${orderCode}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 24px; border-radius: 12px;">
+        <h2 style="color: #d97706; margin-top: 0;">Thông báo Hủy đơn & Hoàn tiền</h2>
+        <p>Kính chào quý khách,</p>
+        <p>Chúng tôi rất tiếc phải thông báo rằng đơn hàng <strong>#${orderCode}</strong> đã bị hủy vì lý do:</p>
+        <div style="background:#fffbe6; padding:12px 16px; border-left: 4px solid #f59e0b; margin:16px 0; font-weight:bold; color: #b45309;">
+          ${reason}
+        </div>
+        <p>Vì bạn đã thanh toán trực tuyến số tiền <strong>${formatVND(amount)}</strong>, siêu thị đã tiến hành lệnh <strong>Hoàn tiền 100%</strong> cho bạn.</p>
+        <p>Tiền hoàn sẽ ghi có vào tài khoản của bạn trong thời gian sớm nhất. Xin chân thành cảm ơn và cáo lỗi vì sự bất tiện này!</p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+        <p style="color:#888; font-size:12px;">PMAN-Mart Customer Support</p>
+      </div>
+    `,
+  });
+};

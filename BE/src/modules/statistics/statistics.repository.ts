@@ -348,7 +348,7 @@ export class StatisticsRepository {
 
   async getTotalRevenue(match: Record<string, unknown> = {}): Promise<number> {
     const result = await Order.aggregate([
-      { $match: { ...match, status: 'delivered' } },
+      { $match: { ...match, status: { $ne: 'cancelled' } } },
       { $group: { _id: null, totalRevenue: { $sum: '$totalAmount' } } },
     ]).exec();
     return result.length > 0 ? result[0].totalRevenue : 0;
@@ -359,7 +359,7 @@ export class StatisticsRepository {
       {
         $match: {
           ...match,
-          status: 'delivered',
+          status: { $ne: 'cancelled' },
           createdAt: { $gte: range.from, $lte: range.to },
         },
       },
@@ -382,7 +382,7 @@ export class StatisticsRepository {
 
   async getRevenueByBranch(match: Record<string, unknown> = {}): Promise<any[]> {
     const rows = await Order.aggregate([
-      { $match: { ...match, status: 'delivered' } },
+      { $match: { ...match, status: { $ne: 'cancelled' } } },
       { $group: { _id: '$branchId', revenue: { $sum: '$totalAmount' } } },
       { $sort: { revenue: -1 } },
       {
@@ -407,7 +407,7 @@ export class StatisticsRepository {
 
   async getTopSellingProducts(limit: number, match: Record<string, unknown> = {}): Promise<any[]> {
     const rows = await Order.aggregate([
-      { $match: { ...match, status: 'delivered' } },
+      { $match: { ...match, status: { $ne: 'cancelled' } } },
       { $unwind: '$items' },
       {
         $group: {
@@ -500,7 +500,7 @@ export class StatisticsRepository {
 
   async getTopCustomers(limit: number, match: Record<string, unknown> = {}): Promise<any[]> {
     const rows = await Order.aggregate([
-      { $match: { ...match, status: 'delivered' } },
+      { $match: { ...match, status: { $ne: 'cancelled' } } },
       {
         $group: {
           _id: '$customerId',
@@ -536,7 +536,7 @@ export class StatisticsRepository {
 
   async getTopStaff(limit: number, match: Record<string, unknown> = {}): Promise<any[]> {
     const rows = await Order.aggregate([
-      { $match: { ...match, status: 'delivered', confirmedBy: { $exists: true, $ne: null } } },
+      { $match: { ...match, status: { $ne: 'cancelled' }, confirmedBy: { $exists: true, $ne: null } } },
       {
         $group: {
           _id: '$confirmedBy',
@@ -571,7 +571,7 @@ export class StatisticsRepository {
 
   async countServedCustomers(match: Record<string, unknown> = {}): Promise<number> {
     const rows = await Order.aggregate([
-      { $match: { ...match, status: 'delivered' } },
+      { $match: { ...match, status: { $ne: 'cancelled' } } },
       { $group: { _id: '$customerId' } },
       { $count: 'total' },
     ]).exec();

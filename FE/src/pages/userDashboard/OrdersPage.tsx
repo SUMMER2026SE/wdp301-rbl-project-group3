@@ -659,9 +659,39 @@ export const OrdersPage = () => {
                           : selectedOrder.paymentMethod || 'COD'}
                       </span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="text-on-surface-variant font-medium">Trạng thái thanh toán:</span>
-                      <span className="font-bold text-xs capitalize text-tertiary">{selectedOrder.paymentStatus || 'Chưa thanh toán'}</span>
+                      <div className="flex items-center gap-2">
+                        <span className={`font-bold text-xs capitalize ${
+                          selectedOrder.paymentStatus === 'paid' ? 'text-success font-black' : 'text-amber-600 font-bold'
+                        }`}>
+                          {selectedOrder.paymentStatus === 'paid' ? 'Đã thanh toán' : 'Chưa thanh toán'}
+                        </span>
+                        {selectedOrder.paymentMethod === 'payos' && selectedOrder.paymentStatus !== 'paid' && (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                const res = await orderService.getOrderById(selectedOrder.orderId)
+                                if (res.success && res.data) {
+                                  setSelectedOrder(res.data)
+                                  if (res.data.paymentStatus === 'paid') {
+                                    notify.success('Đã xác nhận thanh toán PayOS thành công!')
+                                  } else {
+                                    notify.error('Chưa nhận được giao dịch từ PayOS. Vui lòng chuyển khoản hoặc thử lại sau ít phút.')
+                                  }
+                                  fetchOrders()
+                                }
+                              } catch (e) {
+                                console.error(e)
+                              }
+                            }}
+                            className="text-[10px] bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-md hover:bg-primary/20 transition-all border border-primary/20"
+                          >
+                            🔄 Kiểm tra PayOS
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div className="flex justify-between border-t border-outline-variant/20 pt-2 text-base font-black">
                       <span>Tổng tiền thanh toán:</span>
