@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   CheckCircle,
   Clock,
@@ -82,6 +82,7 @@ export const OrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [searchParams, setSearchParams] = useSearchParams()
   
   const [selectedStatusTab, setSelectedStatusTab] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
@@ -96,6 +97,33 @@ export const OrdersPage = () => {
   useEffect(() => {
     setPage(1)
   }, [selectedStatusTab, searchQuery])
+
+  // Xử lý tự động hủy đơn khi người dùng bấm Hủy giao dịch trên cổng PayOS
+  useEffect(() => {
+    const payosCancel = searchParams.get('payos_cancel')
+    const payosSuccess = searchParams.get('payos_success')
+    const orderId = searchParams.get('orderId')
+
+    if (payosCancel === 'true' && orderId) {
+      orderService.cancelOrder(orderId, 'Khách hàng hủy thanh toán trên cổng PayOS')
+        .then(() => {
+          notify.error('Bạn đã hủy thanh toán trên PayOS. Đơn hàng đã được tự động hủy và khôi phục tồn kho.')
+          fetchOrders()
+        })
+        .catch(console.error)
+      const nextParams = new URLSearchParams(searchParams)
+      nextParams.delete('payos_cancel')
+      nextParams.delete('orderId')
+      setSearchParams(nextParams, { replace: true })
+    } else if (payosSuccess === 'true') {
+      notify.success('Thanh toán thành công qua cổng PayOS!')
+      const nextParams = new URLSearchParams(searchParams)
+      nextParams.delete('payos_success')
+      nextParams.delete('orderId')
+      setSearchParams(nextParams, { replace: true })
+      fetchOrders()
+    }
+  }, [searchParams])
 
   // Detailed Modal states
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)

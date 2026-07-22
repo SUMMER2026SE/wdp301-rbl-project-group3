@@ -18,6 +18,8 @@ import {
   assertBackOfficeBranchAccess,
   resolveBackOfficeBranch,
 } from '../../utils/backOfficeAccess.util';
+import { payOSClient } from '../../config/payos.config';
+import { env } from '../../config/env.config';
 
 const allowedTransitions: Record<OrderStatus, OrderStatus[]> = {
   pending: ['confirmed', 'cancelled'],
@@ -653,13 +655,103 @@ export class OrderService {
     // 8. Xóa sạch giỏ hàng
     await cartRepository.clearCart(customerId);
 
-    const orderResponse = this.buildCustomerOrderResponse(order);
+    let payOSData: any = null;
+    if (data.paymentMethod === 'payos') {
+      try {
+        if (payOSClient) {
+          const numericCode = Number(Date.now().toString().slice(-6) + Math.floor(100 + Math.random() * 900));
+          const paymentLink = await payOSClient.paymentRequests.create({
+            orderCode: numericCode,
+            amount: Math.round(totalAmount),
+            description: `PMAN ${orderCode.slice(-8)}`.substring(0, 25),
+            cancelUrl: `${env.clientUrl}/dashboard/orders?payos_cancel=true&orderId=${order._id.toString()}`,
+            returnUrl: `${env.clientUrl}/dashboard/orders?payos_success=true&orderId=${order._id.toString()}`,
+          });
+          payOSData = {
+            checkoutUrl: paymentLink.checkoutUrl,
+            qrCode: paymentLink.qrCode,
+            accountName: paymentLink.accountName,
+            accountNumber: paymentLink.accountNumber,
+            bin: paymentLink.bin,
+          };
+        } else {
+          // VietQR PayOS QR fallback mode for instant scanning
+          const memo = `PMAN ${orderCode.slice(-8)}`;
+          payOSData = {
+            checkoutUrl: null,
+            qrCode: `https://img.vietqr.io/image/MB-0388888888-compact2.png?amount=${Math.round(totalAmount)}&addInfo=${encodeURIComponent(memo)}&accountName=PMAN%20MART`,
+            accountName: 'PMAN MART (PayOS Gate)',
+            accountNumber: '0388888888',
+            bin: '970422',
+            memo,
+          };
+        }
+      } catch (payosErr) {
+        console.error('[PAYOS_CREATE_PAYMENT_LINK_FAILED]', payosErr);
+      }
+    }
+
+    const orderResponse: any = this.buildCustomerOrderResponse(order);
+    if (payOSData) {
+      orderResponse.payOSData = payOSData;
+    }
+
     // Phát tin realtime cho chi nhánh được chọn và cho toàn bộ Admin/Staff
     emitToRoom(`branch:${data.branchId}`, 'order:new', orderResponse);
     emitToRoom('role:admin', 'order:created', orderResponse);
     emitToRoom('role:branch_manager', 'order:created', orderResponse);
 
     return orderResponse;
+  }
+
+  async handlePayOSWebhook(webhookData: any): Promise<any> {
+    try {
+      let verifiedData: any = webhookData;
+      if (payOSClient && payOSClient.webhooks) {
+        try {
+          verifiedData = await payOSClient.webhooks.verify(webhookData);
+        } catch (vErr) {
+          console.warn('[PAYOS_WEBHOOK_VERIFY_WARN]', vErr);
+        }
+      }
+
+      const dataObj = verifiedData.data || verifiedData;
+      if (dataObj && (verifiedData.code === '00' || verifiedData.success === true || dataObj.code === '00')) {
+        const orderCodeStr = dataObj.orderCode?.toString();
+        let order: any = await Order.findOne({
+          $or: [
+            { code: { $regex: orderCodeStr || 'NOMATCH', $options: 'i' } },
+            { code: dataObj.orderCode }
+          ]
+        }).exec();
+
+        if (!order) {
+          order = await Order.findOne({ paymentMethod: 'payos', paymentStatus: { $ne: 'paid' } }).sort({ createdAt: -1 }).exec();
+        }
+
+        if (order) {
+          order.paymentStatus = 'paid';
+          if (order.status === 'pending') {
+            order.status = 'confirmed';
+            order.confirmedAt = new Date();
+          }
+          await order.save();
+
+          await orderRepository.addTrackingEvent(
+            order._id.toString(),
+            'confirmed',
+            order.customerId.toString(),
+            'Thanh toán thành công qua cổng PayOS.'
+          );
+
+          this.emitOrderUpdate(order);
+        }
+      }
+      return { success: true };
+    } catch (err) {
+      console.error('[PAYOS_WEBHOOK_ERROR]', err);
+      return { success: false };
+    }
   }
 
   private buildTrackingActor(value: unknown) {

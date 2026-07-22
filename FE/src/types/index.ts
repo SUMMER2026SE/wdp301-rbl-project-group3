@@ -174,6 +174,14 @@ export interface Order {
   totalAmount: number
   createdAt: string
   updatedAt?: string
+  payOSData?: {
+    checkoutUrl?: string | null
+    qrCode?: string | null
+    accountName?: string | null
+    accountNumber?: string | null
+    bin?: string | null
+    memo?: string | null
+  }
 }
 
 export interface PlaceOrderInput {
