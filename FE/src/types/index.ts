@@ -163,7 +163,7 @@ export interface Order {
     address?: string
     phone?: string | null
   }
-  paymentMethod?: 'COD' | 'banking' | 'momo' | 'vnpay'
+  paymentMethod?: 'COD' | 'payos'
   paymentStatus?: 'pending' | 'paid' | 'failed' | 'refunded'
   shippingAddress?: string
   deliveryAddress?: string | null
@@ -181,7 +181,7 @@ export interface PlaceOrderInput {
   shippingAddress: string
   phoneNumber: string
   note?: string
-  paymentMethod: 'COD' | 'banking' | 'momo' | 'vnpay'
+  paymentMethod: 'COD' | 'payos'
   selectedItemIds?: string[]
   voucherCode?: string
 }

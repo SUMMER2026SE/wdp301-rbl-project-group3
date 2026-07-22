@@ -54,7 +54,7 @@ export const CheckoutPage = () => {
   const [phoneNumber, setPhoneNumber] = useState('')
   const [shippingAddress, setShippingAddress] = useState('')
   const [note, setNote] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'banking' | 'momo' | 'vnpay'>('COD')
+  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'payos'>('payos')
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -646,10 +646,8 @@ export const CheckoutPage = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
+                    { id: 'payos', label: 'Thanh toán bằng PayOS', desc: 'Thanh toán trực tuyến an toàn qua cổng PayOS (Mã QR / Ngân hàng)' },
                     { id: 'COD', label: 'Thanh toán khi nhận hàng (COD)', desc: 'Thanh toán bằng tiền mặt khi nhận hàng' },
-                    { id: 'momo', label: 'Ví điện tử MoMo', desc: 'Thanh toán qua cổng thử nghiệm MoMo' },
-                    { id: 'vnpay', label: 'Cổng thanh toán VNPay', desc: 'Chuyển khoản nhanh qua cổng VNPay' },
-                    { id: 'banking', label: 'Chuyển khoản ngân hàng', desc: 'Chuyển khoản trực tiếp vào tài khoản công ty' },
                   ].map((method) => {
                     const active = paymentMethod === method.id
                     return (

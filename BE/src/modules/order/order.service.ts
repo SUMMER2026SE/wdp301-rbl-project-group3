@@ -496,7 +496,7 @@ export class OrderService {
     shippingAddress: string;
     phoneNumber: string;
     note?: string;
-    paymentMethod: 'COD' | 'banking' | 'momo' | 'vnpay';
+    paymentMethod: 'COD' | 'payos';
     voucherCode?: string;
   }): Promise<any> {
     // 1. Lấy giỏ hàng của user

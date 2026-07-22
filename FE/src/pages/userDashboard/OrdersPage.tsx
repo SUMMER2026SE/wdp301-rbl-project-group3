@@ -623,7 +623,13 @@ export const OrdersPage = () => {
                   <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/30 text-sm space-y-2">
                     <div className="flex justify-between">
                       <span className="text-on-surface-variant font-medium">Hình thức thanh toán:</span>
-                      <span className="font-bold uppercase text-xs">{selectedOrder.paymentMethod || 'COD (Tiền mặt)'}</span>
+                      <span className="font-bold uppercase text-xs font-mono">
+                        {selectedOrder.paymentMethod === 'payos'
+                          ? 'PayOS (Thanh toán trực tuyến)'
+                          : selectedOrder.paymentMethod === 'COD'
+                          ? 'COD (Tiền mặt khi nhận hàng)'
+                          : selectedOrder.paymentMethod || 'COD'}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-on-surface-variant font-medium">Trạng thái thanh toán:</span>

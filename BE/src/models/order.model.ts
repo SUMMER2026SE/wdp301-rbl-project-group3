@@ -8,7 +8,7 @@ export type OrderStatus =
   | 'delivered'
   | 'cancelled';
 
-export type PaymentMethod = 'COD' | 'banking' | 'momo' | 'vnpay';
+export type PaymentMethod = 'COD' | 'payos';
 
 export interface IOrderItem {
   productId: Types.ObjectId;
@@ -66,7 +66,7 @@ const OrderSchema = new Schema<IOrder>(
     phoneNumber: { type: String, trim: true },
     paymentMethod: {
       type: String,
-      enum: ['COD', 'banking', 'momo', 'vnpay'],
+      enum: ['COD', 'payos'],
       default: 'COD',
     },
     note: { type: String, trim: true },
