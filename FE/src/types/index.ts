@@ -163,7 +163,7 @@ export interface Order {
     address?: string
     phone?: string | null
   }
-  paymentMethod?: 'COD' | 'banking' | 'momo' | 'vnpay'
+  paymentMethod?: 'COD' | 'payos'
   paymentStatus?: 'pending' | 'paid' | 'failed' | 'refunded'
   shippingAddress?: string
   deliveryAddress?: string | null
@@ -174,6 +174,14 @@ export interface Order {
   totalAmount: number
   createdAt: string
   updatedAt?: string
+  payOSData?: {
+    checkoutUrl?: string | null
+    qrCode?: string | null
+    accountName?: string | null
+    accountNumber?: string | null
+    bin?: string | null
+    memo?: string | null
+  }
 }
 
 export interface PlaceOrderInput {
@@ -181,7 +189,7 @@ export interface PlaceOrderInput {
   shippingAddress: string
   phoneNumber: string
   note?: string
-  paymentMethod: 'COD' | 'banking' | 'momo' | 'vnpay'
+  paymentMethod: 'COD' | 'payos'
   selectedItemIds?: string[]
   voucherCode?: string
 }
@@ -322,6 +330,8 @@ export interface AdminOrder {
   items: AdminOrderItem[]
   totalAmount: number
   status: AdminOrderStatus
+  paymentMethod?: 'COD' | 'payos'
+  paymentStatus?: 'pending' | 'paid' | 'failed' | 'refunded'
   deliveryAddress?: string
   note?: string
   confirmedBy?: {

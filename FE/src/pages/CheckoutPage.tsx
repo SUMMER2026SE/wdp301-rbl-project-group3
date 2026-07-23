@@ -54,7 +54,7 @@ export const CheckoutPage = () => {
   const [phoneNumber, setPhoneNumber] = useState('')
   const [shippingAddress, setShippingAddress] = useState('')
   const [note, setNote] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'banking' | 'momo' | 'vnpay'>('COD')
+  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'payos'>('payos')
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -356,9 +356,13 @@ export const CheckoutPage = () => {
       })
 
       if (res.success) {
-        setSuccessOrder(res.data)
-        // Clear local cart
+        if (paymentMethod === 'payos' && res.data?.payOSData?.checkoutUrl) {
+          clearCart()
+          window.location.href = res.data.payOSData.checkoutUrl
+          return
+        }
         await clearCart()
+        setSuccessOrder(res.data)
       } else {
         setError(res.message || 'Đặt hàng thất bại. Vui lòng thử lại.')
       }
@@ -374,29 +378,99 @@ export const CheckoutPage = () => {
   }
 
   if (successOrder) {
+    const isPayOS = successOrder.paymentMethod === 'payos'
+    const payOS = successOrder.payOSData
+
     return (
       <div className="min-h-screen bg-surface-container-lowest flex items-center justify-center p-4">
-        <div className="bg-surface-container-low max-w-md w-full rounded-2xl shadow-xl p-8 text-center border border-outline-variant/30 animate-fade-in">
-          <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
+        <div className="bg-surface-container-low max-w-md w-full rounded-2xl shadow-xl p-8 text-center border border-outline-variant/30 animate-fade-in space-y-6">
+          <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto">
             <CheckCircle className="w-10 h-10" />
           </div>
-          <h1 className="text-2xl font-black text-on-surface mb-2">Đặt hàng thành công!</h1>
-          <p className="text-on-surface-variant mb-6 text-sm">
-            Cảm ơn bạn đã mua sắm tại {storeName}. Mã đơn hàng của bạn là{' '}
-            <span className="font-bold text-primary">{successOrder.orderId}</span>.
-          </p>
+          <div>
+            <h1 className="text-2xl font-black text-on-surface">Đặt hàng thành công!</h1>
+            <p className="text-on-surface-variant text-sm mt-1">
+              Cảm ơn bạn đã mua sắm tại {storeName}. Mã đơn hàng của bạn là{' '}
+              <span className="font-bold text-primary">{successOrder.code || successOrder.orderId}</span>.
+            </p>
+          </div>
 
-          <div className="bg-surface-container-high rounded-xl p-4 mb-6 text-left space-y-2 text-sm text-on-surface">
+          {/* PayOS QR Payment Section */}
+          {isPayOS && payOS && (
+            <div className="bg-surface-container-lowest p-5 rounded-2xl border border-primary/30 shadow-sm space-y-4 text-left">
+              <div className="flex items-center justify-between border-b border-outline-variant/30 pb-3">
+                <span className="text-xs font-black text-primary uppercase tracking-wider flex items-center gap-1.5">
+                  <CreditCard className="w-4 h-4" /> Cổng thanh toán PayOS
+                </span>
+                <span className="bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-500/20">
+                  Chờ chuyển khoản
+                </span>
+              </div>
+
+              {payOS.qrCode && (
+                <div className="flex flex-col items-center justify-center p-3 bg-white rounded-xl border border-outline-variant/20 shadow-inner">
+                  <img
+                    src={payOS.qrCode}
+                    alt="PayOS QR Code"
+                    className="w-48 h-48 object-contain"
+                  />
+                  <p className="text-[11px] font-bold text-slate-700 mt-2 text-center">
+                    Quét mã QR bằng App Ngân hàng (MB, VCB, Techcombank...)
+                  </p>
+                </div>
+              )}
+
+              <div className="space-y-1.5 text-xs text-on-surface bg-surface-container-low p-3.5 rounded-xl border border-outline-variant/20">
+                {payOS.accountName && (
+                  <div className="flex justify-between">
+                    <span className="text-on-surface-variant font-medium">Chủ tài khoản:</span>
+                    <span className="font-bold">{payOS.accountName}</span>
+                  </div>
+                )}
+                {payOS.accountNumber && (
+                  <div className="flex justify-between">
+                    <span className="text-on-surface-variant font-medium">Số tài khoản:</span>
+                    <span className="font-mono font-bold text-primary">{payOS.accountNumber}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-on-surface-variant font-medium">Số tiền:</span>
+                  <span className="font-black text-primary">{formatVND(successOrder.totalAmount)}</span>
+                </div>
+                {payOS.memo && (
+                  <div className="flex justify-between">
+                    <span className="text-on-surface-variant font-medium">Nội dung CK:</span>
+                    <span className="font-mono font-bold text-amber-600">{payOS.memo}</span>
+                  </div>
+                )}
+              </div>
+
+              {payOS.checkoutUrl && (
+                <a
+                  href={payOS.checkoutUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full bg-primary hover:bg-opacity-95 text-white py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all text-center block"
+                >
+                  <CreditCard className="w-4 h-4" /> Mở trang thanh toán PayOS trực tiếp
+                </a>
+              )}
+            </div>
+          )}
+
+          <div className="bg-surface-container-high rounded-xl p-4 text-left space-y-2 text-sm text-on-surface">
             <div className="flex justify-between">
               <span className="text-on-surface-variant font-bold">Tổng tiền:</span>
               <span className="font-black text-primary">{formatVND(successOrder.totalAmount)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-on-surface-variant font-bold">Phương thức:</span>
-              <span className="uppercase font-bold">{successOrder.paymentMethod}</span>
+              <span className="uppercase font-bold text-xs">
+                {successOrder.paymentMethod === 'payos' ? 'PayOS (Trực tuyến)' : 'COD (Tiền mặt)'}
+              </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-on-surface-variant font-bold">Trạng thái:</span>
+              <span className="text-on-surface-variant font-bold">Trạng thái đơn:</span>
               <span className="capitalize font-bold text-tertiary">{successOrder.status}</span>
             </div>
           </div>
@@ -420,6 +494,46 @@ export const CheckoutPage = () => {
     )
   }
 
+  if ((!cart || cart.items.length === 0) && !isSubmitting && !successOrder) {
+    return (
+      <div className="min-h-screen bg-surface-container-lowest text-on-surface">
+        <header className="sticky top-0 bg-surface-container-low border-b border-outline-variant z-40 backdrop-blur-md">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 flex items-center gap-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container-high transition-colors"
+              type="button"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-lg font-black leading-none">Thanh toán</h1>
+              <p className="text-[12px] text-on-surface-variant mt-1">Hoàn tất thông tin đơn đặt hàng</p>
+            </div>
+          </div>
+        </header>
+
+        <main className="max-w-7xl mx-auto px-4 md:px-8 py-8">
+          <div className="text-center py-16 bg-surface-container-low rounded-2xl border border-outline-variant/30 max-w-lg mx-auto">
+            <AlertCircle className="w-16 h-16 text-on-surface-variant/40 mx-auto mb-4" />
+            <h2 className="text-xl font-bold">Giỏ hàng của bạn đang trống</h2>
+            <p className="text-on-surface-variant text-sm mt-1 mb-6">
+              Vui lòng thêm sản phẩm vào giỏ hàng trước khi thanh toán!
+            </p>
+            <Link
+              to="/"
+              className="inline-flex bg-primary hover:bg-on-primary-fixed-variant text-white px-6 py-3 rounded-xl font-bold transition-all shadow-md"
+            >
+              Quay lại Cửa hàng
+            </Link>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  if (!cart) return null
+
   return (
     <div className="min-h-screen bg-surface-container-lowest text-on-surface">
       {/* Top Bar */}
@@ -440,22 +554,7 @@ export const CheckoutPage = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-8">
-        {!cart || cart.items.length === 0 ? (
-          <div className="text-center py-16 bg-surface-container-low rounded-2xl border border-outline-variant/30 max-w-lg mx-auto">
-            <AlertCircle className="w-16 h-16 text-on-surface-variant/40 mx-auto mb-4" />
-            <h2 className="text-xl font-bold">Giỏ hàng của bạn đang trống</h2>
-            <p className="text-on-surface-variant text-sm mt-1 mb-6">
-              Vui lòng thêm sản phẩm vào giỏ hàng trước khi thanh toán!
-            </p>
-            <Link
-              to="/"
-              className="inline-flex bg-primary hover:bg-on-primary-fixed-variant text-white px-6 py-3 rounded-xl font-bold transition-all shadow-md"
-            >
-              Quay lại Cửa hàng
-            </Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Form Column */}
             <form onSubmit={handleSubmit} className="lg:col-span-7 space-y-6">
               {error && (
@@ -646,10 +745,8 @@ export const CheckoutPage = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
+                    { id: 'payos', label: 'Thanh toán bằng PayOS', desc: 'Thanh toán trực tuyến an toàn qua cổng PayOS (Mã QR / Ngân hàng)' },
                     { id: 'COD', label: 'Thanh toán khi nhận hàng (COD)', desc: 'Thanh toán bằng tiền mặt khi nhận hàng' },
-                    { id: 'momo', label: 'Ví điện tử MoMo', desc: 'Thanh toán qua cổng thử nghiệm MoMo' },
-                    { id: 'vnpay', label: 'Cổng thanh toán VNPay', desc: 'Chuyển khoản nhanh qua cổng VNPay' },
-                    { id: 'banking', label: 'Chuyển khoản ngân hàng', desc: 'Chuyển khoản trực tiếp vào tài khoản công ty' },
                   ].map((method) => {
                     const active = paymentMethod === method.id
                     return (
@@ -842,8 +939,7 @@ export const CheckoutPage = () => {
               </div>
             </div>
           </div>
-        )}
-      </main>
+        </main>
 
       {/* Branch Selection Modal */}
       {isBranchModalOpen && (

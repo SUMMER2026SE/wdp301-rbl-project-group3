@@ -291,14 +291,24 @@ export const ManageInventoryPage = () => {
       }
     }
 
+    const handleImportReceiptUpdated = (data: any) => {
+      console.log('Realtime import receipt update received:', data)
+      fetchReceipts()
+      fetchInventory()
+    }
+
     socket.on('crawler:status', handleCrawlerStatus)
     socket.on('crawler:progress', handleCrawlerProgress)
+    socket.on('import_receipt:updated', handleImportReceiptUpdated)
+    socket.on('inventory:updated', handleImportReceiptUpdated)
 
     return () => {
       socket.off('crawler:status', handleCrawlerStatus)
       socket.off('crawler:progress', handleCrawlerProgress)
+      socket.off('import_receipt:updated', handleImportReceiptUpdated)
+      socket.off('inventory:updated', handleImportReceiptUpdated)
     }
-  }, [socket, activeTab, crawledKeyword]);
+  }, [socket, activeTab, crawledKeyword, selectedBranchId]);
 
   const handleToggleCrawler = async () => {
     try {
