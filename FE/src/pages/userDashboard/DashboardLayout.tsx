@@ -53,50 +53,50 @@ export const DashboardLayout = () => {
     return <Navigate to="/admin" replace />
   }
 
-  const displayName = user?.fullName || 'Customer'
-  const roleLabel = user?.role || 'customer'
+  const displayName = user?.fullName || 'Khách hàng'
+  const roleLabel = user?.role === 'customer' ? 'Khách hàng' : user?.role || 'Khách hàng'
 
   const navItems: NavItem[] = [
     {
       path: '/dashboard',
-      label: 'Overview',
-      description: 'Account summary',
+      label: 'Tổng quan',
+      description: 'Tóm tắt tài khoản',
       icon: <LayoutDashboard size={20} />,
     },
     {
       path: '/dashboard/orders',
-      label: 'Orders',
-      description: 'Track purchases',
+      label: 'Đơn hàng',
+      description: 'Theo dõi đơn hàng',
       icon: <ShoppingBag size={20} />,
     },
     {
       path: '/dashboard/favorites',
-      label: 'Favorites',
-      description: 'Saved products',
+      label: 'Yêu thích',
+      description: 'Sản phẩm đã lưu',
       icon: <Heart size={20} />,
     },
     {
       path: '/dashboard/addresses',
-      label: 'Addresses',
-      description: 'Delivery locations',
+      label: 'Địa chỉ',
+      description: 'Sổ địa chỉ nhận hàng',
       icon: <MapPin size={20} />,
     },
     {
       path: '/dashboard/vouchers',
-      label: 'Vouchers',
-      description: 'Available savings',
+      label: 'Mã giảm giá',
+      description: 'Voucher khuyến mãi',
       icon: <Ticket size={20} />,
     },
     {
       path: '/dashboard/profile',
-      label: 'Profile',
-      description: 'Personal details',
+      label: 'Hồ sơ',
+      description: 'Thông tin cá nhân',
       icon: <User size={20} />,
     },
     {
       path: '/dashboard/settings',
-      label: 'Settings',
-      description: 'Security and alerts',
+      label: 'Cài đặt',
+      description: 'Bảo mật và thông báo',
       icon: <Settings size={20} />,
     },
   ]
@@ -137,9 +137,9 @@ export const DashboardLayout = () => {
                 <ShoppingBag size={18} />
               </div>
               <div className="hidden sm:block">
-                <p className="text-lg font-black leading-none text-primary">WinMart+</p>
+                <p className="text-lg font-black leading-none text-primary">PMAN-Mart</p>
                 <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-on-surface-variant">
-                  Account
+                  Tài khoản
                 </p>
               </div>
             </Link>
@@ -153,9 +153,9 @@ export const DashboardLayout = () => {
               />
               <input
                 type="text"
-                placeholder="Search orders, products, vouchers..."
+                placeholder="Tìm kiếm đơn hàng, sản phẩm, mã giảm giá..."
                 className="w-full rounded-lg border border-transparent bg-surface-container-low py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-primary/30 focus:ring-2 focus:ring-primary/20"
-                aria-label="Search dashboard"
+                aria-label="Tìm kiếm bảng điều khiển"
               />
             </div>
           </div>
@@ -164,7 +164,7 @@ export const DashboardLayout = () => {
             <button
               type="button"
               className="relative rounded-lg p-2 text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-on-surface"
-              aria-label="Notifications"
+              aria-label="Thông báo"
             >
               <Bell size={20} />
               <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-error" />
@@ -249,7 +249,7 @@ export const DashboardLayout = () => {
               <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-error-container">
                 <LogOut size={20} />
               </span>
-              <span className="text-sm font-bold">Logout</span>
+              <span className="text-sm font-bold">Đăng xuất</span>
             </button>
           </div>
         </aside>
@@ -259,7 +259,7 @@ export const DashboardLayout = () => {
             type="button"
             onClick={() => setSidebarOpen(false)}
             className="fixed inset-0 z-20 bg-black/45 lg:hidden"
-            aria-label="Close navigation overlay"
+            aria-label="Đóng bảng điều hướng"
           />
         ) : null}
 
@@ -267,10 +267,10 @@ export const DashboardLayout = () => {
           <div className="mx-auto max-w-7xl">
             <div className="mb-6 flex items-center gap-2 text-sm text-on-surface-variant">
               <Link to="/" className="hover:text-primary">
-                Home
+                Trang chủ
               </Link>
               <ChevronRight size={16} />
-              <span className="font-bold text-on-surface">Dashboard</span>
+              <span className="font-bold text-on-surface">Bảng điều khiển</span>
             </div>
 
             <Outlet />

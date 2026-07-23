@@ -27,7 +27,10 @@ import {
   Minus,
   Sparkles,
   Clock,
-  UserCheck
+  UserCheck,
+  ShieldCheck,
+  ShieldX,
+  ShieldAlert
 } from 'lucide-react'
 import apiClient from '@/services/api';
 import { inventoryService } from '@services/inventoryService'
@@ -38,6 +41,7 @@ import { competitorProductService } from '@services/competitorProductService'
 import { useAuth } from '@hooks/useAuth'
 import type { Inventory, ImportReceipt, Branch, Product, Category, CompetitorProduct } from '@/types'
 import { notify } from '../../utils/toast';
+import { useSocket } from '../../contexts/SocketContext';
 
 const formatVND = (num: number) => {
   return new Intl.NumberFormat('vi-VN', {
@@ -48,6 +52,7 @@ const formatVND = (num: number) => {
 
 export const ManageInventoryPage = () => {
   const { user, loading: authLoading } = useAuth()
+  const { socket } = useSocket()
   const isManagerOrStaff = user?.role === 'branch_manager' || user?.role === 'staff'
   const userBranchId = user?.branchId || ''
   const isAdmin = user?.role === 'admin'
@@ -98,6 +103,15 @@ export const ManageInventoryPage = () => {
   const [verificationNote, setVerificationNote] = useState('')
   const [verifyLoading, setVerifyLoading] = useState(false)
   const [verifyError, setVerifyError] = useState<string | null>(null)
+
+  // Approval states (Admin only) — UC mới: duyệt/từ chối phiếu nhập kho
+  const [approveLoading, setApproveLoading] = useState(false)
+  const [approveError, setApproveError] = useState<string | null>(null)
+  const [rejectTargetId, setRejectTargetId] = useState<string | null>(null)
+  const [showRejectModal, setShowRejectModal] = useState(false)
+  const [rejectReason, setRejectReason] = useState('')
+  const [rejectLoading, setRejectLoading] = useState(false)
+  const [rejectError, setRejectError] = useState<string | null>(null)
 
   // Manual Stock Editing states
   const [isEditStockModalOpen, setIsEditStockModalOpen] = useState(false)
@@ -156,6 +170,8 @@ export const ManageInventoryPage = () => {
 
   // Crawler states
   const [isCrawling, setIsCrawling] = useState(false);
+  const [crawledCount, setCrawledCount] = useState<number>(0);
+  const [lastCrawledProduct, setLastCrawledProduct] = useState<string>('');
   const [showCrawlerStopConfirm, setShowCrawlerStopConfirm] = useState(false);
 
   // Tab 4: Crawled Products states
@@ -243,27 +259,56 @@ export const ManageInventoryPage = () => {
   }, [catalogSearch])
 
 
-  // Poll Crawler Status
+  // Lắng nghe sự kiện cào dữ liệu thời gian thực từ Socket.io
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (activeTab === 'catalog') {
-      const fetchStatus = async () => {
-        try {
-          const res = await apiClient.get('/api/crawler/status');
-          if (res.data?.success) {
-            setIsCrawling(res.data.data.isRunning);
-          }
-        } catch (err) {
-          console.error('Failed to fetch crawler status', err);
-        }
+    if (!socket) return
+
+    const handleCrawlerStatus = (data: { isRunning: boolean; crawledCount: number; error?: string }) => {
+      console.log('Realtime crawler status:', data)
+      setIsCrawling(data.isRunning)
+      if (data.crawledCount !== undefined) {
+        setCrawledCount(data.crawledCount)
       }
-      fetchStatus();
-      interval = setInterval(fetchStatus, 5000);
+      if (data.error) {
+        notify.error(`Lỗi Bot Cào: ${data.error}`)
+      } else if (!data.isRunning) {
+        notify.success('Bot cào dữ liệu đã hoàn thành nhiệm vụ!')
+      }
+      
+      if (activeTab === 'crawled') {
+        fetchCrawledProducts(1, crawledKeyword)
+      }
     }
+
+    const handleCrawlerProgress = (data: { isRunning: boolean; crawledCount: number; lastCrawledProduct: string }) => {
+      console.log('Realtime crawler progress:', data)
+      setIsCrawling(data.isRunning)
+      setCrawledCount(data.crawledCount)
+      setLastCrawledProduct(data.lastCrawledProduct)
+      
+      if (activeTab === 'crawled') {
+        fetchCrawledProducts(1, crawledKeyword)
+      }
+    }
+
+    const handleImportReceiptUpdated = (data: any) => {
+      console.log('Realtime import receipt update received:', data)
+      fetchReceipts()
+      fetchInventory()
+    }
+
+    socket.on('crawler:status', handleCrawlerStatus)
+    socket.on('crawler:progress', handleCrawlerProgress)
+    socket.on('import_receipt:updated', handleImportReceiptUpdated)
+    socket.on('inventory:updated', handleImportReceiptUpdated)
+
     return () => {
-      if (interval) clearInterval(interval);
+      socket.off('crawler:status', handleCrawlerStatus)
+      socket.off('crawler:progress', handleCrawlerProgress)
+      socket.off('import_receipt:updated', handleImportReceiptUpdated)
+      socket.off('inventory:updated', handleImportReceiptUpdated)
     }
-  }, [activeTab]);
+  }, [socket, activeTab, crawledKeyword, selectedBranchId]);
 
   const handleToggleCrawler = async () => {
     try {
@@ -387,7 +432,7 @@ export const ManageInventoryPage = () => {
     }
 
     const selectedProducts = products.filter(p => selectedCatalogIds.includes(p._id));
-    
+
     // Initialize results list without calling API immediately
     const initialResults = selectedProducts.map(prod => {
       const catId = prod.categoryId ? (typeof prod.categoryId === 'object' ? (prod.categoryId as any)._id : String(prod.categoryId)) : '';
@@ -413,7 +458,7 @@ export const ManageInventoryPage = () => {
 
   const handleBulkImportFromCatalog = () => {
     if (selectedCatalogIds.length === 0) return;
-    
+
     const selectedProducts = products.filter(p => selectedCatalogIds.includes(p._id));
     const newItems = selectedProducts.map(prod => {
       const historicalItem = importBranchInventory.find(
@@ -422,7 +467,7 @@ export const ManageInventoryPage = () => {
           return invProdId === prod._id;
         }
       );
-      
+
       let suggestedCost = 0;
       if (historicalItem && historicalItem.lastImportCost && historicalItem.lastImportCost > 0) {
         suggestedCost = historicalItem.lastImportCost;
@@ -431,7 +476,7 @@ export const ManageInventoryPage = () => {
       } else if (prod.costPrice && prod.costPrice > 0) {
         suggestedCost = prod.costPrice;
       }
-      
+
       return {
         productId: prod._id,
         quantity: 1,
@@ -932,6 +977,8 @@ export const ManageInventoryPage = () => {
     setViewingReceipt(rec)
     setVerificationNote(rec.verificationNote || '')
     setVerifyError(null)
+    setApproveError(null)
+    setRejectError(null)
 
     const initialQuantities: Record<string, number> = {}
     rec.items.forEach((it) => {
@@ -994,6 +1041,69 @@ export const ManageInventoryPage = () => {
       setVerifyError(err.response?.data?.message || err.message || 'Đã xảy ra lỗi khi gửi xác nhận.')
     } finally {
       setVerifyLoading(false)
+    }
+  }
+
+  // ── UC mới: Admin duyệt phiếu nhập kho ────────────────────────────────────
+  const handleApproveReceipt = async (id: string) => {
+    try {
+      setApproveLoading(true)
+      setApproveError(null)
+      const res = await inventoryService.approveImportReceipt(id)
+      if (res.success && res.data) {
+        if (viewingReceipt && viewingReceipt._id === id) {
+          setViewingReceipt(res.data)
+        }
+        notify.success('Đã duyệt phiếu nhập kho thành công.')
+        fetchReceipts()
+      } else {
+        setApproveError(res.message || 'Không thể duyệt phiếu nhập kho.')
+      }
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || 'Lỗi hệ thống khi duyệt phiếu.'
+      setApproveError(msg)
+    } finally {
+      setApproveLoading(false)
+    }
+  }
+
+  // ── UC mới: Mở modal nhập lý do từ chối ───────────────────────────────────
+  const handleOpenRejectModal = (id: string) => {
+    setRejectTargetId(id)
+    setRejectReason('')
+    setRejectError(null)
+    setShowRejectModal(true)
+  }
+
+  // ── UC mới: Admin từ chối phiếu nhập kho ──────────────────────────────────
+  const handleRejectSubmit = async () => {
+    if (!rejectTargetId) return
+    if (!rejectReason.trim()) {
+      setRejectError('Vui lòng nhập lý do từ chối.')
+      return
+    }
+
+    try {
+      setRejectLoading(true)
+      setRejectError(null)
+      const res = await inventoryService.rejectImportReceipt(rejectTargetId, rejectReason.trim())
+      if (res.success && res.data) {
+        if (viewingReceipt && viewingReceipt._id === rejectTargetId) {
+          setViewingReceipt(res.data)
+        }
+        notify.success('Đã từ chối phiếu nhập kho.')
+        setShowRejectModal(false)
+        setRejectTargetId(null)
+        setRejectReason('')
+        fetchReceipts()
+      } else {
+        setRejectError(res.message || 'Không thể từ chối phiếu nhập kho.')
+      }
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || 'Lỗi hệ thống khi từ chối phiếu.'
+      setRejectError(msg)
+    } finally {
+      setRejectLoading(false)
     }
   }
 
@@ -1903,6 +2013,7 @@ export const ManageInventoryPage = () => {
                       <th className="p-4 font-bold text-on-surface-variant text-right">Tổng giá trị</th>
                       <th className="p-4 font-bold text-on-surface-variant">Người tạo</th>
                       <th className="p-4 font-bold text-on-surface-variant">Ngày nhập</th>
+                      <th className="p-4 font-bold text-on-surface-variant text-center">Trạng thái duyệt</th>
                       <th className="p-4 font-bold text-on-surface-variant text-center">Trạng thái kiểm</th>
                       <th className="p-4 font-bold text-on-surface-variant text-center">Hành động</th>
                     </tr>
@@ -1933,6 +2044,31 @@ export const ManageInventoryPage = () => {
                             {new Date(rec.createdAt).toLocaleString()}
                           </td>
                           <td className="p-4 text-center">
+                            {rec.status === 'pending_approval' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                <Clock size={12} />
+                                Chờ duyệt
+                              </span>
+                            )}
+                            {rec.status === 'rejected' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                <ShieldX size={12} />
+                                Đã từ chối
+                              </span>
+                            )}
+                            {rec.status === 'active' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <ShieldCheck size={12} />
+                                Đã duyệt
+                              </span>
+                            )}
+                            {rec.status === 'cancelled' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-surface-container-high text-on-surface-variant border border-outline-variant">
+                                Đã hủy
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-4 text-center">
                             {vStatus === 'pending' && (
                               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
                                 <Clock size={12} />
@@ -1953,14 +2089,43 @@ export const ManageInventoryPage = () => {
                             )}
                           </td>
                           <td className="p-4 text-center">
-                            <button
-                              type="button"
-                              onClick={() => handleOpenReceiptDetail(rec)}
-                              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 transition-colors"
-                            >
-                              <Layers size={14} />
-                              Xem & Kiểm hàng
-                            </button>
+                            <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                              {rec.status === 'pending_approval' && isAdmin && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleApproveReceipt(rec._id)}
+                                    disabled={approveLoading}
+                                    className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors disabled:opacity-50"
+                                  >
+                                    <ShieldCheck size={14} />
+                                    Duyệt
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenRejectModal(rec._id)}
+                                    className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors"
+                                  >
+                                    <ShieldX size={14} />
+                                    Từ chối
+                                  </button>
+                                </>
+                              )}
+                              {rec.status === 'pending_approval' && !isAdmin && (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200">
+                                  <Clock size={12} />
+                                  Chờ Admin duyệt
+                                </span>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleOpenReceiptDetail(rec)}
+                                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 transition-colors"
+                              >
+                                <Layers size={14} />
+                                {rec.status === 'active' ? 'Xem & Kiểm hàng' : 'Xem chi tiết'}
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       )
@@ -2206,6 +2371,15 @@ export const ManageInventoryPage = () => {
               <p className="text-on-surface-variant text-sm mt-1">
                 Quản lý danh sách sản phẩm thô cào được từ đối thủ Winmart và đưa vào danh mục hệ thống.
               </p>
+              {isCrawling && lastCrawledProduct && (
+                <p className="text-xs text-primary font-bold animate-pulse mt-1.5 flex items-center gap-1.5 bg-primary/5 px-2.5 py-1 rounded-lg w-fit border border-primary/10">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                  </span>
+                  Đang cào: {lastCrawledProduct}
+                </p>
+              )}
             </div>
 
             {/* Crawler Status Box */}
@@ -2218,7 +2392,7 @@ export const ManageInventoryPage = () => {
                   <span className={`relative inline-flex rounded-full h-3.5 w-3.5 ${isCrawling ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
                 </span>
                 <span className="text-sm font-semibold text-on-surface">
-                  Bot Cào: {isCrawling ? 'Đang hoạt động' : 'Tắt'}
+                  Bot Cào: {isCrawling ? `Đang hoạt động (${crawledCount})` : 'Tắt'}
                 </span>
               </div>
 
@@ -2546,7 +2720,7 @@ export const ManageInventoryPage = () => {
                     />
                     <div className="max-h-40 overflow-y-auto space-y-2 divide-y divide-outline-variant/40 pr-1 text-xs">
                       {activeProducts
-                        .filter(p => 
+                        .filter(p =>
                           (p.productName || p.name || '').toLowerCase().includes(importProductSearch.toLowerCase()) ||
                           (p.sku || '').toLowerCase().includes(importProductSearch.toLowerCase())
                         )
@@ -2571,25 +2745,24 @@ export const ManageInventoryPage = () => {
                                     handleQuickAddProduct(p);
                                   }
                                 }}
-                                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black tracking-wide transition-all border shrink-0 ${
-                                  isAdded
-                                    ? 'bg-success/15 border-success/30 text-success hover:bg-success/20'
-                                    : 'bg-primary border-primary text-white hover:bg-opacity-90 active:scale-95'
-                                }`}
+                                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black tracking-wide transition-all border shrink-0 ${isAdded
+                                  ? 'bg-success/15 border-success/30 text-success hover:bg-success/20'
+                                  : 'bg-primary border-primary text-white hover:bg-opacity-90 active:scale-95'
+                                  }`}
                               >
                                 {isAdded ? 'Đã thêm ✓' : 'Thêm +'}
                               </button>
                             </div>
                           );
                         })}
-                      {activeProducts.filter(p => 
+                      {activeProducts.filter(p =>
                         (p.productName || p.name || '').toLowerCase().includes(importProductSearch.toLowerCase()) ||
                         (p.sku || '').toLowerCase().includes(importProductSearch.toLowerCase())
                       ).length === 0 && (
-                        <div className="text-center py-4 text-on-surface-variant opacity-60">
-                          Không tìm thấy sản phẩm nào khớp từ khóa.
-                        </div>
-                      )}
+                          <div className="text-center py-4 text-on-surface-variant opacity-60">
+                            Không tìm thấy sản phẩm nào khớp từ khóa.
+                          </div>
+                        )}
                     </div>
                   </div>
                 </div>
@@ -2638,7 +2811,7 @@ export const ManageInventoryPage = () => {
                             notify.error('Không có sản phẩm nào thuộc danh mục này.');
                             return;
                           }
-                          
+
                           const newItems = matchedProducts.map(prod => {
                             const historicalItem = importBranchInventory.find(
                               inv => (typeof inv.productId === 'object' ? inv.productId?._id : inv.productId) === prod._id
@@ -3303,6 +3476,9 @@ export const ManageInventoryPage = () => {
         const creatorName = typeof viewingReceipt.createdBy === 'object' ? viewingReceipt.createdBy.fullName : 'System'
         const vStatus = viewingReceipt.verificationStatus || 'pending'
         const isPending = vStatus === 'pending'
+        const canVerify = viewingReceipt.status === 'active' && isPending
+        const isAwaitingApproval = viewingReceipt.status === 'pending_approval'
+        const isRejected = viewingReceipt.status === 'rejected'
 
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
@@ -3332,6 +3508,13 @@ export const ManageInventoryPage = () => {
                   </div>
                 )}
 
+                {approveError && (
+                  <div className="flex items-center gap-3 p-4 bg-error-container text-on-error-container rounded-xl border border-error/20">
+                    <AlertCircle size={20} className="shrink-0" />
+                    <p className="text-sm font-semibold">{approveError}</p>
+                  </div>
+                )}
+
                 {/* Info summary */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-surface-container-low p-4 rounded-xl border border-outline-variant/60">
                   <div className="space-y-1 text-xs">
@@ -3345,16 +3528,84 @@ export const ManageInventoryPage = () => {
                     <p className="text-sm text-on-surface font-semibold">Người tạo: <span className="font-bold text-on-surface">{creatorName}</span></p>
                     <p className="text-sm text-on-surface font-semibold">Tổng giá trị: <span className="text-primary font-black">{formatVND(viewingReceipt.totalCost)}</span></p>
                     <p className="text-sm text-on-surface font-semibold">
-                      Trạng thái:
+                      Trạng thái duyệt:
                       <span className={`ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${viewingReceipt.status === 'active' ? 'bg-emerald-100 text-emerald-800' :
-                          viewingReceipt.status === 'cancelled' ? 'bg-rose-100 text-rose-800' :
+                        viewingReceipt.status === 'cancelled' ? 'bg-surface-container-high text-on-surface-variant' :
+                          viewingReceipt.status === 'rejected' ? 'bg-rose-100 text-rose-800' :
                             'bg-amber-100 text-amber-800'
                         }`}>
-                        {viewingReceipt.status}
+                        {viewingReceipt.status === 'pending_approval' ? 'Chờ duyệt' :
+                          viewingReceipt.status === 'active' ? 'Đã duyệt' :
+                            viewingReceipt.status === 'rejected' ? 'Đã từ chối' :
+                              viewingReceipt.status === 'cancelled' ? 'Đã hủy' : viewingReceipt.status}
                       </span>
                     </p>
                   </div>
                 </div>
+
+                {/* UC mới: Banner chờ duyệt / đã từ chối / khu vực nút Duyệt-Từ chối cho Admin */}
+                {isAwaitingApproval && isAdmin && (
+                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-3">
+                    <p className="text-xs font-black uppercase tracking-wide text-amber-800 flex items-center gap-1.5">
+                      <ShieldAlert size={14} />
+                      Phiếu này đang chờ bạn duyệt
+                    </p>
+                    <p className="text-xs text-amber-900">
+                      Kiểm tra thông tin phiếu nhập trước khi duyệt. Sau khi duyệt, nhân viên chi nhánh mới có thể kiểm hàng và cập nhật tồn kho.
+                    </p>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        disabled={approveLoading}
+                        onClick={() => handleApproveReceipt(viewingReceipt._id)}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-xs font-bold text-white shadow transition-all disabled:opacity-50"
+                      >
+                        {approveLoading ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />}
+                        Duyệt phiếu
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenRejectModal(viewingReceipt._id)}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 px-4 py-2 text-xs font-bold text-white shadow transition-all"
+                      >
+                        <ShieldX size={14} />
+                        Từ chối phiếu
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {isAwaitingApproval && !isAdmin && (
+                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                    <p className="text-xs font-black uppercase tracking-wide text-amber-800 flex items-center gap-1.5">
+                      <Clock size={14} />
+                      Đang chờ Admin duyệt phiếu này
+                    </p>
+                    <p className="text-xs text-amber-900 mt-1">
+                      Bạn sẽ có thể kiểm hàng sau khi phiếu được Admin duyệt. Vui lòng quay lại kiểm tra sau.
+                    </p>
+                  </div>
+                )}
+
+                {isRejected && (
+                  <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl space-y-1">
+                    <p className="text-xs font-black uppercase tracking-wide text-rose-800 flex items-center gap-1.5">
+                      <ShieldX size={14} />
+                      Phiếu đã bị từ chối
+                    </p>
+                    {viewingReceipt.rejectedBy && (
+                      <p className="text-xs text-rose-900">
+                        Người từ chối: <strong>{viewingReceipt.rejectedBy.fullName}</strong>
+                        {viewingReceipt.rejectedAt && <> · {new Date(viewingReceipt.rejectedAt).toLocaleString()}</>}
+                      </p>
+                    )}
+                    {viewingReceipt.rejectionReason && (
+                      <p className="text-xs text-rose-900 italic mt-1 bg-surface/60 p-2 rounded-lg border border-rose-200/60">
+                        Lý do: &ldquo;{viewingReceipt.rejectionReason}&rdquo;
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* Audit verification report details if verified */}
                 {!isPending && (
@@ -3378,7 +3629,7 @@ export const ManageInventoryPage = () => {
                 {/* Product items table / checklist */}
                 <div className="space-y-2">
                   <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
-                    {isPending ? 'Checklist Kiểm hàng (Tích chọn sản phẩm nhận đủ)' : 'Kết quả đối soát sản phẩm'}
+                    {canVerify ? 'Checklist Kiểm hàng (Tích chọn sản phẩm nhận đủ)' : 'Danh sách sản phẩm trong phiếu'}
                   </p>
 
                   <div className="border border-outline-variant rounded-xl overflow-hidden divide-y divide-outline-variant/60">
@@ -3390,7 +3641,7 @@ export const ManageInventoryPage = () => {
                       const isItemVerified = !isPending ? it.verified : isTicked
 
                       return (
-                        <div key={prodId} className={`flex items-center gap-4 p-3 transition-colors ${isItemVerified ? 'bg-emerald-50/15' : 'bg-rose-50/10'
+                        <div key={prodId} className={`flex items-center gap-4 p-3 transition-colors ${canVerify ? (isItemVerified ? 'bg-emerald-50/15' : 'bg-rose-50/10') : ''
                           }`}>
 
                           {/* Image */}
@@ -3415,7 +3666,7 @@ export const ManageInventoryPage = () => {
                             {!isPending ? (
                               <p className="text-xs font-bold text-on-surface">SL nhập: {it.quantity}</p>
                             ) : (
-                              <p className="text-xs text-on-surface-variant">Đơn giá: {formatVND(it.unitCost)}</p>
+                              <p className="text-xs text-on-surface-variant">SL: {it.quantity} · Đơn giá: {formatVND(it.unitCost)}</p>
                             )}
                             {!isPending && (
                               <p className="text-[11px] text-on-surface-variant">Đơn giá: {formatVND(it.unitCost)}</p>
@@ -3424,7 +3675,7 @@ export const ManageInventoryPage = () => {
 
                           {/* Checkbox or verification badge */}
                           <div className="flex items-center gap-3 shrink-0 pl-2">
-                            {isPending ? (
+                            {canVerify ? (
                               <>
                                 {/* Number input */}
                                 <div className="flex items-center gap-1 bg-surface-container-low border border-outline-variant/60 rounded-xl px-2.5 py-1">
@@ -3450,6 +3701,11 @@ export const ManageInventoryPage = () => {
                                   <span className="text-xs font-bold text-on-surface-variant select-none">Nhận đủ</span>
                                 </label>
                               </>
+                            ) : isPending ? (
+                              // Trường hợp status khác 'active' (pending_approval / rejected) — chưa kiểm hàng, chỉ đọc
+                              <span className="text-xs font-bold text-on-surface-variant italic opacity-70">
+                                Chưa kiểm hàng
+                              </span>
                             ) : (
                               <div className="flex flex-col items-end gap-1">
                                 <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${it.verified ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
@@ -3475,7 +3731,7 @@ export const ManageInventoryPage = () => {
                 </div>
 
                 {/* Verification Note input for pending */}
-                {isPending && (
+                {canVerify && (
                   <div className="space-y-1.5">
                     <label htmlFor="verify-note" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
                       Ghi chú kiểm kho
@@ -3500,7 +3756,7 @@ export const ManageInventoryPage = () => {
                   >
                     Đóng
                   </button>
-                  {isPending && (
+                  {canVerify && (
                     <button
                       type="submit"
                       disabled={verifyLoading}
@@ -3742,6 +3998,75 @@ export const ManageInventoryPage = () => {
         </div>
       )}
 
+      {/* ── UC mới: Reject Import Receipt Modal (nhập lý do từ chối) ── */}
+      {showRejectModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-surface rounded-2xl border border-outline-variant shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-outline-variant bg-surface-container-low px-6 py-4">
+              <h2 className="text-lg font-black text-on-surface flex items-center gap-2">
+                <ShieldX size={20} className="text-rose-600" />
+                Từ chối phiếu nhập kho
+              </h2>
+              <button
+                type="button"
+                onClick={() => { setShowRejectModal(false); setRejectTargetId(null); setRejectReason(''); setRejectError(null) }}
+                className="rounded-full p-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              {rejectError && (
+                <div className="flex items-center gap-3 p-4 bg-error-container text-on-error-container rounded-xl border border-error/20">
+                  <AlertCircle size={20} className="shrink-0" />
+                  <p className="text-sm font-semibold">{rejectError}</p>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label htmlFor="reject-reason" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                  Lý do từ chối <span className="text-error">*</span>
+                </label>
+                <textarea
+                  id="reject-reason"
+                  rows={3}
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  placeholder="Ví dụ: Số lượng không khớp với hóa đơn nhà cung cấp..."
+                  className="w-full bg-surface-container-low border border-outline-variant/60 rounded-xl py-2 px-3 text-sm focus:ring-2 focus:ring-primary outline-none transition-all"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-outline-variant">
+                <button
+                  type="button"
+                  onClick={() => { setShowRejectModal(false); setRejectTargetId(null); setRejectReason(''); setRejectError(null) }}
+                  disabled={rejectLoading}
+                  className="rounded-xl px-5 py-3 text-sm font-bold text-on-surface-variant hover:bg-surface-container-low transition-colors disabled:opacity-50"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRejectSubmit}
+                  disabled={rejectLoading}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-rose-600 px-6 py-3 text-sm font-bold text-white transition-all hover:bg-rose-700 active:scale-95 disabled:opacity-50"
+                >
+                  {rejectLoading ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Đang gửi...
+                    </>
+                  ) : (
+                    'Xác nhận từ chối'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Bulk AI Price Suggestion Modal ── */}
       {showBulkSuggestModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
@@ -3863,9 +4188,8 @@ export const ManageInventoryPage = () => {
                                         setBulkSuggestResults(prev => prev.map(r => r.productId === result.productId ? { ...r, suggestedPrice: val } : r));
                                       }}
                                       placeholder="Giá gợi ý"
-                                      className={`bg-surface-container-low border rounded-lg py-1 px-2 focus:ring-1 text-xs font-mono w-24 font-bold text-right ${
-                                        result.suggestedPrice < result.floorPrice ? 'border-error text-error focus:ring-error' : 'border-primary/40 text-primary focus:ring-primary'
-                                      }`}
+                                      className={`bg-surface-container-low border rounded-lg py-1 px-2 focus:ring-1 text-xs font-mono w-24 font-bold text-right ${result.suggestedPrice < result.floorPrice ? 'border-error text-error focus:ring-error' : 'border-primary/40 text-primary focus:ring-primary'
+                                        }`}
                                     />
                                     {result.floorPrice > 0 && (
                                       <span className={`text-[10px] ${result.suggestedPrice < result.floorPrice ? 'text-error font-semibold' : 'text-on-surface-variant'}`}>
@@ -3879,9 +4203,8 @@ export const ManageInventoryPage = () => {
                               </td>
                               <td className="p-3 text-center">
                                 {result.confidence > 0 ? (
-                                  <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                                    result.confidence >= 80 ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'
-                                  }`}>
+                                  <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold ${result.confidence >= 80 ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'
+                                    }`}>
                                     {result.confidence}%
                                   </span>
                                 ) : '---'}
@@ -3943,4 +4266,3 @@ export const ManageInventoryPage = () => {
     </div>
   )
 }
-

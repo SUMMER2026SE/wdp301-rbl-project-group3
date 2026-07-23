@@ -15,6 +15,8 @@ interface CartItemResponse {
         price: number;
         unit?: string;
         imageUrl?: string;
+        isAvailable?: boolean;
+        availableQuantity?: number;
     };
     quantity: number;
     subtotal: number;
@@ -50,6 +52,20 @@ async function buildCartResponse(cart: any, branchId?: string): Promise<CartResp
         const product = item.productId;
         let price = product?.salePrice ?? 0;
         
+        // Kiểm tra tồn kho tại chi nhánh hiện tại
+        let isAvailable = true;
+        let availableQuantity = 0;
+        if (cleanBranchId) {
+            const inventory = await Inventory.findOne({
+                branchId: cleanBranchId,
+                productId: product._id
+            }).exec();
+            availableQuantity = inventory?.quantity ?? 0;
+            isAvailable = availableQuantity >= item.quantity;
+        } else {
+            isAvailable = true;
+            availableQuantity = 999;
+        }
         
         // Apply flash sale price override if applicable
         if (activeFlashSale) {
@@ -72,6 +88,8 @@ async function buildCartResponse(cart: any, branchId?: string): Promise<CartResp
                 price,
                 unit: product?.unit,
                 imageUrl: product?.imageUrl,
+                isAvailable,
+                availableQuantity,
             },
             quantity: item.quantity,
             subtotal: price * item.quantity,

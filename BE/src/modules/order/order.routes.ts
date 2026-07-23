@@ -8,6 +8,9 @@ const router = Router();
 const backOffice = authorize('admin', 'branch_manager', 'staff');
 const customerOnly = authorize('customer', 'admin', 'branch_manager', 'staff');
 
+// PayOS Webhook (Công khai không cần JWT header)
+router.post('/payos-webhook', orderController.handlePayOSWebhook);
+
 router.use(authenticate);
 
 router.get('/my', customerOnly, validate(myOrdersSchema), orderController.getMyOrders);

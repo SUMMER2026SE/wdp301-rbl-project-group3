@@ -56,7 +56,7 @@ export const placeOrderSchema = z.object({
     shippingAddress: z.string().min(1, 'Shipping address is required').max(500),
     phoneNumber: z.string().min(10, 'Invalid phone number').max(15),
     note: z.string().max(500).optional(),
-    paymentMethod: z.enum(['COD', 'banking', 'momo', 'vnpay']),
+    paymentMethod: z.enum(['COD', 'payos']),
     voucherCode: z.string().max(50).optional(),
   }),
 });

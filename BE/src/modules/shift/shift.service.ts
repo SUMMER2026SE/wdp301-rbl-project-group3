@@ -3,6 +3,7 @@ import { shiftRepository, RegistrationFilters } from './shift.repository';
 import { IShiftTemplate } from '../../models/shift-template.model';
 import { IShiftRegistration } from '../../models/shift-registration.model';
 import { AppError } from '../../middlewares/errorHandler.middleware';
+import { emitToRoom } from '../../config/socket.config';
 
 export interface ShiftActor {
   userId: string;
@@ -153,7 +154,9 @@ export class ShiftService {
       note: data.note,
     };
 
-    return shiftRepository.createRegistration(payload);
+    const result = await shiftRepository.createRegistration(payload);
+    emitToRoom(`branch:${branchId}`, 'shift:updated', { action: 'created', id: result._id.toString() });
+    return result;
   }
 
   async getRegistrations(
@@ -218,6 +221,7 @@ export class ShiftService {
     }
 
     await shiftRepository.deleteRegistration(id);
+    emitToRoom(`branch:${registration.branchId.toString()}`, 'shift:updated', { action: 'cancelled', id });
   }
 
   async reviewRegistration(
@@ -257,6 +261,11 @@ export class ShiftService {
     if (!updated) {
       throw new AppError('Failed to update registration status', 500);
     }
+
+    const staffId = String((updated.userId as any)._id || updated.userId);
+
+    emitToRoom(`customer:${staffId}`, 'shift:updated', { action: 'reviewed', id, status: updated.status });
+    emitToRoom(`branch:${updated.branchId.toString()}`, 'shift:updated', { action: 'reviewed', id, status: updated.status });
 
     return updated;
   }

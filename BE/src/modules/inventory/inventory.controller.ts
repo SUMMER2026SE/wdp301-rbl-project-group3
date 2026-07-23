@@ -79,6 +79,31 @@ export class InventoryController {
     sendSuccess(res, { receipt }, 'Import receipt cancelled and stock reversed');
   });
 
+  approveImportReceipt = asyncHandler(async (req: Request, res: Response) => {
+    const receipt = await inventoryService.approveImportReceipt(
+      String(req.params.id),
+      req.user!.userId,
+      {
+        userId: req.user!.userId,
+        role: req.user!.role,
+      }
+    );
+    sendSuccess(res, { receipt }, 'Import receipt approved');
+  });
+
+  rejectImportReceipt = asyncHandler(async (req: Request, res: Response) => {
+    const receipt = await inventoryService.rejectImportReceipt(
+      String(req.params.id),
+      req.user!.userId,
+      req.body.reason,
+      {
+        userId: req.user!.userId,
+        role: req.user!.role,
+      }
+    );
+    sendSuccess(res, { receipt }, 'Import receipt rejected');
+  });
+
   createInventory = asyncHandler(async (req: Request, res: Response) => {
     const inventory = await inventoryService.createInventory({
       ...req.body,

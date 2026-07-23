@@ -1,9 +1,0 @@
-{
-	"id": "YaiSEIVTaaOqtVt",
-	"json": "{\"id\":\"YaiSEIVTaaOqtVt\",\"url\":\"https://winmart.vn/info/customer-support\",\"loadedUrl\":\"https://winmart.vn/info/customer-support\",\"uniqueKey\":\"https://winmart.vn/info/customer-support\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-07-13T19:13:42.692Z\"}",
-	"method": "GET",
-	"orderNo": null,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/info/customer-support",
-	"url": "https://winmart.vn/info/customer-support"
-}

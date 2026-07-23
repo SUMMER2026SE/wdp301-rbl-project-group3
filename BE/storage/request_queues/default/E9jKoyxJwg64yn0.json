@@ -1,9 +1,0 @@
-{
-	"id": "E9jKoyxJwg64yn0",
-	"json": "{\"id\":\"E9jKoyxJwg64yn0\",\"url\":\"https://winmart.vn/products/green-ace-dau-dau-nanh-2l--s10198354?storeGroupCode=1998&storeCode=1535\",\"loadedUrl\":\"https://winmart.vn/products/green-ace-dau-dau-nanh-2l--s10198354?storeCode=1535&storeGroupCode=1998\",\"uniqueKey\":\"https://winmart.vn/products/green-ace-dau-dau-nanh-2l--s10198354?storeCode=1535&storeGroupCode=1998\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":2,\"state\":4}},\"handledAt\":\"2026-07-13T19:14:34.859Z\"}",
-	"method": "GET",
-	"orderNo": null,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/products/green-ace-dau-dau-nanh-2l--s10198354?storeCode=1535&storeGroupCode=1998",
-	"url": "https://winmart.vn/products/green-ace-dau-dau-nanh-2l--s10198354?storeGroupCode=1998&storeCode=1535"
-}

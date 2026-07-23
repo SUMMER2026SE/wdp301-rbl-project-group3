@@ -46,7 +46,7 @@ export const SettingsPage = () => {
     setSuccess('')
 
     if (!user?.isEmailVerified) {
-      setError('Verify your email in Profile before changing your password.')
+      setError('Vui lòng xác thực email trong trang Hồ sơ trước khi đổi mật khẩu.')
       return
     }
 
@@ -54,9 +54,9 @@ export const SettingsPage = () => {
     try {
       await authService.requestPasswordChangeOtp()
       setOtpSent(true)
-      setSuccess('OTP sent to your verified email.')
+      setSuccess('Mã OTP đã được gửi về email đã xác thực của bạn.')
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to send OTP.'))
+      setError(getErrorMessage(err, 'Gửi mã OTP thất bại.'))
     } finally {
       setLoading(false)
     }
@@ -68,21 +68,21 @@ export const SettingsPage = () => {
     setSuccess('')
 
     if (newPassword !== confirmPassword) {
-      setError('Password confirmation does not match.')
+      setError('Xác nhận mật khẩu mới không trùng khớp.')
       return
     }
 
     setLoading(true)
     try {
       await authService.changePasswordWithOtp({ otp, newPassword })
-      setSuccess('Password changed successfully. Please sign in again.')
+      setSuccess('Đổi mật khẩu thành công. Vui lòng đăng nhập lại.')
       resetPasswordFlow()
 
       window.setTimeout(() => {
         navigate('/login')
       }, 1500)
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to change password.'))
+      setError(getErrorMessage(err, 'Đổi mật khẩu thất bại.'))
     } finally {
       setLoading(false)
     }
@@ -91,12 +91,12 @@ export const SettingsPage = () => {
   return (
     <div className="max-w-4xl space-y-6">
       <section>
-        <p className="text-sm font-bold uppercase tracking-wide text-primary">Settings</p>
+        <p className="text-sm font-bold uppercase tracking-wide text-primary">Cài đặt</p>
         <h1 className="mt-1 text-2xl font-black text-on-surface sm:text-3xl">
-          Account preferences
+          Tùy chọn tài khoản
         </h1>
         <p className="mt-2 text-sm text-on-surface-variant">
-          Manage notifications, email verification, and password security.
+          Quản lý thông báo, trạng thái xác thực email và bảo mật mật khẩu của bạn.
         </p>
       </section>
 
@@ -121,9 +121,9 @@ export const SettingsPage = () => {
               <Bell size={22} />
             </div>
             <div>
-              <h2 className="text-base font-black text-on-surface">Push Notifications</h2>
+              <h2 className="text-base font-black text-on-surface">Thông báo đẩy</h2>
               <p className="mt-1 text-sm text-on-surface-variant">
-                Receive delivery updates, promotional alerts, and account notices.
+                Nhận cập nhật đơn hàng, cảnh báo khuyến mãi và các thông báo khác.
               </p>
             </div>
           </div>
@@ -134,7 +134,7 @@ export const SettingsPage = () => {
               className="peer sr-only"
               checked={notifications}
               onChange={() => setNotifications((current) => !current)}
-              aria-label="Toggle push notifications"
+              aria-label="Chuyển đổi thông báo đẩy"
             />
             <span className="h-6 w-11 rounded-full bg-surface-container-highest transition-colors peer-checked:bg-primary peer-focus:ring-4 peer-focus:ring-primary/20" />
             <span className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-5" />
@@ -148,13 +148,13 @@ export const SettingsPage = () => {
                 <Lock size={22} />
               </div>
               <div>
-                <h2 className="text-base font-black text-on-surface">Password</h2>
+                <h2 className="text-base font-black text-on-surface">Mật khẩu</h2>
                 <p className="mt-1 text-sm text-on-surface-variant">
-                  Change your password using an OTP sent to your verified email.
+                  Thay đổi mật khẩu tài khoản bằng mã xác thực gửi về địa chỉ email đã đăng ký.
                 </p>
                 <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-surface-container-low px-3 py-1 text-xs font-bold text-on-surface-variant">
                   <ShieldCheck size={14} />
-                  {user?.isEmailVerified ? 'Email verified' : 'Email verification required'}
+                  {user?.isEmailVerified ? 'Email đã xác thực' : 'Yêu cầu xác thực Email'}
                 </div>
               </div>
             </div>
@@ -165,7 +165,7 @@ export const SettingsPage = () => {
                 onClick={() => setIsChangingPassword(true)}
                 className="rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-on-primary-fixed-variant"
               >
-                Update
+                Cập nhật
               </button>
             ) : null}
           </div>
@@ -175,7 +175,7 @@ export const SettingsPage = () => {
               {!otpSent ? (
                 <div className="space-y-4">
                   <p className="text-sm text-on-surface-variant">
-                    Request an OTP first. After verification, you can set a new password.
+                    Vui lòng gửi mã OTP trước. Sau khi xác minh, bạn có thể thiết lập mật khẩu mới.
                   </p>
                   <div className="flex flex-col gap-3 sm:flex-row">
                     <button
@@ -183,7 +183,7 @@ export const SettingsPage = () => {
                       onClick={resetPasswordFlow}
                       className="rounded-lg px-4 py-2.5 text-sm font-bold text-on-surface-variant transition-colors hover:bg-surface-container-high"
                     >
-                      Cancel
+                      Hủy
                     </button>
                     <button
                       type="button"
@@ -191,7 +191,7 @@ export const SettingsPage = () => {
                       disabled={loading}
                       className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-on-primary-fixed-variant disabled:opacity-50"
                     >
-                      {loading ? <Loader className="animate-spin" size={18} /> : 'Send OTP'}
+                      {loading ? <Loader className="animate-spin" size={18} /> : 'Gửi mã OTP'}
                     </button>
                   </div>
                 </div>
@@ -199,7 +199,7 @@ export const SettingsPage = () => {
                 <form onSubmit={handleChangePassword} className="max-w-md space-y-4">
                   <div>
                     <label className="mb-1 block text-sm font-bold text-on-surface">
-                      OTP Code
+                      Mã OTP
                     </label>
                     <input
                       type="text"
@@ -213,7 +213,7 @@ export const SettingsPage = () => {
                   </div>
                   <div>
                     <label className="mb-1 block text-sm font-bold text-on-surface">
-                      New Password
+                      Mật khẩu mới
                     </label>
                     <input
                       type="password"
@@ -226,7 +226,7 @@ export const SettingsPage = () => {
                   </div>
                   <div>
                     <label className="mb-1 block text-sm font-bold text-on-surface">
-                      Confirm Password
+                      Xác nhận mật khẩu
                     </label>
                     <input
                       type="password"
@@ -243,14 +243,14 @@ export const SettingsPage = () => {
                       onClick={resetPasswordFlow}
                       className="rounded-lg px-4 py-2.5 text-sm font-bold text-on-surface-variant transition-colors hover:bg-surface-container-high"
                     >
-                      Cancel
+                      Hủy
                     </button>
                     <button
                       type="submit"
                       disabled={loading || otp.length !== 6}
                       className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-on-primary-fixed-variant disabled:opacity-50"
                     >
-                      {loading ? <Loader className="animate-spin" size={18} /> : 'Change'}
+                      {loading ? <Loader className="animate-spin" size={18} /> : 'Thay đổi'}
                     </button>
                   </div>
                 </form>

@@ -5,6 +5,7 @@ import { AppError } from '../../../middlewares/errorHandler.middleware';
 import { IVoucher, Voucher } from '../../../models/voucher.model';
 import { Promotion } from '../../../models/promotion.model';
 import { User } from '../../../models/user.model';
+import { emitToRoom, emitGlobal } from '../../../config/socket.config';
 
 function toVoucherResponse(v: IVoucher) {
   return {
@@ -69,9 +70,11 @@ export class CouponService {
     };
 
     const voucher = await promotionRepository.createVoucher(voucherData);
+    const voucherRes = toVoucherResponse(voucher);
+    emitGlobal('promotion:updated', { action: 'voucher_created', voucher: voucherRes });
     return {
       message: `Voucher "${normalizedCode}" created successfully`,
-      data: toVoucherResponse(voucher),
+      data: voucherRes,
     };
   }
 
@@ -121,7 +124,9 @@ export class CouponService {
     }
 
     const updated = await promotionRepository.updateVoucherStatus(voucherId, 'disabled');
-    return toVoucherResponse(updated!);
+    const voucherRes = toVoucherResponse(updated!);
+    emitGlobal('promotion:updated', { action: 'voucher_disabled', voucher: voucherRes });
+    return voucherRes;
   }
 
   async claimVoucher(code: string, caller: CallerContext) {
@@ -206,6 +211,9 @@ export class CouponService {
     });
 
     await voucher.save();
+
+    emitToRoom(`customer:${caller.userId}`, 'voucher:claimed', { code: voucher.code, status: 'claimed' });
+    emitToRoom(`customer:${caller.userId}`, 'user:points_updated', { userId: caller.userId });
 
     return {
       message: 'Nhận mã giảm giá thành công',

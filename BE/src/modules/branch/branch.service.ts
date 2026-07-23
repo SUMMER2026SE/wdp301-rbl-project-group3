@@ -5,16 +5,19 @@ import { Types } from 'mongoose';
 import { User } from '../../models/user.model';
 import { Inventory } from '../../models/inventory.model';
 import { Order } from '../../models/order.model';
+import { emitGlobal } from '../../config/socket.config';
 
 export class BranchService {
   async createBranch(data: Partial<IBranch>): Promise<IBranch> {
     const existing = await branchRepository.findByCode(String(data.code));
     if (existing) throw new AppError('Branch code already exists', 409);
 
-    return branchRepository.create({
+    const result = await branchRepository.create({
       ...data,
       code: String(data.code).toUpperCase(),
     });
+    emitGlobal('branch:updated', result);
+    return result;
   }
 
   async getBranches(filters: { status?: string; keyword?: string }): Promise<IBranch[]> {
@@ -61,12 +64,14 @@ export class BranchService {
 
     const updated = await branchRepository.updateById(id, data);
     if (!updated) throw new AppError('Branch not found', 404);
+    emitGlobal('branch:updated', updated);
     return updated;
   }
 
   async deactivateBranch(id: string): Promise<IBranch> {
     const updated = await branchRepository.updateById(id, { status: 'inactive' });
     if (!updated) throw new AppError('Branch not found', 404);
+    emitGlobal('branch:updated', updated);
     return updated;
   }
 

@@ -1,9 +1,0 @@
-{
-	"id": "7PCO6f391pTAsTA",
-	"json": "{\"id\":\"7PCO6f391pTAsTA\",\"url\":\"https://winmart.vn/danh-sach-giai-thuong\",\"loadedUrl\":\"https://winmart.vn/danh-sach-giai-thuong\",\"uniqueKey\":\"https://winmart.vn/danh-sach-giai-thuong\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"label\":\"DETAIL_OR_CATEGORY\",\"__crawlee\":{\"crawlDepth\":1,\"state\":4}},\"handledAt\":\"2026-07-13T19:13:46.237Z\"}",
-	"method": "GET",
-	"orderNo": null,
-	"retryCount": 0,
-	"uniqueKey": "https://winmart.vn/danh-sach-giai-thuong",
-	"url": "https://winmart.vn/danh-sach-giai-thuong"
-}

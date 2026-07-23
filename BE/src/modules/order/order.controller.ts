@@ -92,6 +92,11 @@ export class OrderController {
     const order = await orderService.placeOrder(customerId, req.body);
     sendSuccess(res, order, 'Đơn hàng đã được tạo thành công', 201);
   });
+
+  handlePayOSWebhook = asyncHandler(async (req: Request, res: Response) => {
+    const result = await orderService.handlePayOSWebhook(req.body);
+    res.status(200).json(result);
+  });
 }
 
 export const orderController = new OrderController();

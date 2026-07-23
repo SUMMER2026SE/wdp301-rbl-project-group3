@@ -21,9 +21,12 @@ import shiftService, { ShiftTemplate, ShiftRegistration } from '@services/shiftS
 import { branchService } from '@services/branchService'
 import { employeeService } from '@services/employeeService'
 import type { Branch, Employee } from '@/types'
+import { useSocket } from '../../contexts/SocketContext'
+import { notify } from '../../utils/toast'
 
 export const ManageShiftsPage = () => {
   const { user } = useAuth()
+  const { socket } = useSocket()
   const isStaff = user?.role === 'staff'
   const isBranchManager = user?.role === 'branch_manager'
   const isAdmin = user?.role === 'admin'
@@ -168,6 +171,9 @@ export const ManageShiftsPage = () => {
       const res = await branchService.getBranches()
       if (res.success && res.data) {
         setBranches(res.data)
+        if (isAdmin && res.data.length > 0 && !selectedBranchId) {
+          setSelectedBranchId(res.data[0]._id)
+        }
       }
     } catch (err: any) {
       console.error('Failed to load branches:', err)
@@ -226,8 +232,12 @@ export const ManageShiftsPage = () => {
         if (filterEmployeeId !== 'all') {
           params.userId = filterEmployeeId
         }
-        if (filterStatus !== 'all') {
-          params.status = filterStatus
+        if (activeTab === 'review') {
+          if (filterStatus !== 'all') {
+            params.status = filterStatus
+          }
+        } else if (activeTab === 'overview') {
+          params.status = 'approved'
         }
       }
 
@@ -258,6 +268,30 @@ export const ManageShiftsPage = () => {
       loadRegistrations()
     }
   }, [selectedBranchId, mondayDateStr, filterEmployeeId, filterStatus, activeTab])
+
+  // Lắng nghe sự kiện ca trực thay đổi thời gian thực
+  useEffect(() => {
+    if (!socket) return
+
+    const handleShiftUpdated = (data: any) => {
+      console.log('Realtime shift update received:', data)
+      loadRegistrations()
+      
+      if (data.action === 'reviewed') {
+        notify.success('🔔 Một đơn đăng ký ca làm đã được duyệt mới!')
+      } else if (data.action === 'created') {
+        notify.success('🔔 Có yêu cầu đăng ký ca làm mới từ nhân viên!')
+      } else if (data.action === 'cancelled') {
+        notify.success('🔔 Một ca đăng ký đã được hủy bỏ.')
+      }
+    }
+
+    socket.on('shift:updated', handleShiftUpdated)
+
+    return () => {
+      socket.off('shift:updated', handleShiftUpdated)
+    }
+  }, [socket, selectedBranchId])
 
   // --- SUBMISSIONS ---
   // Registration Form
@@ -986,45 +1020,77 @@ export const ManageShiftsPage = () => {
               Lịch trực chung trong tuần ({formatDisplayDate(mondayDate)} - {formatDisplayDate(sundayDate)})
             </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-              {weekDates.map((dateItem, idx) => {
-                const dateStr = formatDateString(dateItem)
-                const dayName = getDayName(idx)
+            <div className="overflow-x-auto pb-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-3 min-w-[950px]">
+                {weekDates.map((dateItem, idx) => {
+                  const dateStr = formatDateString(dateItem)
+                  const dayName = getDayName(idx)
 
-                // Filter registrations on this specific day
-                const dayRegs = registrations.filter(
-                  (r) => r.date.substring(0, 10) === dateStr && r.status === 'approved'
-                )
+                  // Filter registrations on this specific day
+                  const dayRegs = registrations.filter((r) => {
+                    if (r.status !== 'approved') return false
+                    const rDateStr = typeof r.date === 'string'
+                      ? r.date.substring(0, 10)
+                      : new Date(r.date).toISOString().split('T')[0]
+                    return rDateStr === dateStr
+                  })
 
-                return (
-                  <div key={dateStr} className="rounded-xl border border-outline-variant bg-surface-container-low/20 p-3 min-h-[220px] flex flex-col">
-                    <div className="border-b border-outline-variant pb-2 mb-2 text-center">
-                      <p className="text-sm font-black text-on-surface">{dayName}</p>
-                      <p className="text-xs font-bold text-on-surface-variant">{formatDisplayDate(dateItem)}</p>
-                    </div>
+                  const isToday = formatDateString(new Date()) === dateStr
 
-                    <div className="flex-1 space-y-2">
-                      {dayRegs.length === 0 ? (
-                        <p className="text-[10px] text-on-surface-variant/50 text-center py-10 italic">
-                          Không có ca được duyệt
+                  return (
+                    <div
+                      key={dateStr}
+                      className={`rounded-xl border p-3 min-h-[260px] flex flex-col transition-all ${
+                        isToday
+                          ? 'border-primary bg-primary-container/15 ring-2 ring-primary/20 shadow-sm'
+                          : 'border-outline-variant bg-surface-container-low/30'
+                      }`}
+                    >
+                      <div className="border-b border-outline-variant/60 pb-2 mb-2 text-center">
+                        <p className="text-sm font-black text-on-surface flex items-center justify-center gap-1">
+                          {dayName}
                         </p>
-                      ) : (
-                        dayRegs.map((reg) => (
-                          <div key={reg._id} className="rounded bg-success/10 border border-success/20 p-2 text-[11px] font-bold text-success-dark">
-                            <div className="flex justify-between items-center">
-                              <span className="text-on-surface truncate">{reg.userId.fullName}</span>
-                              <span className="text-[9px] text-success shrink-0">{reg.shiftName}</span>
+                        <p className="text-xs font-bold text-on-surface-variant">{formatDisplayDate(dateItem)}</p>
+                        {isToday && (
+                          <span className="mt-1 inline-block rounded bg-primary px-1.5 py-0.5 text-[9px] font-black uppercase text-white tracking-wider">
+                            Hôm nay
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex-1 space-y-2">
+                        {dayRegs.length === 0 ? (
+                          <p className="text-[11px] text-on-surface-variant/40 text-center py-12 italic">
+                            Không có ca được duyệt
+                          </p>
+                        ) : (
+                          dayRegs.map((reg) => (
+                            <div
+                              key={reg._id}
+                              className="rounded-xl bg-emerald-50/90 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800/60 p-2.5 text-xs shadow-xs space-y-1.5 hover:shadow-sm transition-all"
+                            >
+                              <div className="flex items-start justify-between gap-1">
+                                <span className="font-extrabold text-on-surface text-xs leading-snug break-words">
+                                  {reg.userId.fullName}
+                                </span>
+                                <span className="inline-flex shrink-0 rounded bg-emerald-600/15 px-1.5 py-0.5 text-[9px] font-black text-emerald-800 dark:text-emerald-200">
+                                  {reg.shiftName}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
+                                <Clock size={11} className="shrink-0" />
+                                <span>
+                                  {reg.startTime} - {reg.endTime}
+                                </span>
+                              </div>
                             </div>
-                            <div className="text-[10px] text-on-surface-variant/80 mt-0.5">
-                              {reg.startTime} - {reg.endTime}
-                            </div>
-                          </div>
-                        ))
-                      )}
+                          ))
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
           </div>
         </div>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@hooks/useAuth'
 import { useCart } from '@/contexts/CartContext'
 import { useFavorites } from '@/contexts/FavoritesContext'
+import { useSocket } from '@/contexts/SocketContext'
 import { productService } from '@services/productService'
 import { branchService } from '@services/branchService'
 import { categoryService } from '@services/categoryService'
@@ -128,6 +129,14 @@ const categories: Category[] = [
 ]
 
 const heroImage = '/assets/winmart/hero-market.png'
+
+const ALL_BRANCH: Branch = {
+  _id: '',
+  name: 'Tất cả chi nhánh',
+  code: 'ALL',
+  address: 'Hiển thị sản phẩm từ tất cả chi nhánh hệ thống',
+  status: 'active'
+}
 
 
 const getCountdownTime = (endDateStr?: string): CountdownTime => {
@@ -285,9 +294,8 @@ const RecommendedCard = ({ product, onAddToCart }: { product: any; onAddToCart?:
         {hasFavorite ? (
           <button
             onClick={handleFavoriteClick}
-            className={`absolute bottom-2 right-2 p-2 rounded-full shadow-md transition-all translate-y-2 group-hover:translate-y-0 group-hover:opacity-100 ${
-              favorited ? 'bg-error text-white opacity-100 translate-y-0' : 'bg-white/90 text-primary opacity-0'
-            }`}
+            className={`absolute bottom-2 right-2 p-2 rounded-full shadow-md transition-all translate-y-2 group-hover:translate-y-0 group-hover:opacity-100 ${favorited ? 'bg-error text-white opacity-100 translate-y-0' : 'bg-white/90 text-primary opacity-0'
+              }`}
             type="button"
             aria-label={`Favorite ${title}`}
           >
@@ -326,6 +334,7 @@ export const HomePage = () => {
   const navigate = useNavigate()
   const { user, isAuthenticated, logout } = useAuth()
   const { cart, addToCart, updateQuantity, removeItem, clearCart, refreshCart } = useCart()
+  const { socket } = useSocket()
   const [activeFlashSale, setActiveFlashSale] = useState<any | null>(null)
   const [countdown, setCountdown] = useState<CountdownTime>({ hours: '00', minutes: '00', seconds: '00' })
   const heroImageRef = useRef<HTMLImageElement | null>(null)
@@ -412,9 +421,13 @@ export const HomePage = () => {
         if (savedBranchStr) {
           try {
             const parsed = JSON.parse(savedBranchStr)
-            const found = res.data.find((b) => b._id === parsed._id)
-            if (found) {
-              activeBranch = found
+            if (parsed && parsed._id === '') {
+              activeBranch = ALL_BRANCH
+            } else {
+              const found = res.data.find((b) => b._id === parsed._id)
+              if (found) {
+                activeBranch = found
+              }
             }
           } catch (e) {
             console.error('Failed to parse saved branch', e)
@@ -458,6 +471,43 @@ export const HomePage = () => {
     fetchActiveBanners()
     fetchPublicSettings()
   }, [])
+
+  // Đăng ký lắng nghe các thay đổi thời gian thực
+  useEffect(() => {
+    if (!socket) return
+
+    const handleProductChange = () => {
+      fetchDbProducts(searchQuery, selectedBranch?._id)
+    }
+
+    const handleBannerChange = () => {
+      fetchActiveBanners()
+    }
+
+    const handleFlashSaleChange = () => {
+      fetchActiveFlashSale(selectedBranch?._id)
+    }
+
+    const handleCategoryChange = () => {
+      fetchCategories()
+    }
+
+    socket.on('product:created', handleProductChange)
+    socket.on('product:updated', handleProductChange)
+    socket.on('product:deleted', handleProductChange)
+    socket.on('banner:updated', handleBannerChange)
+    socket.on('flash_sale:updated', handleFlashSaleChange)
+    socket.on('category:updated', handleCategoryChange)
+
+    return () => {
+      socket.off('product:created', handleProductChange)
+      socket.off('product:updated', handleProductChange)
+      socket.off('product:deleted', handleProductChange)
+      socket.off('banner:updated', handleBannerChange)
+      socket.off('flash_sale:updated', handleFlashSaleChange)
+      socket.off('category:updated', handleCategoryChange)
+    }
+  }, [socket, selectedBranch, searchQuery])
 
   useEffect(() => {
     if (activeBanners.length <= 1) return
@@ -685,7 +735,7 @@ export const HomePage = () => {
                             </div>
                           </div>
                           <span className="text-primary font-bold whitespace-nowrap text-body-md">
-                            {formatVND(product.salePrice || product.costPrice || 0)}
+                            {formatVND(product.salePrice || 0)}
                           </span>
                         </button>
                       </li>
@@ -797,73 +847,75 @@ export const HomePage = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-stack-lg">
-        <section
-          className="w-full min-w-0 relative overflow-hidden rounded-xl h-[520px] sm:h-[460px] lg:h-[420px] bg-primary group"
-          onMouseMove={handleHeroMouseMove}
-          onMouseLeave={handleHeroMouseLeave}
-        >
-          <img
-            ref={heroImageRef}
-            className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-80 transition-transform duration-700 group-hover:scale-105"
-            src={currentBanner ? currentBanner.imageUrl : heroImage}
-            alt={currentBanner ? currentBanner.title : "Premium organic supermarket aisle with fresh produce"}
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent flex flex-col justify-center px-6 md:px-12 text-white">
-            <span className="bg-secondary text-white font-bold px-4 py-1 rounded-full w-fit mb-4 text-label-lg animate-bounce">
-              {currentBanner ? "Ưu Đãi Đặc Biệt" : "Exclusive Offer"}
-            </span>
-            <h2 className="font-headline-lg text-[36px] sm:text-[40px] md:text-[48px] leading-tight mb-4 max-w-[11ch] sm:max-w-none">
-              {currentBanner ? currentBanner.title : "Fresh Food Festival"}
-              <br />
-              <span className="text-primary-fixed">{currentBanner ? currentBanner.subtitle : "Up to 30% OFF"}</span>
-            </h2>
-            <p className="text-body-lg mb-8 opacity-90 max-w-[280px] sm:max-w-sm md:max-w-none">
-              {currentBanner ? currentBanner.description : "Experience the peak of season's harvest with our premium organic selection."}
-              {currentBanner?.promoCode && (
-                <>
-                  <br />
-                  Mã code: <span className="font-bold border-b-2 border-primary-fixed">{currentBanner.promoCode}</span>
-                </>
-              )}
-              {!currentBanner && (
-                <>
-                  <br />
-                  Use code: <span className="font-bold border-b-2 border-primary-fixed">FRESH2026</span>
-                </>
-              )}
-            </p>
-            <button
-              onClick={() => {
-                const targetId = currentBanner?.linkUrl || '#recommended-products';
-                if (targetId.startsWith('#')) {
-                  document.getElementById(targetId.substring(1))?.scrollIntoView({ behavior: 'smooth' });
-                } else {
-                  navigate(targetId);
-                }
-              }}
-              className="beveled-btn bg-primary-container hover:bg-primary text-on-primary-container hover:text-white px-8 py-4 rounded-xl font-bold w-fit transition-all flex items-center gap-2 group-hover:translate-x-2"
-              type="button"
-            >
-              Shop Now <Icon>arrow_forward</Icon>
-            </button>
-          </div>
-
-          {/* Dot Indicators for carousel */}
-          {activeBanners.length > 1 && (
-            <div className="absolute bottom-4 right-4 flex gap-2 z-10">
-              {activeBanners.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setCurrentBannerIndex(idx)}
-                  className={`w-2.5 h-2.5 rounded-full transition-all ${idx === currentBannerIndex ? 'bg-primary w-6' : 'bg-white/50 hover:bg-white'
-                    }`}
-                  type="button"
-                  aria-label={`Go to slide ${idx + 1}`}
-                />
-              ))}
+        {activeBanners.length > 0 && (
+          <section
+            className="w-full min-w-0 relative overflow-hidden rounded-xl h-[520px] sm:h-[460px] lg:h-[420px] bg-primary group mb-8"
+            onMouseMove={handleHeroMouseMove}
+            onMouseLeave={handleHeroMouseLeave}
+          >
+            <img
+              ref={heroImageRef}
+              className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-80 transition-transform duration-700 group-hover:scale-105"
+              src={currentBanner ? currentBanner.imageUrl : heroImage}
+              alt={currentBanner ? currentBanner.title : "Premium organic supermarket aisle with fresh produce"}
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent flex flex-col justify-center px-6 md:px-12 text-white">
+              <span className="bg-secondary text-white font-bold px-4 py-1 rounded-full w-fit mb-4 text-label-lg animate-bounce">
+                {currentBanner ? "Ưu Đãi Đặc Biệt" : "Exclusive Offer"}
+              </span>
+              <h2 className="font-headline-lg text-[36px] sm:text-[40px] md:text-[48px] leading-tight mb-4 max-w-[11ch] sm:max-w-none">
+                {currentBanner ? currentBanner.title : "Fresh Food Festival"}
+                <br />
+                <span className="text-primary-fixed">{currentBanner ? currentBanner.subtitle : "Up to 30% OFF"}</span>
+              </h2>
+              <p className="text-body-lg mb-8 opacity-90 max-w-[280px] sm:max-w-sm md:max-w-none">
+                {currentBanner ? currentBanner.description : "Experience the peak of season's harvest with our premium organic selection."}
+                {currentBanner?.promoCode && (
+                  <>
+                    <br />
+                    Mã code: <span className="font-bold border-b-2 border-primary-fixed">{currentBanner.promoCode}</span>
+                  </>
+                )}
+                {!currentBanner && (
+                  <>
+                    <br />
+                    Use code: <span className="font-bold border-b-2 border-primary-fixed">FRESH2026</span>
+                  </>
+                )}
+              </p>
+              <button
+                onClick={() => {
+                  const targetId = currentBanner?.linkUrl || '#recommended-products';
+                  if (targetId.startsWith('#')) {
+                    document.getElementById(targetId.substring(1))?.scrollIntoView({ behavior: 'smooth' });
+                  } else {
+                    navigate(targetId);
+                  }
+                }}
+                className="beveled-btn bg-primary-container hover:bg-primary text-on-primary-container hover:text-white px-8 py-4 rounded-xl font-bold w-fit transition-all flex items-center gap-2 group-hover:translate-x-2"
+                type="button"
+              >
+                Shop Now <Icon>arrow_forward</Icon>
+              </button>
             </div>
-          )}
-        </section>
+
+            {/* Dot Indicators for carousel */}
+            {activeBanners.length > 1 && (
+              <div className="absolute bottom-4 right-4 flex gap-2 z-10">
+                {activeBanners.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentBannerIndex(idx)}
+                    className={`w-2.5 h-2.5 rounded-full transition-all ${idx === currentBannerIndex ? 'bg-primary w-6' : 'bg-white/50 hover:bg-white'
+                      }`}
+                    type="button"
+                    aria-label={`Go to slide ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        )}
 
         <section className="mt-stack-lg">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3 mb-6">
@@ -885,14 +937,33 @@ export const HomePage = () => {
             </a>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-gutter-md">
-            {!activeFlashSale || !activeFlashSale.products || activeFlashSale.products.length === 0 ? (
-              <div className="col-span-full text-center py-12 text-on-surface-variant bg-surface-container-low rounded-xl border border-outline-variant/30">
-                <p className="text-sm font-bold">Không có sản phẩm Flash Sale nào đang hoạt động tại chi nhánh này</p>
-              </div>
-            ) : (
-              activeFlashSale.products.slice(0, 5).map((fp: any) => {
+            {(() => {
+              if (!activeFlashSale || !activeFlashSale.products || activeFlashSale.products.length === 0) {
+                return (
+                  <div className="col-span-full text-center py-12 text-on-surface-variant bg-surface-container-low rounded-xl border border-outline-variant/30">
+                    <p className="text-sm font-bold">Không có sản phẩm Flash Sale nào đang hoạt động tại chi nhánh này</p>
+                  </div>
+                )
+              }
+
+              // Lọc các sản phẩm có tồn kho tại chi nhánh hiện tại (hoặc hiển thị toàn bộ nếu chọn Tất cả chi nhánh)
+              const availableFlashProducts = activeFlashSale.products.filter((fp: any) => {
                 const product = fp.productId
-                if (!product) return null
+                if (!product) return false
+                const productIdStr = typeof product === 'object' && product !== null ? product._id : product
+                return selectedBranch?._id === '' || dbProducts.some((p) => p._id === productIdStr)
+              })
+
+              if (availableFlashProducts.length === 0) {
+                return (
+                  <div className="col-span-full text-center py-12 text-on-surface-variant bg-surface-container-low rounded-xl border border-outline-variant/30">
+                    <p className="text-sm font-bold">Không có sản phẩm Flash Sale nào đang hoạt động tại chi nhánh này</p>
+                  </div>
+                )
+              }
+
+              return availableFlashProducts.slice(0, 5).map((fp: any) => {
+                const product = fp.productId
                 const productIdStr = typeof product === 'object' && product !== null ? product._id : product
 
                 return (
@@ -914,7 +985,7 @@ export const HomePage = () => {
                   />
                 )
               })
-            )}
+            })()}
           </div>
         </section>
 
@@ -1200,6 +1271,11 @@ export const HomePage = () => {
                           <p className="text-primary font-bold text-body-md mt-1">
                             {formatVND(item.product.price)}
                           </p>
+                          {item.product.isAvailable === false && (
+                            <span className="text-[10px] font-bold text-error bg-error-container/20 border border-error/10 px-2 py-0.5 rounded-full mt-1.5 inline-block">
+                              Hết hàng tại chi nhánh này
+                            </span>
+                          )}
                         </div>
                         <div className="flex flex-col items-end gap-2">
                           <button
@@ -1253,25 +1329,41 @@ export const HomePage = () => {
               </div>
 
               {/* Footer */}
-              {cart && cart.items.length > 0 && (
-                <div className="px-6 py-5 border-t border-outline-variant bg-surface-container-low space-y-4">
-                  <div className="flex justify-between items-center text-body-lg font-bold">
-                    <span>Tổng tiền</span>
-                    <span className="text-primary text-headline-sm">{formatVND(cart.totalAmount)}</span>
+              {cart && cart.items.length > 0 && (() => {
+                const hasUnavailableItems = cart.items.some(item => item.product.isAvailable === false);
+                return (
+                  <div className="px-6 py-5 border-t border-outline-variant bg-surface-container-low space-y-4">
+                    {hasUnavailableItems && (
+                      <div className="bg-error-container/20 text-error p-3 rounded-xl flex items-start gap-2 text-xs font-bold border border-error/15 leading-relaxed">
+                        <Icon className="text-sm shrink-0 mt-0.5">error</Icon>
+                        <span>Giỏ hàng có sản phẩm hết hàng hoặc không đủ tồn kho tại chi nhánh này. Vui lòng gỡ bỏ để tiếp tục thanh toán.</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center text-body-lg font-bold">
+                      <span>Tổng tiền</span>
+                      <span className="text-primary text-headline-sm">{formatVND(cart.totalAmount)}</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (!hasUnavailableItems) {
+                          setIsCartOpen(false)
+                          navigate('/checkout')
+                        }
+                      }}
+                      disabled={hasUnavailableItems}
+                      className={`w-full py-4 rounded-xl font-bold text-body-md transition-all flex items-center justify-center gap-2 shadow-lg ${
+                        hasUnavailableItems
+                          ? 'bg-outline-variant/40 text-on-surface-variant/40 cursor-not-allowed shadow-none'
+                          : 'bg-primary hover:bg-on-primary-fixed-variant text-white cursor-pointer'
+                      }`}
+                      type="button"
+                    >
+                      Tiến hành thanh toán
+                      <Icon>arrow_forward</Icon>
+                    </button>
                   </div>
-                  <button
-                    onClick={() => {
-                      setIsCartOpen(false)
-                      navigate('/checkout')
-                    }}
-                    className="w-full bg-primary hover:bg-on-primary-fixed-variant text-white py-4 rounded-xl font-bold text-body-md transition-all flex items-center justify-center gap-2 shadow-lg"
-                    type="button"
-                  >
-                    Tiến hành thanh toán
-                    <Icon>arrow_forward</Icon>
-                  </button>
-                </div>
-              )}
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -1324,41 +1416,69 @@ export const HomePage = () => {
                   <p className="text-xs mt-1">Vui lòng thử từ khóa khác.</p>
                 </div>
               ) : (
-                filteredBranches.map((branch) => {
-                  const isSelected = selectedBranch?._id === branch._id
-                  return (
-                    <div
-                      key={branch._id}
-                      onClick={() => handleSelectBranch(branch)}
-                      className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 flex items-center justify-between gap-4 ${isSelected
+                <>
+                  {/* Option: Tất cả chi nhánh */}
+                  <div
+                    onClick={() => handleSelectBranch(ALL_BRANCH)}
+                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 flex items-center justify-between gap-4 mb-3 ${selectedBranch?._id === ''
+                        ? 'border-primary bg-primary/5'
+                        : 'border-outline-variant/40 hover:border-primary/30 hover:bg-surface-container-low'
+                      }`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${selectedBranch?._id === '' ? 'bg-primary text-white' : 'bg-surface-container-highest text-on-surface-variant'
+                          }`}>
+                          ALL
+                        </span>
+                        <h4 className="font-black text-sm truncate text-on-surface">Tất cả chi nhánh</h4>
+                      </div>
+                      <p className="text-xs text-on-surface-variant mt-1.5 line-clamp-2 leading-relaxed">
+                        Hiển thị sản phẩm từ tất cả chi nhánh thuộc hệ thống siêu thị PMAN-Mart
+                      </p>
+                    </div>
+                    <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${selectedBranch?._id === '' ? 'border-primary bg-primary' : 'border-outline'
+                      }`}>
+                      {selectedBranch?._id === '' && <div className="w-2 h-2 rounded-full bg-white" />}
+                    </div>
+                  </div>
+
+                  {filteredBranches.map((branch) => {
+                    const isSelected = selectedBranch?._id === branch._id
+                    return (
+                      <div
+                        key={branch._id}
+                        onClick={() => handleSelectBranch(branch)}
+                        className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 flex items-center justify-between gap-4 ${isSelected
                           ? 'border-primary bg-primary/5'
                           : 'border-outline-variant/40 hover:border-primary/30 hover:bg-surface-container-low'
-                        }`}
-                    >
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${isSelected ? 'bg-primary text-white' : 'bg-surface-container-highest text-on-surface-variant'
-                            }`}>
-                            {branch.code}
-                          </span>
-                          <h4 className="font-black text-sm truncate text-on-surface">{branch.name}</h4>
-                        </div>
-                        <p className="text-xs text-on-surface-variant mt-1.5 line-clamp-2 leading-relaxed">
-                          Địa chỉ: {branch.address}
-                        </p>
-                        {branch.phone && (
-                          <p className="text-[10px] text-on-surface-variant mt-1">
-                            SĐT: {branch.phone}
+                          }`}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${isSelected ? 'bg-primary text-white' : 'bg-surface-container-highest text-on-surface-variant'
+                              }`}>
+                              {branch.code}
+                            </span>
+                            <h4 className="font-black text-sm truncate text-on-surface">{branch.name}</h4>
+                          </div>
+                          <p className="text-xs text-on-surface-variant mt-1.5 line-clamp-2 leading-relaxed">
+                            Địa chỉ: {branch.address}
                           </p>
-                        )}
+                          {branch.phone && (
+                            <p className="text-[10px] text-on-surface-variant mt-1">
+                              SĐT: {branch.phone}
+                            </p>
+                          )}
+                        </div>
+                        <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${isSelected ? 'border-primary bg-primary' : 'border-outline'
+                          }`}>
+                          {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                        </div>
                       </div>
-                      <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${isSelected ? 'border-primary bg-primary' : 'border-outline'
-                        }`}>
-                        {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
-                      </div>
-                    </div>
-                  )
-                })
+                    )
+                  })}
+                </>
               )}
             </div>
           </div>

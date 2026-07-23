@@ -81,6 +81,8 @@ export interface CartProduct {
   price: number
   unit?: string
   imageUrl?: string
+  isAvailable?: boolean
+  availableQuantity?: number
 }
 
 export interface CartItem {
@@ -161,7 +163,7 @@ export interface Order {
     address?: string
     phone?: string | null
   }
-  paymentMethod?: 'COD' | 'banking' | 'momo' | 'vnpay'
+  paymentMethod?: 'COD' | 'payos'
   paymentStatus?: 'pending' | 'paid' | 'failed' | 'refunded'
   shippingAddress?: string
   deliveryAddress?: string | null
@@ -172,6 +174,14 @@ export interface Order {
   totalAmount: number
   createdAt: string
   updatedAt?: string
+  payOSData?: {
+    checkoutUrl?: string | null
+    qrCode?: string | null
+    accountName?: string | null
+    accountNumber?: string | null
+    bin?: string | null
+    memo?: string | null
+  }
 }
 
 export interface PlaceOrderInput {
@@ -179,7 +189,7 @@ export interface PlaceOrderInput {
   shippingAddress: string
   phoneNumber: string
   note?: string
-  paymentMethod: 'COD' | 'banking' | 'momo' | 'vnpay'
+  paymentMethod: 'COD' | 'payos'
   selectedItemIds?: string[]
   voucherCode?: string
 }
@@ -257,7 +267,12 @@ export interface ImportReceipt {
   createdBy: { _id: string; fullName: string; email: string }
   createdAt: string
   updatedAt?: string
-  status: 'active' | 'adjusting' | 'cancelled'
+  status: 'pending_approval' | 'active' | 'adjusting' | 'rejected' | 'cancelled'
+  approvedBy?: { _id: string; fullName: string; email: string }
+  approvedAt?: string
+  rejectedBy?: { _id: string; fullName: string; email: string }
+  rejectedAt?: string
+  rejectionReason?: string
   verificationStatus?: 'pending' | 'verified' | 'partially_verified'
   verifiedBy?: { _id: string; fullName: string; email: string }
   verifiedAt?: string
@@ -315,6 +330,8 @@ export interface AdminOrder {
   items: AdminOrderItem[]
   totalAmount: number
   status: AdminOrderStatus
+  paymentMethod?: 'COD' | 'payos'
+  paymentStatus?: 'pending' | 'paid' | 'failed' | 'refunded'
   deliveryAddress?: string
   note?: string
   confirmedBy?: {

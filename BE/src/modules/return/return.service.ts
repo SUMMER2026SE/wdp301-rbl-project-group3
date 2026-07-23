@@ -1,6 +1,7 @@
 import { Types } from 'mongoose';
 import { AppError } from '../../middlewares/errorHandler.middleware';
 import { IOrder } from '../../models/order.model';
+import { emitToRoom } from '../../config/socket.config';
 import {
   IReturnItem,
   IReturnRequest,
@@ -80,7 +81,7 @@ export class ReturnService {
         name: string;
         address: string;
       };
-      return await returnRepository.create({
+      const result = await returnRepository.create({
         code: this.generateCode(),
         orderId: order._id.toString(),
         orderCode: order.code,
@@ -96,6 +97,9 @@ export class ReturnService {
         totalRefund: this.totalRefund(items),
         createdBy: actor.userId,
       });
+
+      this.emitReturnUpdate(result, 'created');
+      return result;
     } finally {
       await returnRepository.releaseOrderLock(data.orderId, lockId);
     }
@@ -128,10 +132,10 @@ export class ReturnService {
         items,
         totalRefund: this.totalRefund(items),
       });
-      if (!updated) {
-        throw new AppError('Return request changed by another request', 409);
-      }
-      return (await returnRepository.findById(id)) || updated;
+      const result = (await returnRepository.findById(id)) || updated;
+      if (!result) throw new AppError('Return request changed by another request', 409);
+      this.emitReturnUpdate(result, 'updated');
+      return result;
     } finally {
       await returnRepository.releaseOrderLock(orderId, lockId);
     }
@@ -163,7 +167,10 @@ export class ReturnService {
         }
       );
       if (!updated) throw new AppError('Return request changed by another request', 409);
-      return (await returnRepository.findById(id)) || updated;
+      const result = (await returnRepository.findById(id)) || updated;
+      if (!result) throw new AppError('Return request changed by another request', 409);
+      this.emitReturnUpdate(result, 'updated');
+      return result;
     } finally {
       await returnRepository.releaseOrderLock(orderId, lockId);
     }
@@ -182,7 +189,10 @@ export class ReturnService {
       resolutionNote: note,
     });
     if (!updated) throw new AppError('Only pending returns can be approved', 409);
-    return (await returnRepository.findById(id)) || updated;
+    const result = (await returnRepository.findById(id)) || updated;
+    if (!result) throw new AppError('Return request changed by another request', 409);
+    this.emitReturnUpdate(result, 'updated');
+    return result;
   }
 
   async rejectReturn(
@@ -198,7 +208,10 @@ export class ReturnService {
       resolutionNote: note,
     });
     if (!updated) throw new AppError('Only pending returns can be rejected', 409);
-    return (await returnRepository.findById(id)) || updated;
+    const result = (await returnRepository.findById(id)) || updated;
+    if (!result) throw new AppError('Return request changed by another request', 409);
+    this.emitReturnUpdate(result, 'updated');
+    return result;
   }
 
   async completeReturn(
@@ -295,7 +308,10 @@ export class ReturnService {
         if (!stillOwned) completionLeaseLost = true;
         throw new AppError('Return completion conflict', 409);
       }
-      return (await returnRepository.findById(id)) || completed;
+      const result = (await returnRepository.findById(id)) || completed;
+      if (!result) throw new AppError('Return request changed by another request', 409);
+      this.emitReturnUpdate(result, 'updated');
+      return result;
     } catch (error) {
       if (completionLeaseLost) {
         console.error('[RETURN_COMPLETION_LEASE_LOST]', {
@@ -574,6 +590,13 @@ export class ReturnService {
       return String((value as { _id: Types.ObjectId })._id);
     }
     return String(value);
+  }
+  private emitReturnUpdate(request: IReturnRequest, action: 'created' | 'updated') {
+    const branchId = request.branchId.toString();
+    const customerId = request.customerId.toString();
+    emitToRoom(`branch:${branchId}`, `return:${action}`, request);
+    emitToRoom(`customer:${customerId}`, `return:${action}`, request);
+    emitToRoom('role:admin', `return:${action}`, request);
   }
 }
 

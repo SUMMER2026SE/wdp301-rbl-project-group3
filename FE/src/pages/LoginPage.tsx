@@ -30,7 +30,22 @@ type ApiError = {
 
 const getErrorMessage = (error: unknown, fallback: string) => {
   const apiError = error as ApiError
-  return apiError.response?.data?.message || apiError.message || fallback
+  const msg = apiError.response?.data?.message || apiError.message || fallback
+  
+  // Dịch các thông báo lỗi từ backend sang Tiếng Việt
+  if (msg === 'Invalid credentials') {
+    return 'Email hoặc mật khẩu không chính xác.'
+  }
+  if (msg === 'Please verify your email before logging in') {
+    return 'Vui lòng xác minh địa chỉ email trước khi đăng nhập.'
+  }
+  if (msg === 'Account is not active') {
+    return 'Tài khoản của bạn đã bị khóa hoặc chưa được kích hoạt.'
+  }
+  if (msg === 'Please login with Google') {
+    return 'Tài khoản này được đăng ký qua Google. Vui lòng chọn đăng nhập bằng Google.'
+  }
+  return msg
 }
 
 export const LoginPage = () => {
@@ -61,7 +76,7 @@ export const LoginPage = () => {
     setError('')
 
     if (!email || !password) {
-      setError('Please fill in all fields')
+      setError('Vui lòng điền đầy đủ thông tin các trường')
       return
     }
 
@@ -74,7 +89,7 @@ export const LoginPage = () => {
         navigate('/')
       }
     } catch (err) {
-      setError(getErrorMessage(err, 'Login failed'))
+      setError(getErrorMessage(err, 'Đăng nhập thất bại'))
     }
   }
 
@@ -82,7 +97,7 @@ export const LoginPage = () => {
     try {
       setError('')
       if (!credentialResponse.credential) {
-        setError('Google login failed')
+        setError('Đăng nhập bằng Google thất bại')
         return
       }
 
@@ -95,12 +110,12 @@ export const LoginPage = () => {
       }
       window.location.reload()
     } catch (err) {
-      setError(getErrorMessage(err, 'Google login failed'))
+      setError(getErrorMessage(err, 'Đăng nhập bằng Google thất bại'))
     }
   }
 
   const handleGoogleError = () => {
-    setError('Google login failed. Please try again.')
+    setError('Đăng nhập bằng Google thất bại. Vui lòng thử lại.')
   }
 
   return (
@@ -118,11 +133,11 @@ export const LoginPage = () => {
 
         <div className="z-10 max-w-lg">
           <h1 className="font-headline-lg text-headline-lg mb-4">
-            Freshness &amp; Efficiency in One Place.
+            Tươi ngon &amp; Tiện lợi ở cùng một nơi.
           </h1>
           <p className="font-body-lg text-body-lg text-white/80 leading-relaxed mb-12">
-            The unified platform for smart shopping and real-time retail chain
-            management. Join thousands of users optimizing their daily essentials.
+            Nền tảng hợp nhất cho mua sắm thông minh và quản lý chuỗi cửa hàng bán lẻ thời gian thực.
+            Tham gia cùng hàng ngàn người dùng để tối ưu hóa nhu cầu thiết yếu hàng ngày của bạn.
           </p>
 
           <div className="relative w-full aspect-square rounded-3xl overflow-hidden shadow-2xl border-4 border-white/10 group">
@@ -139,7 +154,7 @@ export const LoginPage = () => {
         <div className="absolute bottom-10 left-16 flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/20">
           <ShieldCheck size={20} className="text-white" />
           <span className="font-label-md text-label-md text-white">
-            Certified Premium Retailer
+            Nhà bán lẻ đạt chuẩn chất lượng
           </span>
         </div>
       </section>
@@ -161,13 +176,13 @@ export const LoginPage = () => {
           <div className="flex items-center gap-6">
             <button className="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-all">
               <Globe size={20} />
-              <span className="font-label-md text-label-md">VN / EN</span>
+              <span className="font-label-md text-label-md">VN</span>
             </button>
             <Link
               to="/"
               className="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-all group"
             >
-              <span className="font-label-md text-label-md">Back to Homepage</span>
+              <span className="font-label-md text-label-md">Quay lại trang chủ</span>
               <ArrowRight
                 size={18}
                 className="transition-transform group-hover:translate-x-1"
@@ -192,10 +207,10 @@ export const LoginPage = () => {
             {/* Intro */}
             <div className="mb-8">
               <h2 className="font-headline-lg text-headline-lg text-on-surface mb-2">
-                Welcome Back
+                Chào mừng quay lại
               </h2>
               <p className="font-body-md text-body-md text-on-surface-variant">
-                Sign in to your account to access your dashboard.
+                Đăng nhập tài khoản để vào bảng điều khiển mua sắm.
               </p>
             </div>
 
@@ -212,7 +227,7 @@ export const LoginPage = () => {
               {/* Email */}
               <div className="space-y-1.5">
                 <label className="font-label-lg text-label-lg text-on-surface-variant ml-1">
-                  Email Address
+                  Địa chỉ Email
                 </label>
                 <div className="relative group">
                   <Mail
@@ -224,7 +239,7 @@ export const LoginPage = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full pl-12 pr-4 py-3.5 bg-surface-container-low border-none rounded-xl font-body-md text-body-md focus:ring-2 focus:ring-primary/20 focus:bg-white transition-all outline-none"
-                    placeholder="name@company.com"
+                    placeholder="email@example.com"
                     disabled={loading}
                   />
                 </div>
@@ -233,7 +248,7 @@ export const LoginPage = () => {
               {/* Password */}
               <div className="space-y-1.5">
                 <label className="font-label-lg text-label-lg text-on-surface-variant ml-1">
-                  Password
+                  Mật khẩu
                 </label>
                 <div className="relative group">
                   <Lock
@@ -245,7 +260,7 @@ export const LoginPage = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full pl-12 pr-12 py-3.5 bg-surface-container-low border-none rounded-xl font-body-md text-body-md focus:ring-2 focus:ring-primary/20 focus:bg-white transition-all outline-none"
-                    placeholder="Enter your password"
+                    placeholder="Nhập mật khẩu của bạn"
                     disabled={loading}
                   />
                   <div
@@ -270,14 +285,14 @@ export const LoginPage = () => {
                     className="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary/20"
                   />
                   <span className="font-label-md text-label-md text-on-surface-variant group-hover:text-on-surface transition-colors">
-                    Keep me signed in
+                    Duy trì đăng nhập
                   </span>
                 </label>
                 <Link
                   to="/forgot-password"
                   className="font-label-md text-label-md text-primary font-bold hover:underline"
                 >
-                  Forgot Password?
+                  Quên mật khẩu?
                 </Link>
               </div>
 
@@ -290,10 +305,10 @@ export const LoginPage = () => {
                 {loading ? (
                   <>
                     <Loader className="animate-spin" size={20} />
-                    Signing in...
+                    Đang đăng nhập...
                   </>
                 ) : (
-                  'Sign In'
+                  'Đăng nhập'
                 )}
               </button>
             </form>
@@ -305,7 +320,7 @@ export const LoginPage = () => {
               </div>
               <div className="relative flex justify-center">
                 <span className="bg-surface px-4 font-label-md text-label-md text-on-surface-variant">
-                  Or continue with
+                  Hoặc tiếp tục bằng
                 </span>
               </div>
             </div>
@@ -327,12 +342,12 @@ export const LoginPage = () => {
             {/* Footer */}
             <div className="mt-10 text-center transition-opacity duration-300">
               <p className="font-body-md text-body-md text-on-surface-variant">
-                New to our supermarket?{' '}
+                Mới mua sắm lần đầu?{' '}
                 <Link
                   to="/register"
                   className="text-primary font-bold hover:underline ml-1"
                 >
-                  Create an account
+                  Tạo tài khoản mới
                 </Link>
               </p>
             </div>
