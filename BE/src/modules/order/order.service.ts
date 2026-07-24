@@ -159,55 +159,13 @@ export class OrderService {
       `Order status changed from ${order.status} to ${status}`
     );
 
-    // Tích điểm tích lũy cho khách hàng khi giao hàng thành công
-    if (status === 'delivered' && updated.customerId) {
-      const pointsEarned = Math.floor(updated.totalAmount / 10000);
-      if (pointsEarned > 0) {
-        try {
-          const user = await User.findById(updated.customerId).exec();
-          if (user) {
-            user.points = (user.points || 0) + pointsEarned;
-            user.lifetimePoints = (user.lifetimePoints || 0) + pointsEarned;
-
-            // Đọc ngưỡng thành viên từ system settings (fallback về hardcode nếu chưa có)
-            const [bronze, silver, gold, diamond] = await Promise.all([
-              systemSettingRepository.findByKey('loyalty_bronze_threshold'),
-              systemSettingRepository.findByKey('loyalty_silver_threshold'),
-              systemSettingRepository.findByKey('loyalty_gold_threshold'),
-              systemSettingRepository.findByKey('loyalty_diamond_threshold'),
-            ]);
-
-            const bronzeMin = Number(bronze?.value ?? 100);
-            const silverMin = Number(silver?.value ?? 300);
-            const goldMin = Number(gold?.value ?? 600);
-            const diamondMin = Number(diamond?.value ?? 1000);
-
-            // Tính toán lại hạng thành viên dựa trên điểm trọn đời
-            const lp = user.lifetimePoints;
-            let newLevel: 'new' | 'bronze' | 'silver' | 'gold' | 'diamond' = 'new';
-            if (lp >= diamondMin) {
-              newLevel = 'diamond';
-            } else if (lp >= goldMin) {
-              newLevel = 'gold';
-            } else if (lp >= silverMin) {
-              newLevel = 'silver';
-            } else if (lp >= bronzeMin) {
-              newLevel = 'bronze';
-            }
-
-            user.memberLevel = newLevel;
-            await user.save();
-
-            emitToRoom(`customer:${user._id.toString()}`, 'user:points_updated', {
-              points: user.points,
-              lifetimePoints: user.lifetimePoints,
-              memberLevel: user.memberLevel,
-            });
-          }
-        } catch (err) {
-          console.error('[LOYALTY_POINTS_AWARD_FAILED]', err);
-        }
+    // Tích điểm tích lũy cho khách hàng khi giao hàng thành công & thanh toán thành công
+    if (status === 'delivered') {
+      if (updated.paymentStatus !== 'paid') {
+        updated.paymentStatus = 'paid';
+        await updated.save();
       }
+      await this.awardLoyaltyPointsIfEligible(updated);
     }
 
     this.emitOrderUpdate(updated);
@@ -774,6 +732,7 @@ export class OrderService {
             'Thanh toán thành công qua cổng PayOS.'
           );
 
+          await this.awardLoyaltyPointsIfEligible(order);
           this.emitOrderUpdate(order);
         }
       }
@@ -813,6 +772,7 @@ export class OrderService {
             'Thanh toán thành công qua cổng PayOS.'
           );
 
+          await this.awardLoyaltyPointsIfEligible(order);
           this.emitOrderUpdate(order);
         }
       } catch (payosErr) {
@@ -866,6 +826,66 @@ export class OrderService {
       console.error('[RESTORE_FLASH_SALE_QUANTITIES_FAILED]', err);
     }
   }
+  private async awardLoyaltyPointsIfEligible(order: IOrder): Promise<void> {
+    if (!order || !order.customerId) return;
+    // Điểm thưởng CHỈ được cộng khi: Đơn hàng đã giao thành công (status = 'delivered') VÀ đã thanh toán thành công (paymentStatus = 'paid')
+    if (order.status !== 'delivered' || order.paymentStatus !== 'paid') return;
+    if (order.isPointsAwarded) return;
+
+    try {
+      const [ptsPer10kSetting, bronze, silver, gold, diamond] = await Promise.all([
+        systemSettingRepository.findByKey('loyalty_points_per_10k'),
+        systemSettingRepository.findByKey('loyalty_bronze_threshold'),
+        systemSettingRepository.findByKey('loyalty_silver_threshold'),
+        systemSettingRepository.findByKey('loyalty_gold_threshold'),
+        systemSettingRepository.findByKey('loyalty_diamond_threshold'),
+      ]);
+
+      const ptsPer10k = Number(ptsPer10kSetting?.value ?? 1);
+      const rate = ptsPer10k > 0 ? ptsPer10k : 1;
+      const pointsEarned = Math.floor(order.totalAmount / 10000) * rate;
+
+      if (pointsEarned > 0) {
+        const user = await User.findById(order.customerId).exec();
+        if (user) {
+          user.points = (user.points || 0) + pointsEarned;
+          user.lifetimePoints = (user.lifetimePoints || 0) + pointsEarned;
+
+          const bronzeMin = Number(bronze?.value ?? 100);
+          const silverMin = Number(silver?.value ?? 300);
+          const goldMin = Number(gold?.value ?? 600);
+          const diamondMin = Number(diamond?.value ?? 1000);
+
+          const lp = user.lifetimePoints;
+          let newLevel: 'new' | 'bronze' | 'silver' | 'gold' | 'diamond' = 'new';
+          if (lp >= diamondMin) {
+            newLevel = 'diamond';
+          } else if (lp >= goldMin) {
+            newLevel = 'gold';
+          } else if (lp >= silverMin) {
+            newLevel = 'silver';
+          } else if (lp >= bronzeMin) {
+            newLevel = 'bronze';
+          }
+
+          user.memberLevel = newLevel;
+          await user.save();
+
+          order.isPointsAwarded = true;
+          await order.save();
+
+          emitToRoom(`customer:${user._id.toString()}`, 'user:points_updated', {
+            points: user.points,
+            lifetimePoints: user.lifetimePoints,
+            memberLevel: user.memberLevel,
+          });
+        }
+      }
+    } catch (err) {
+      console.error('[LOYALTY_POINTS_AWARD_FAILED]', err);
+    }
+  }
+
   private emitOrderUpdate(order: any) {
     const customerId = this.getObjectIdString(order.customerId);
     const branchId = this.getObjectIdString(order.branchId);
