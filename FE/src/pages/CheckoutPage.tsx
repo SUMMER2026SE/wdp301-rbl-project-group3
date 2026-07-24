@@ -122,7 +122,7 @@ export const CheckoutPage = () => {
         const res = await branchService.getBranches({ status: 'active' })
         if (res.success && res.data) {
           setBranches(res.data)
-          
+
           const savedBranchStr = localStorage.getItem('selectedBranch')
           if (savedBranchStr) {
             try {
@@ -136,7 +136,7 @@ export const CheckoutPage = () => {
               console.error('Failed to parse saved branch', e)
             }
           }
-          
+
           if (res.data.length > 0) {
             setSelectedBranch(res.data[0])
             localStorage.setItem('selectedBranch', JSON.stringify(res.data[0]))
@@ -224,8 +224,8 @@ export const CheckoutPage = () => {
     } catch (err: any) {
       setVoucherError(
         err.response?.data?.message ||
-          err.message ||
-          'Không thể kiểm tra mã giảm giá lúc này.'
+        err.message ||
+        'Không thể kiểm tra mã giảm giá lúc này.'
       )
     } finally {
       setIsCheckingVoucher(false)
@@ -301,8 +301,8 @@ export const CheckoutPage = () => {
     } catch (err: any) {
       setVoucherError(
         err.response?.data?.message ||
-          err.message ||
-          'Không thể kiểm tra mã giảm giá lúc này.'
+        err.message ||
+        'Không thể kiểm tra mã giảm giá lúc này.'
       )
     } finally {
       setIsCheckingVoucher(false)
@@ -342,6 +342,18 @@ export const CheckoutPage = () => {
       return
     }
 
+    const now = new Date()
+    const hours = now.getHours().toString().padStart(2, '0')
+    const minutes = now.getMinutes().toString().padStart(2, '0')
+    const currentTimeStr = `${hours}:${minutes}`
+    const openTime = selectedBranch.openingTime || '08:00'
+    const closeTime = selectedBranch.closingTime || '22:00'
+
+    if (currentTimeStr < openTime || currentTimeStr >= closeTime) {
+      setError(`Chi nhánh ${selectedBranch.name} hiện đã đóng cửa (Giờ hoạt động: ${openTime} - ${closeTime}). Vui lòng quay lại trong khung giờ mở cửa!`)
+      return
+    }
+
     setIsSubmitting(true)
     setError(null)
 
@@ -369,8 +381,8 @@ export const CheckoutPage = () => {
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-          err.message ||
-          'Đã xảy ra lỗi trong quá trình đặt hàng.'
+        err.message ||
+        'Đã xảy ra lỗi trong quá trình đặt hàng.'
       )
     } finally {
       setIsSubmitting(false)
@@ -555,391 +567,404 @@ export const CheckoutPage = () => {
 
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            {/* Form Column */}
-            <form onSubmit={handleSubmit} className="lg:col-span-7 space-y-6">
-              {error && (
-                <div className="bg-error-container text-on-error-container p-4 rounded-xl flex items-center gap-3 text-sm font-bold">
-                  <AlertCircle className="w-5 h-5 shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
+          {/* Form Column */}
+          <form onSubmit={handleSubmit} className="lg:col-span-7 space-y-6">
+            {error && (
+              <div className="bg-error-container text-on-error-container p-4 rounded-xl flex items-center gap-3 text-sm font-bold">
+                <AlertCircle className="w-5 h-5 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
 
-              {hasUnavailableItems && (
-                <div className="bg-error-container text-on-error-container p-4 rounded-xl flex items-start gap-3 text-sm font-bold border border-error/20">
-                  <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-                  <span>
-                    Đơn hàng của bạn chứa sản phẩm hết hàng hoặc không đủ tồn kho tại chi nhánh {selectedBranch?.name || 'đã chọn'}. Vui lòng quay lại trang chủ, mở giỏ hàng và xóa các sản phẩm hết hàng để tiếp tục thanh toán.
-                  </span>
-                </div>
-              )}
+            {hasUnavailableItems && (
+              <div className="bg-error-container text-on-error-container p-4 rounded-xl flex items-start gap-3 text-sm font-bold border border-error/20">
+                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                <span>
+                  Đơn hàng của bạn chứa sản phẩm hết hàng hoặc không đủ tồn kho tại chi nhánh {selectedBranch?.name || 'đã chọn'}. Vui lòng quay lại trang chủ, mở giỏ hàng và xóa các sản phẩm hết hàng để tiếp tục thanh toán.
+                </span>
+              </div>
+            )}
 
-              {cart.totalAmount < Number(publicSettings.min_order_amount ?? 0) && (
-                <div className="bg-error-container text-on-error-container p-4 rounded-xl flex items-center gap-3 text-sm font-bold">
-                  <AlertCircle className="w-5 h-5 shrink-0" />
-                  <span>
-                     Giá trị đơn hàng tối thiểu phải từ {formatVND(Number(publicSettings.min_order_amount))} trở lên để đặt hàng.
-                  </span>
-                </div>
-              )}
+            {cart.totalAmount < Number(publicSettings.min_order_amount ?? 0) && (
+              <div className="bg-error-container text-on-error-container p-4 rounded-xl flex items-center gap-3 text-sm font-bold">
+                <AlertCircle className="w-5 h-5 shrink-0" />
+                <span>
+                  Giá trị đơn hàng tối thiểu phải từ {formatVND(Number(publicSettings.min_order_amount))} trở lên để đặt hàng.
+                </span>
+              </div>
+            )}
 
-              {/* Delivery Information */}
-              <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant/30 space-y-4">
-                <h3 className="text-lg font-bold flex items-center gap-2 border-b border-outline-variant/30 pb-3">
-                  <MapPin className="text-primary w-5 h-5" />
-                  Thông tin giao hàng
-                </h3>
+            {/* Delivery Information */}
+            <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant/30 space-y-4">
+              <h3 className="text-lg font-bold flex items-center gap-2 border-b border-outline-variant/30 pb-3">
+                <MapPin className="text-primary w-5 h-5" />
+                Thông tin giao hàng
+              </h3>
 
-                {savedAddresses.length > 0 && (
-                  <div className="space-y-2 mb-4 pb-4 border-b border-outline-variant/30">
-                    <label className="text-[12px] text-on-surface-variant font-bold uppercase tracking-wider">
-                      Chọn địa chỉ đã lưu
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {savedAddresses.map((addr) => {
-                        const addrKey = addr.addressId || addr._id || ''
-                        const isSelected = selectedAddressId === addrKey
-                        return (
-                          <div
-                            key={addrKey}
-                            onClick={() => handleSelectSavedAddress(addr)}
-                            className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                              isSelected
-                                ? 'border-primary bg-primary/5'
-                                : 'border-outline-variant/40 hover:border-primary/20 hover:bg-surface-container-high'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="font-bold text-sm truncate max-w-[150px]">
-                                {addr.receiverName}
-                              </span>
-                              {addr.isDefault && (
-                                <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">
-                                  Mặc định
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-xs text-on-surface-variant mt-1.5 leading-relaxed">
-                              SĐT: {addr.phoneNumber}
-                            </p>
-                            <p className="text-xs text-on-surface-variant mt-0.5 line-clamp-1">
-                              Đ/C: {addr.addressDetail}
-                            </p>
-                          </div>
-                        )
-                      })}
-                      <div
-                        onClick={handleUseNewAddress}
-                        className={`p-4 rounded-xl border-2 border-dashed cursor-pointer transition-all duration-200 flex flex-col items-center justify-center min-h-[96px] ${
-                          selectedAddressId === null
+              {savedAddresses.length > 0 && (
+                <div className="space-y-2 mb-4 pb-4 border-b border-outline-variant/30">
+                  <label className="text-[12px] text-on-surface-variant font-bold uppercase tracking-wider">
+                    Chọn địa chỉ đã lưu
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {savedAddresses.map((addr) => {
+                      const addrKey = addr.addressId || addr._id || ''
+                      const isSelected = selectedAddressId === addrKey
+                      return (
+                        <div
+                          key={addrKey}
+                          onClick={() => handleSelectSavedAddress(addr)}
+                          className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${isSelected
                             ? 'border-primary bg-primary/5'
-                            : 'border-outline-variant/60 hover:border-primary/30 hover:bg-surface-container-high'
+                            : 'border-outline-variant/40 hover:border-primary/20 hover:bg-surface-container-high'
+                            }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-sm truncate max-w-[150px]">
+                              {addr.receiverName}
+                            </span>
+                            {addr.isDefault && (
+                              <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">
+                                Mặc định
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-on-surface-variant mt-1.5 leading-relaxed">
+                            SĐT: {addr.phoneNumber}
+                          </p>
+                          <p className="text-xs text-on-surface-variant mt-0.5 line-clamp-1">
+                            Đ/C: {addr.addressDetail}
+                          </p>
+                        </div>
+                      )
+                    })}
+                    <div
+                      onClick={handleUseNewAddress}
+                      className={`p-4 rounded-xl border-2 border-dashed cursor-pointer transition-all duration-200 flex flex-col items-center justify-center min-h-[96px] ${selectedAddressId === null
+                        ? 'border-primary bg-primary/5'
+                        : 'border-outline-variant/60 hover:border-primary/30 hover:bg-surface-container-high'
                         }`}
-                      >
-                        <span className="text-xs font-bold text-primary flex items-center gap-1">
-                          + Nhập địa chỉ mới
-                        </span>
-                      </div>
+                    >
+                      <span className="text-xs font-bold text-primary flex items-center gap-1">
+                        + Nhập địa chỉ mới
+                      </span>
                     </div>
                   </div>
-                )}
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-label-md text-on-surface-variant font-bold flex items-center gap-1.5">
-                      <User className="w-4 h-4" /> Họ và tên *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Ví dụ: Nguyễn Văn A"
-                      className="w-full bg-surface border border-outline rounded-xl px-4 py-3 text-sm focus:border-primary/50 focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-label-md text-on-surface-variant font-bold flex items-center gap-1.5">
-                      <Phone className="w-4 h-4" /> Số điện thoại *
-                    </label>
-                    <input
-                      type="tel"
-                      required
-                      value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value)}
-                      placeholder="Ví dụ: 0912345678"
-                      className="w-full bg-surface border border-outline rounded-xl px-4 py-3 text-sm focus:border-primary/50 focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                    />
-                  </div>
                 </div>
+              )}
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-label-md text-on-surface-variant font-bold flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4" /> Địa chỉ nhận hàng *
+                    <User className="w-4 h-4" /> Họ và tên *
                   </label>
                   <input
                     type="text"
                     required
-                    value={shippingAddress}
-                    onChange={(e) => setShippingAddress(e.target.value)}
-                    placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Ví dụ: Nguyễn Văn A"
                     className="w-full bg-surface border border-outline rounded-xl px-4 py-3 text-sm focus:border-primary/50 focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                   />
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-label-md text-on-surface-variant font-bold flex items-center gap-1.5">
-                    <FileText className="w-4 h-4" /> Ghi chú đơn hàng
+                    <Phone className="w-4 h-4" /> Số điện thoại *
                   </label>
-                  <textarea
-                    rows={3}
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    placeholder="Ghi chú đặc biệt cho người giao hàng..."
-                    className="w-full bg-surface border border-outline rounded-xl px-4 py-3 text-sm focus:border-primary/50 focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none"
+                  <input
+                    type="tel"
+                    required
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    placeholder="Ví dụ: 0912345678"
+                    className="w-full bg-surface border border-outline rounded-xl px-4 py-3 text-sm focus:border-primary/50 focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                   />
                 </div>
               </div>
 
-              {/* Branch Information */}
-              <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant/30">
-                <div className="flex justify-between items-center border-b border-outline-variant/30 pb-3 mb-4">
-                  <h3 className="text-lg font-bold flex items-center gap-2">
-                    <MapPin className="text-primary w-5 h-5" />
-                    Chi nhánh mua hàng
-                  </h3>
-                  <span className="text-[11px] font-bold text-on-surface-variant bg-surface-container-high px-2.5 py-1 rounded-full shrink-0">
-                    Cố định theo giỏ hàng
-                  </span>
-                </div>
-                {selectedBranch ? (
-                  <div className="flex items-center gap-3 bg-surface p-4 rounded-xl border border-primary/20">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                      <MapPin className="w-5 h-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <h4 className="font-bold text-sm text-on-surface truncate">{selectedBranch.name}</h4>
-                      <p className="text-[12px] text-on-surface-variant mt-0.5 leading-relaxed">
-                        {selectedBranch.address}
-                      </p>
-                      {selectedBranch.phone && (
-                        <p className="text-[10px] text-on-surface-variant mt-1">
-                          Số điện thoại: {selectedBranch.phone}
-                        </p>
-                      )}
-                    </div>
+              <div className="space-y-1.5">
+                <label className="text-label-md text-on-surface-variant font-bold flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4" /> Địa chỉ nhận hàng *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={shippingAddress}
+                  onChange={(e) => setShippingAddress(e.target.value)}
+                  placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành"
+                  className="w-full bg-surface border border-outline rounded-xl px-4 py-3 text-sm focus:border-primary/50 focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-label-md text-on-surface-variant font-bold flex items-center gap-1.5">
+                  <FileText className="w-4 h-4" /> Ghi chú đơn hàng
+                </label>
+                <textarea
+                  rows={3}
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="Ghi chú đặc biệt cho người giao hàng..."
+                  className="w-full bg-surface border border-outline rounded-xl px-4 py-3 text-sm focus:border-primary/50 focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none"
+                />
+              </div>
+            </div>
+
+            {/* Branch Information */}
+            <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant/30">
+              <div className="flex justify-between items-center border-b border-outline-variant/30 pb-3 mb-4">
+                <h3 className="text-lg font-bold flex items-center gap-2">
+                  <MapPin className="text-primary w-5 h-5" />
+                  Chi nhánh mua hàng
+                </h3>
+                <span className="text-[11px] font-bold text-on-surface-variant bg-surface-container-high px-2.5 py-1 rounded-full shrink-0">
+                  Cố định theo giỏ hàng
+                </span>
+              </div>
+              {selectedBranch ? (
+                <div className="flex items-start gap-3 bg-surface p-4 rounded-xl border border-primary/20">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                    <MapPin className="w-5 h-5" />
                   </div>
-                ) : (
-                  <div className="text-center py-6 text-on-surface-variant border border-dashed border-outline-variant rounded-xl">
-                    <p className="text-sm font-bold text-error">Vui lòng chọn chi nhánh mua hàng tại Trang chủ trước khi thêm sản phẩm.</p>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="font-bold text-sm text-on-surface truncate">{selectedBranch.name}</h4>
+                      {(() => {
+                        const now = new Date()
+                        const hours = now.getHours().toString().padStart(2, '0')
+                        const minutes = now.getMinutes().toString().padStart(2, '0')
+                        const curr = `${hours}:${minutes}`
+                        const openT = selectedBranch.openingTime || '08:00'
+                        const closeT = selectedBranch.closingTime || '22:00'
+                        const isOpen = curr >= openT && curr < closeT
+                        return (
+                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-full shrink-0 ${isOpen ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
+                            }`}>
+                            {isOpen ? 'Mở cửa' : 'Đóng cửa'} ({openT} - {closeT})
+                          </span>
+                        )
+                      })()}
+                    </div>
+                    <p className="text-[12px] text-on-surface-variant mt-0.5 leading-relaxed">
+                      {selectedBranch.address}
+                    </p>
+                    {selectedBranch.phone && (
+                      <p className="text-[10px] text-on-surface-variant mt-1">
+                        Số điện thoại: {selectedBranch.phone}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-6 text-on-surface-variant border border-dashed border-outline-variant rounded-xl">
+                  <p className="text-sm font-bold text-error">Vui lòng chọn chi nhánh mua hàng tại Trang chủ trước khi thêm sản phẩm.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Payment Methods */}
+            <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant/30 space-y-4">
+              <h3 className="text-lg font-bold flex items-center gap-2 border-b border-outline-variant/30 pb-3">
+                <CreditCard className="text-primary w-5 h-5" />
+                Phương thức thanh toán
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                  { id: 'payos', label: 'Thanh toán bằng PayOS', desc: 'Thanh toán trực tuyến an toàn qua cổng PayOS (Mã QR / Ngân hàng)' },
+                  { id: 'COD', label: 'Thanh toán khi nhận hàng (COD)', desc: 'Thanh toán bằng tiền mặt khi nhận hàng' },
+                ].map((method) => {
+                  const active = paymentMethod === method.id
+                  return (
+                    <div
+                      key={method.id}
+                      onClick={() => setPaymentMethod(method.id as any)}
+                      className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${active
+                        ? 'border-primary bg-primary/5'
+                        : 'border-outline-variant/40 hover:border-primary/40'
+                        }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-sm">{method.label}</span>
+                        <span
+                          className={`w-5 h-5 rounded-full border flex items-center justify-center ${active ? 'border-primary bg-primary text-white' : 'border-outline'
+                            }`}
+                        >
+                          {active && <span className="w-2.5 h-2.5 rounded-full bg-white" />}
+                        </span>
+                      </div>
+                      <p className="text-[12px] text-on-surface-variant mt-1">{method.desc}</p>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </form>
+
+          {/* Cart Summary Column */}
+          <div className="lg:col-span-5 space-y-6">
+            <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant/30 space-y-4">
+              <h3 className="text-lg font-bold border-b border-outline-variant/30 pb-3">
+                Tóm tắt đơn hàng
+              </h3>
+
+              <div className="divide-y divide-outline-variant/30 max-h-96 overflow-y-auto pr-2">
+                {cart.items.map((item) => {
+                  const image = item.product.imageUrl || productImageMap[item.product.name] || '/assets/winmart/tomatoes.png'
+                  return (
+                    <div key={item.itemId} className="flex gap-4 py-3 first:pt-0 last:pb-0">
+                      <div className="w-12 h-12 rounded-lg bg-surface overflow-hidden border border-outline-variant/30 flex-shrink-0">
+                        <img className="w-full h-full object-cover" src={image} alt={item.product.name} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-sm truncate">{item.product.name}</h4>
+                        <p className="text-[12px] text-on-surface-variant mt-0.5">
+                          SL {item.quantity} x {formatVND(item.product.price)}
+                        </p>
+                        {item.product.isAvailable === false && (
+                          <span className="text-[10px] font-bold text-error bg-error-container/20 border border-error/10 px-2 py-0.5 rounded-full mt-1.5 inline-block">
+                            Hết hàng tại chi nhánh này
+                          </span>
+                        )}
+                      </div>
+                      <span className="font-bold text-sm text-on-surface">
+                        {formatVND(item.subtotal)}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Voucher Section */}
+              <div className="border-t border-outline-variant/30 pt-4 space-y-3">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Tag className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant/60" />
+                    <input
+                      type="text"
+                      disabled={!!appliedVoucher || isCheckingVoucher}
+                      value={voucherCode}
+                      onChange={(e) => setVoucherCode(e.target.value)}
+                      placeholder="Nhập mã giảm giá..."
+                      className="w-full bg-surface border border-outline rounded-xl pl-10 pr-4 py-2.5 text-xs focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-on-surface-variant/50"
+                    />
+                  </div>
+                  {appliedVoucher ? (
+                    <button
+                      type="button"
+                      onClick={handleRemoveVoucher}
+                      className="bg-error-container text-on-error-container hover:bg-opacity-90 px-4 rounded-xl text-xs font-bold transition-all border border-error/20 flex items-center justify-center cursor-pointer gap-1"
+                    >
+                      <X className="w-3.5 h-3.5" /> Gỡ bỏ
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={isCheckingVoucher || !voucherCode.trim()}
+                      onClick={handleApplyVoucher}
+                      className="bg-primary text-white hover:bg-opacity-95 disabled:bg-primary/50 px-5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center min-w-[70px]"
+                    >
+                      {isCheckingVoucher ? <Loader className="w-4 h-4 animate-spin" /> : 'Áp dụng'}
+                    </button>
+                  )}
+                </div>
+
+                {!appliedVoucher && (
+                  <div className="flex justify-between items-center text-[11px] mt-1 bg-surface p-2 rounded-lg border border-outline-variant/30">
+                    <span className="text-on-surface-variant font-semibold">Hoặc chọn từ danh sách ưu đãi:</span>
+                    <button
+                      type="button"
+                      onClick={() => setIsVoucherListModalOpen(true)}
+                      className="text-primary font-black hover:underline cursor-pointer flex items-center gap-1 transition active:scale-95"
+                    >
+                      <Ticket className="w-3.5 h-3.5" /> Chọn mã giảm giá
+                    </button>
+                  </div>
+                )}
+
+                {voucherError && (
+                  <div className="text-[11px] font-bold text-error flex items-center gap-1.5 bg-error-container/20 p-2.5 rounded-lg border border-error/10 animate-fade-in">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{voucherError}</span>
+                  </div>
+                )}
+
+                {voucherSuccessMsg && (
+                  <div className="text-[11px] font-bold text-success flex items-center gap-1.5 bg-success-container/20 p-2.5 rounded-lg border border-success/10 animate-fade-in">
+                    <CheckCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{voucherSuccessMsg}</span>
+                  </div>
+                )}
+
+                {appliedVoucher && (
+                  <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 flex items-center justify-between animate-fade-in">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                        <Ticket className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-black text-on-surface">Mã đã áp dụng: {appliedVoucher.code}</p>
+                        <p className="text-[10px] text-on-surface-variant mt-0.5">
+                          {appliedVoucher.discountType === 'percentage'
+                            ? `Giảm ${appliedVoucher.discountValue}%`
+                            : `Giảm ${formatVND(appliedVoucher.discountValue)}`}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
 
-              {/* Payment Methods */}
-              <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant/30 space-y-4">
-                <h3 className="text-lg font-bold flex items-center gap-2 border-b border-outline-variant/30 pb-3">
-                  <CreditCard className="text-primary w-5 h-5" />
-                  Phương thức thanh toán
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[
-                    { id: 'payos', label: 'Thanh toán bằng PayOS', desc: 'Thanh toán trực tuyến an toàn qua cổng PayOS (Mã QR / Ngân hàng)' },
-                    { id: 'COD', label: 'Thanh toán khi nhận hàng (COD)', desc: 'Thanh toán bằng tiền mặt khi nhận hàng' },
-                  ].map((method) => {
-                    const active = paymentMethod === method.id
-                    return (
-                      <div
-                        key={method.id}
-                        onClick={() => setPaymentMethod(method.id as any)}
-                        className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                          active
-                            ? 'border-primary bg-primary/5'
-                            : 'border-outline-variant/40 hover:border-primary/40'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-sm">{method.label}</span>
-                          <span
-                            className={`w-5 h-5 rounded-full border flex items-center justify-center ${
-                              active ? 'border-primary bg-primary text-white' : 'border-outline'
-                            }`}
-                          >
-                            {active && <span className="w-2.5 h-2.5 rounded-full bg-white" />}
-                          </span>
-                        </div>
-                        <p className="text-[12px] text-on-surface-variant mt-1">{method.desc}</p>
-                      </div>
-                    )
-                  })}
+              <div className="border-t border-outline-variant/30 pt-4 space-y-2 text-sm">
+                <div className="flex justify-between text-on-surface-variant">
+                  <span>Tạm tính ({cart.totalItems} sản phẩm)</span>
+                  <span>{formatVND(cart.totalAmount)}</span>
+                </div>
+                {appliedVoucher && (
+                  <div className="flex justify-between text-success font-medium">
+                    <span>Giảm giá (Voucher)</span>
+                    <span>-{formatVND(discountAmount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-on-surface-variant">
+                  <span>VAT ({vatRate}%)</span>
+                  <span>{formatVND(vatAmount)}</span>
+                </div>
+                <div className="flex justify-between text-on-surface-variant">
+                  <span>Phí vận chuyển</span>
+                  <span className={shippingFee === 0 ? "text-success font-bold" : "font-bold"}>
+                    {shippingFee === 0 ? 'MIỄN PHÍ' : formatVND(shippingFee)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-body-lg font-bold border-t border-outline-variant/30 pt-3">
+                  <span>Tổng tiền thanh toán</span>
+                  <span className="text-primary text-headline-sm">
+                    {formatVND(Math.max(0, cart.totalAmount - discountAmount) + vatAmount + shippingFee)}
+                  </span>
                 </div>
               </div>
-            </form>
 
-            {/* Cart Summary Column */}
-            <div className="lg:col-span-5 space-y-6">
-              <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant/30 space-y-4">
-                <h3 className="text-lg font-bold border-b border-outline-variant/30 pb-3">
-                  Tóm tắt đơn hàng
-                </h3>
-
-                <div className="divide-y divide-outline-variant/30 max-h-96 overflow-y-auto pr-2">
-                  {cart.items.map((item) => {
-                    const image = item.product.imageUrl || productImageMap[item.product.name] || '/assets/winmart/tomatoes.png'
-                    return (
-                      <div key={item.itemId} className="flex gap-4 py-3 first:pt-0 last:pb-0">
-                        <div className="w-12 h-12 rounded-lg bg-surface overflow-hidden border border-outline-variant/30 flex-shrink-0">
-                          <img className="w-full h-full object-cover" src={image} alt={item.product.name} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-bold text-sm truncate">{item.product.name}</h4>
-                          <p className="text-[12px] text-on-surface-variant mt-0.5">
-                            SL {item.quantity} x {formatVND(item.product.price)}
-                          </p>
-                          {item.product.isAvailable === false && (
-                            <span className="text-[10px] font-bold text-error bg-error-container/20 border border-error/10 px-2 py-0.5 rounded-full mt-1.5 inline-block">
-                              Hết hàng tại chi nhánh này
-                            </span>
-                          )}
-                        </div>
-                        <span className="font-bold text-sm text-on-surface">
-                          {formatVND(item.subtotal)}
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
-
-                {/* Voucher Section */}
-                <div className="border-t border-outline-variant/30 pt-4 space-y-3">
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Tag className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant/60" />
-                      <input
-                        type="text"
-                        disabled={!!appliedVoucher || isCheckingVoucher}
-                        value={voucherCode}
-                        onChange={(e) => setVoucherCode(e.target.value)}
-                        placeholder="Nhập mã giảm giá..."
-                        className="w-full bg-surface border border-outline rounded-xl pl-10 pr-4 py-2.5 text-xs focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-on-surface-variant/50"
-                      />
-                    </div>
-                    {appliedVoucher ? (
-                      <button
-                        type="button"
-                        onClick={handleRemoveVoucher}
-                        className="bg-error-container text-on-error-container hover:bg-opacity-90 px-4 rounded-xl text-xs font-bold transition-all border border-error/20 flex items-center justify-center cursor-pointer gap-1"
-                      >
-                        <X className="w-3.5 h-3.5" /> Gỡ bỏ
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        disabled={isCheckingVoucher || !voucherCode.trim()}
-                        onClick={handleApplyVoucher}
-                        className="bg-primary text-white hover:bg-opacity-95 disabled:bg-primary/50 px-5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center min-w-[70px]"
-                      >
-                        {isCheckingVoucher ? <Loader className="w-4 h-4 animate-spin" /> : 'Áp dụng'}
-                      </button>
-                    )}
-                  </div>
-
-                  {!appliedVoucher && (
-                    <div className="flex justify-between items-center text-[11px] mt-1 bg-surface p-2 rounded-lg border border-outline-variant/30">
-                      <span className="text-on-surface-variant font-semibold">Hoặc chọn từ danh sách ưu đãi:</span>
-                      <button
-                        type="button"
-                        onClick={() => setIsVoucherListModalOpen(true)}
-                        className="text-primary font-black hover:underline cursor-pointer flex items-center gap-1 transition active:scale-95"
-                      >
-                        <Ticket className="w-3.5 h-3.5" /> Chọn mã giảm giá
-                      </button>
-                    </div>
-                  )}
-
-                  {voucherError && (
-                    <div className="text-[11px] font-bold text-error flex items-center gap-1.5 bg-error-container/20 p-2.5 rounded-lg border border-error/10 animate-fade-in">
-                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                      <span>{voucherError}</span>
-                    </div>
-                  )}
-
-                  {voucherSuccessMsg && (
-                    <div className="text-[11px] font-bold text-success flex items-center gap-1.5 bg-success-container/20 p-2.5 rounded-lg border border-success/10 animate-fade-in">
-                      <CheckCircle className="w-3.5 h-3.5 shrink-0" />
-                      <span>{voucherSuccessMsg}</span>
-                    </div>
-                  )}
-
-                  {appliedVoucher && (
-                    <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 flex items-center justify-between animate-fade-in">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                          <Ticket className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <p className="text-[11px] font-black text-on-surface">Mã đã áp dụng: {appliedVoucher.code}</p>
-                          <p className="text-[10px] text-on-surface-variant mt-0.5">
-                            {appliedVoucher.discountType === 'percentage' 
-                              ? `Giảm ${appliedVoucher.discountValue}%` 
-                              : `Giảm ${formatVND(appliedVoucher.discountValue)}`}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="border-t border-outline-variant/30 pt-4 space-y-2 text-sm">
-                  <div className="flex justify-between text-on-surface-variant">
-                    <span>Tạm tính ({cart.totalItems} sản phẩm)</span>
-                    <span>{formatVND(cart.totalAmount)}</span>
-                  </div>
-                  {appliedVoucher && (
-                    <div className="flex justify-between text-success font-medium">
-                      <span>Giảm giá (Voucher)</span>
-                      <span>-{formatVND(discountAmount)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between text-on-surface-variant">
-                    <span>VAT ({vatRate}%)</span>
-                    <span>{formatVND(vatAmount)}</span>
-                  </div>
-                  <div className="flex justify-between text-on-surface-variant">
-                    <span>Phí vận chuyển</span>
-                    <span className={shippingFee === 0 ? "text-success font-bold" : "font-bold"}>
-                      {shippingFee === 0 ? 'MIỄN PHÍ' : formatVND(shippingFee)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-body-lg font-bold border-t border-outline-variant/30 pt-3">
-                    <span>Tổng tiền thanh toán</span>
-                    <span className="text-primary text-headline-sm">
-                      {formatVND(Math.max(0, cart.totalAmount - discountAmount) + vatAmount + shippingFee)}
-                    </span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleSubmit}
-                  disabled={isSubmitting || hasUnavailableItems || cart.totalAmount < Number(publicSettings.min_order_amount ?? 0)}
-                  className="w-full bg-primary hover:bg-on-primary-fixed-variant disabled:bg-primary/50 text-white py-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer"
-                  type="button"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader className="w-5 h-5 animate-spin" /> Đang đặt hàng...
-                    </>
-                  ) : (
-                    <>
-                      Đặt hàng ({formatVND(Math.max(0, cart.totalAmount - discountAmount) + vatAmount + shippingFee)})
-                    </>
-                  )}
-                </button>
-              </div>
+              <button
+                onClick={handleSubmit}
+                disabled={isSubmitting || hasUnavailableItems || cart.totalAmount < Number(publicSettings.min_order_amount ?? 0)}
+                className="w-full bg-primary hover:bg-on-primary-fixed-variant disabled:bg-primary/50 text-white py-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer"
+                type="button"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader className="w-5 h-5 animate-spin" /> Đang đặt hàng...
+                  </>
+                ) : (
+                  <>
+                    Đặt hàng ({formatVND(Math.max(0, cart.totalAmount - discountAmount) + vatAmount + shippingFee)})
+                  </>
+                )}
+              </button>
             </div>
           </div>
-        </main>
+        </div>
+      </main>
 
       {/* Branch Selection Modal */}
       {isBranchModalOpen && (
@@ -994,17 +1019,15 @@ export const CheckoutPage = () => {
                     <div
                       key={branch._id}
                       onClick={() => handleSelectBranch(branch)}
-                      className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 flex items-center justify-between gap-4 ${
-                        isSelected
-                          ? 'border-primary bg-primary/5'
-                          : 'border-outline-variant/40 hover:border-primary/30 hover:bg-surface-container-low'
-                      }`}
+                      className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 flex items-center justify-between gap-4 ${isSelected
+                        ? 'border-primary bg-primary/5'
+                        : 'border-outline-variant/40 hover:border-primary/30 hover:bg-surface-container-low'
+                        }`}
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
-                            isSelected ? 'bg-primary text-white' : 'bg-surface-container-highest text-on-surface-variant'
-                          }`}>
+                          <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${isSelected ? 'bg-primary text-white' : 'bg-surface-container-highest text-on-surface-variant'
+                            }`}>
                             {branch.code}
                           </span>
                           <h4 className="font-black text-sm truncate text-on-surface">{branch.name}</h4>
@@ -1018,9 +1041,8 @@ export const CheckoutPage = () => {
                           </p>
                         )}
                       </div>
-                      <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${
-                        isSelected ? 'border-primary bg-primary' : 'border-outline'
-                      }`}>
+                      <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${isSelected ? 'border-primary bg-primary' : 'border-outline'
+                        }`}>
                         {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
                       </div>
                     </div>
@@ -1088,22 +1110,20 @@ export const CheckoutPage = () => {
                             handleSelectVoucherFromList(codeStr)
                           }
                         }}
-                        className={`p-4 rounded-xl border-2 flex items-start gap-4 transition-all duration-200 ${
-                          isSelected
-                            ? 'border-primary bg-primary/5 cursor-default'
-                            : isMinOrderMet
+                        className={`p-4 rounded-xl border-2 flex items-start gap-4 transition-all duration-200 ${isSelected
+                          ? 'border-primary bg-primary/5 cursor-default'
+                          : isMinOrderMet
                             ? 'border-outline-variant/40 hover:border-primary/30 hover:bg-surface-container-low cursor-pointer'
                             : 'border-outline-variant/20 bg-surface-container-high/30 opacity-60 cursor-not-allowed'
-                        }`}
+                          }`}
                       >
                         {/* Left visual icon */}
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
-                          isSelected
-                            ? 'bg-primary text-white'
-                            : isMinOrderMet
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${isSelected
+                          ? 'bg-primary text-white'
+                          : isMinOrderMet
                             ? 'bg-primary/10 text-primary'
                             : 'bg-surface-container-highest text-on-surface-variant'
-                        }`}>
+                          }`}>
                           <Ticket className="w-6 h-6" />
                         </div>
 
