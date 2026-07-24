@@ -354,7 +354,7 @@ export class StatisticsRepository {
     return result.length > 0 ? result[0].totalRevenue : 0;
   }
 
-  async getRevenueTrend(range: DateRange, match: Record<string, unknown> = {}): Promise<RevenueTrendPoint[]> {
+  async getRevenueTrend(range: DateRange, match: Record<string, unknown> = {}): Promise<any[]> {
     const rows = await Order.aggregate([
       {
         $match: {
@@ -374,16 +374,19 @@ export class StatisticsRepository {
     ]).exec();
 
     return rows.map((row) => ({
+      _id: row._id,
       date: row._id,
-      revenue: row.revenue,
-      count: row.count,
+      revenue: row.revenue ?? 0,
+      totalRevenue: row.revenue ?? 0,
+      count: row.count ?? 0,
+      orderCount: row.count ?? 0,
     }));
   }
 
   async getRevenueByBranch(match: Record<string, unknown> = {}): Promise<any[]> {
     const rows = await Order.aggregate([
       { $match: { ...match, status: { $ne: 'cancelled' } } },
-      { $group: { _id: '$branchId', revenue: { $sum: '$totalAmount' } } },
+      { $group: { _id: '$branchId', revenue: { $sum: '$totalAmount' }, orderCount: { $sum: 1 } } },
       { $sort: { revenue: -1 } },
       {
         $lookup: {
@@ -399,6 +402,8 @@ export class StatisticsRepository {
           _id: 1,
           branchName: '$branch.name',
           revenue: 1,
+          totalRevenue: '$revenue',
+          orderCount: 1,
         },
       },
     ]).exec();
