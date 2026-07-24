@@ -31,7 +31,7 @@ export class OrderRepository {
 
     if (filters.keyword) {
       const q = filters.keyword.trim();
-      
+
       const matchingUsers = await User.find({
         $or: [
           { fullName: { $regex: q, $options: 'i' } },
@@ -208,7 +208,7 @@ export class OrderRepository {
           _id: new Types.ObjectId(trackingId),
           orderId: new Types.ObjectId(orderId),
           status,
-          changedBy: changedBy ? new Types.ObjectId(changedBy) : undefined,
+          changedBy: changedBy && Types.ObjectId.isValid(changedBy) ? new Types.ObjectId(changedBy) : undefined,
           note,
           location,
         },

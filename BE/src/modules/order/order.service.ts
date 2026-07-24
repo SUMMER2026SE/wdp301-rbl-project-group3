@@ -472,6 +472,32 @@ export class OrderService {
     return this.buildCustomerOrderResponse(updatedOrder);
   }
 
+  async autoCancelOverdueOrder(orderId: string, timeoutMinutes: number): Promise<void> {
+    const order = await orderRepository.findRawById(orderId);
+    if (!order || order.status !== 'pending' || order.paymentStatus === 'paid') return;
+
+    await this.increaseOrderStock(order, 'system', false);
+    await this.restoreFlashSaleQuantities(order);
+
+    const updatedOrder = await orderRepository.updateStatusIfCurrent(orderId, 'pending', {
+      status: 'cancelled',
+    });
+
+    if (!updatedOrder) {
+      await this.reconcileOrderStock(order, 'system');
+      return;
+    }
+
+    await this.recordTrackingEvent(
+      orderId,
+      'cancelled',
+      'system',
+      `Tự động hủy đơn hàng do vượt quá thời gian chờ (${timeoutMinutes} phút).`
+    );
+
+    this.emitOrderUpdate(updatedOrder);
+  }
+
   private generateOrderCode(): string {
     const date = new Date();
     const stamp = date.toISOString().slice(0, 10).replace(/-/g, '');
