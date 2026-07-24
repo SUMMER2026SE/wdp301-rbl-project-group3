@@ -11,6 +11,7 @@ import { promotionCalculationService } from '../promotion/services/calculation.s
 import { promotionUsageService } from '../promotion/services/usage.service';
 import { invoiceRepository } from '../invoice/invoice.repository';
 import { User } from '../../models/user.model';
+import { Branch } from '../../models/branch.model';
 import { systemSettingRepository } from '../system-setting/system-setting.repository';
 import { flashSaleRepository } from '../flash-sale/flash-sale.repository';
 import { sendOrderRefundEmail } from '../../utils/mail.util';
@@ -513,6 +514,37 @@ export class OrderService {
     paymentMethod: 'COD' | 'payos';
     voucherCode?: string;
   }): Promise<any> {
+    // 0.5. Kiểm tra chi nhánh và giờ mở cửa / đóng cửa
+    const branch = await Branch.findById(data.branchId).exec();
+    if (!branch || branch.status === 'inactive') {
+      throw new AppError('Chi nhánh được chọn hiện đang tạm ngưng hoạt động.', 400);
+    }
+
+    const now = new Date();
+    const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const currentDayName = daysOfWeek[now.getDay()];
+
+    if (branch.activeDays && branch.activeDays.length > 0 && !branch.activeDays.includes(currentDayName)) {
+      throw new AppError(
+        `Chi nhánh ${branch.name} không hoạt động vào ngày ${currentDayName}. Vui lòng chọn chi nhánh khác!`,
+        400
+      );
+    }
+
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const currentTimeStr = `${hours}:${minutes}`;
+
+    const openTime = branch.openingTime || '08:00';
+    const closeTime = branch.closingTime || '22:00';
+
+    if (currentTimeStr < openTime || currentTimeStr >= closeTime) {
+      throw new AppError(
+        `Chi nhánh ${branch.name} hiện đã đóng cửa (Giờ hoạt động: ${openTime} - ${closeTime}). Vui lòng quay lại trong khung giờ mở cửa!`,
+        400
+      );
+    }
+
     // 1. Lấy giỏ hàng của user
     const cart = await cartRepository.findByUserId(customerId);
     if (!cart || cart.items.length === 0) {
