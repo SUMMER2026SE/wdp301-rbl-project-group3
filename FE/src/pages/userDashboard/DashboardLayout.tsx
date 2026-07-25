@@ -17,6 +17,11 @@ import {
   X,
 } from 'lucide-react'
 
+/**
+ * Interface định nghĩa cấu trúc của một phần tử trên thanh điều hướng (Sidebar Nav).
+ * Bao gồm đường dẫn tĩnh (path), tiêu đề hiển thị (label), mô tả phụ (description), 
+ * biểu tượng UI (icon) và huy hiệu số đếm thông báo tùy chọn (badge).
+ */
 type NavItem = {
   path: string
   label: string
@@ -25,6 +30,14 @@ type NavItem = {
   badge?: number
 }
 
+/**
+ * Hàm tiện ích (Utility function) để tạo ảnh đại diện (avatar) dạng chữ cái đầu (Initials)
+ * trong trường hợp người dùng chưa tải lên ảnh đại diện cá nhân (avatarUrl).
+ * Ví dụ: "Minh Le" -> "ML".
+ * 
+ * @param {string} name - Họ và tên đầy đủ của người dùng
+ * @returns {string} Chuỗi ký tự viết tắt tối đa 2 chữ cái đầu
+ */
 const getInitials = (name?: string) => {
   if (!name) return 'U'
 
@@ -36,6 +49,13 @@ const getInitials = (name?: string) => {
     .join('')
 }
 
+/**
+ * Component Layout chính cho giao diện Dashboard của người dùng (Customer).
+ * Chứa Sidebar điều hướng, Header với thanh tìm kiếm và khu vực hiển thị nội dung chính (Outlet).
+ * Tự động chuyển hướng Admin/Staff sang trang /admin.
+ *
+ * @author MinhLD
+ */
 export const DashboardLayout = () => {
   const location = useLocation()
   const navigate = useNavigate()
@@ -47,7 +67,10 @@ export const DashboardLayout = () => {
     return <div className="flex h-screen items-center justify-center bg-surface"><div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>
   }
 
-  // Redirect back-office users to the admin portal
+  /** 
+   * Mảng hằng số định nghĩa danh sách các phân quyền (Roles) thuộc về khu vực Quản trị nội bộ (Back Office).
+   * Chặn không cho các role này truy cập vào giao diện người dùng thường để tránh lỗi luồng (Business Flow).
+   */
   const BACK_OFFICE_ROLES = ['admin', 'branch_manager', 'staff']
   if (user && BACK_OFFICE_ROLES.includes(user.role)) {
     return <Navigate to="/admin" replace />
@@ -101,6 +124,10 @@ export const DashboardLayout = () => {
     },
   ]
 
+  /**
+   * Xử lý đăng xuất người dùng.
+   * Xóa token và điều hướng người dùng quay lại trang đăng nhập.
+   */
   const handleLogout = async () => {
     try {
       await logout()

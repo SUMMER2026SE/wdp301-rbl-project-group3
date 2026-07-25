@@ -18,19 +18,43 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   return apiError.response?.data?.message || apiError.message || fallback
 }
 
+/**
+ * Component Cài đặt tài khoản (Settings).
+ * Cho phép người dùng cấu hình các tùy chọn cá nhân như:
+ * - Bật/tắt thông báo đẩy
+ * - Thay đổi mật khẩu an toàn (yêu cầu xác thực OTP qua email)
+ *
+ * @author MinhLD
+ */
 export const SettingsPage = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
+  
+  /** Trạng thái cho phép bật/tắt nhận thông báo đẩy. Hiện tại chỉ lưu ở client, có thể tích hợp API sau. */
   const [notifications, setNotifications] = useState(true)
 
+  /** Cờ (boolean) mở khu vực form đổi mật khẩu. Nếu false thì form sẽ ẩn đi để UI gọn gàng. */
   const [isChangingPassword, setIsChangingPassword] = useState(false)
+  
+  /** Trạng thái xác nhận xem hệ thống đã gửi OTP đến email thành công hay chưa, nhằm hiển thị bước tiếp theo. */
   const [otpSent, setOtpSent] = useState(false)
+  
+  /** Mã OTP người dùng nhập vào để chứng minh quyền sở hữu tài khoản */
   const [otp, setOtp] = useState('')
+  
+  /** Trạng thái lưu trữ mật khẩu mới người dùng mong muốn cập nhật */
   const [newPassword, setNewPassword] = useState('')
+  
+  /** Trạng thái lưu trữ chuỗi nhập lại của mật khẩu mới để hệ thống đối chiếu (validate) */
   const [confirmPassword, setConfirmPassword] = useState('')
 
+  /** Cờ hiệu xử lý bất đồng bộ (loading indicator) khi đang gọi API gửi OTP hoặc Đổi mật khẩu */
   const [loading, setLoading] = useState(false)
+  
+  /** Biến trạng thái lưu lỗi để báo đỏ trên UI nếu có trục trặc xảy ra */
   const [error, setError] = useState('')
+  
+  /** Biến trạng thái chứa thông báo xanh (thành công) trên UI khi thao tác hoàn tất */
   const [success, setSuccess] = useState('')
 
   const resetPasswordFlow = () => {
@@ -62,6 +86,13 @@ export const SettingsPage = () => {
     }
   }
 
+  /**
+   * Xử lý đổi mật khẩu sau khi người dùng đã nhập mã OTP và mật khẩu mới.
+   * Validate xác nhận mật khẩu và gọi API changePasswordWithOtp.
+   * Đăng xuất và chuyển hướng về trang Login nếu thành công.
+   *
+   * @param {FormEvent} event - Sự kiện submit form
+   */
   const handleChangePassword = async (event: FormEvent) => {
     event.preventDefault()
     setError('')

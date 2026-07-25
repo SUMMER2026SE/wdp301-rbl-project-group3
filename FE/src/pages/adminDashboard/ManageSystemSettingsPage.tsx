@@ -153,6 +153,15 @@ const ToggleSwitch = ({
 )
 
 // ─── Main Page ───────────────────────────────────────────────────────────────
+/**
+ * Component Quản lý Cài đặt hệ thống (Dành cho Admin).
+ * Cho phép điều chỉnh các tham số vận hành cốt lõi như:
+ * - Thông tin chung (Tên, Email, Chế độ bảo trì)
+ * - Đơn hàng, Giao hàng, Thanh toán, Loyalty.
+ * Quản lý trạng thái dirty (chưa lưu) và cập nhật hàng loạt (bulk update).
+ *
+ * @author MinhLD
+ */
 export const ManageSystemSettingsPage = () => {
   const [groups, setGroups] = useState<Partial<Record<SettingGroup, SystemSetting[]>>>({})
   const [localValues, setLocalValues] = useState<Record<string, string | number | boolean>>({})
@@ -163,6 +172,10 @@ export const ManageSystemSettingsPage = () => {
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<SettingGroup>('general')
 
+  /**
+   * Tải toàn bộ danh sách cài đặt từ server và nhóm chúng theo từng tab.
+   * Khởi tạo giá trị local để người dùng có thể chỉnh sửa trước khi lưu.
+   */
   const fetchSettings = useCallback(async () => {
     try {
       setLoading(true)
@@ -199,6 +212,10 @@ export const ManageSystemSettingsPage = () => {
     setSuccessMsg(null)
   }
 
+  /**
+   * Lấy danh sách các cài đặt đã bị thay đổi (dirty) và gửi yêu cầu
+   * cập nhật hàng loạt lên máy chủ qua API bulkUpdate.
+   */
   const handleSave = async () => {
     if (dirtyKeys.size === 0) return
     try {
