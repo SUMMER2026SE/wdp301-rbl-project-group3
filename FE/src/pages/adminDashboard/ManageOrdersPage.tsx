@@ -25,6 +25,7 @@ import { useAuth } from '@hooks/useAuth'
 import type { AdminOrder, AdminOrderStatus, Branch } from '@/types'
 import { notify } from '../../utils/toast';
 import { useSocket } from '../../contexts/SocketContext';
+import { ConfirmModal } from '../../components/ConfirmModal';
 
 // Format currency in VND
 const formatVND = (num: number) => {
@@ -117,6 +118,15 @@ export const ManageOrdersPage = () => {
 
   // Selected order for details modal
   const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null)
+  
+  // Confirm Modal State
+  const [confirmModalData, setConfirmModalData] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} })
+  const closeConfirmModal = () => setConfirmModalData(prev => ({ ...prev, isOpen: false }))
   
   // Auto-refresh state
   const [autoRefresh, setAutoRefresh] = useState(false)
@@ -323,36 +333,36 @@ export const ManageOrdersPage = () => {
       cancelled: 'Hủy đơn hàng',
     }
 
-    if (
-      !window.confirm(
-        `Bạn có chắc chắn muốn cập nhật trạng thái đơn hàng này sang "${statusLabels[nextStatus]}"?`
-      )
-    ) {
-      return
-    }
-
-    try {
-      setActionLoading(true)
-      const response = await orderService.updateOrderStatus(orderId, nextStatus)
-      if (response.success) {
-        // Refresh orders list
-        await fetchFilteredOrders()
-        // Update currently opened modal data if applicable
-        if (selectedOrder && selectedOrder._id === orderId) {
-          const updatedOrder = await orderService.getAdminOrderById(orderId)
-          if (updatedOrder.success) {
-            setSelectedOrder(updatedOrder.data)
+    setConfirmModalData({
+      isOpen: true,
+      title: 'Xác nhận cập nhật',
+      message: `Bạn có chắc chắn muốn cập nhật trạng thái đơn hàng này sang "${statusLabels[nextStatus]}"?`,
+      onConfirm: async () => {
+        closeConfirmModal()
+        try {
+          setActionLoading(true)
+          const response = await orderService.updateOrderStatus(orderId, nextStatus)
+          if (response.success) {
+            // Refresh orders list
+            await fetchFilteredOrders()
+            // Update currently opened modal data if applicable
+            if (selectedOrder && selectedOrder._id === orderId) {
+              const updatedOrder = await orderService.getAdminOrderById(orderId)
+              if (updatedOrder.success) {
+                setSelectedOrder(updatedOrder.data)
+              }
+            }
+            notify.success('Cập nhật trạng thái thành công.')
+          } else {
+            notify.error(response.message || 'Cập nhật trạng thái không thành công.')
           }
+        } catch (err: any) {
+          notify.error(err.message || 'Lỗi kết nối khi cập nhật trạng thái.')
+        } finally {
+          setActionLoading(false)
         }
-        notify.success('Cập nhật trạng thái thành công.')
-      } else {
-        notify.error(response.message || 'Cập nhật trạng thái không thành công.')
       }
-    } catch (err: any) {
-      notify.error(err.message || 'Lỗi kết nối khi cập nhật trạng thái.')
-    } finally {
-      setActionLoading(false)
-    }
+    })
   }
 
   const filteredOrders = orders
@@ -1219,6 +1229,16 @@ export const ManageOrdersPage = () => {
           </div>
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmModalData.isOpen}
+        title={confirmModalData.title}
+        message={confirmModalData.message}
+        onConfirm={confirmModalData.onConfirm}
+        onCancel={closeConfirmModal}
+        type="warning"
+      />
     </div>
   )
 }
