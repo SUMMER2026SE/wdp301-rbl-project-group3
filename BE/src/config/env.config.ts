@@ -43,4 +43,10 @@ export const env = {
   },
 
   geminiApiKey: process.env.GEMINI_API_KEY || '',
+
+  payos: {
+    clientId: process.env.PAYOS_CLIENT_ID || '',
+    apiKey: process.env.PAYOS_API_KEY || '',
+    checksumKey: process.env.PAYOS_CHECKSUM_KEY || '',
+  },
 };

@@ -15,6 +15,7 @@ import {
 import { bannerService } from '@/services/bannerService'
 import { useAuth } from '@hooks/useAuth'
 import type { Banner } from '@/types'
+import { ConfirmModal } from '@/components/ConfirmModal'
 
 export const ManageBannersPage = () => {
   const { user } = useAuth()
@@ -29,6 +30,14 @@ export const ManageBannersPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null)
   const [bannerToDelete, setBannerToDelete] = useState<Banner | null>(null)
+
+  const [confirmModalData, setConfirmModalData] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} })
+  const closeConfirmModal = () => setConfirmModalData(prev => ({ ...prev, isOpen: false }))
 
   // Form Fields
   const [title, setTitle] = useState('')
@@ -124,6 +133,7 @@ export const ManageBannersPage = () => {
     }
   }
 
+<<<<<<< HEAD
   const handleDelete = async () => {
     if (isStaff || !bannerToDelete) return
 
@@ -141,6 +151,31 @@ export const ManageBannersPage = () => {
       setIsLoading(false)
       setBannerToDelete(null)
     }
+=======
+  const handleDelete = async (banner: Banner) => {
+    if (isStaff) return
+    setConfirmModalData({
+      isOpen: true,
+      title: 'Xóa Banner',
+      message: 'Bạn có chắc chắn muốn xóa banner này?',
+      onConfirm: async () => {
+        closeConfirmModal()
+        try {
+          setIsLoading(true)
+          const id = banner._id || banner.id
+          const res = await bannerService.deleteBanner(id)
+          if (res.success) {
+            showSuccess('Đã xóa banner thành công!')
+            fetchBanners()
+          }
+        } catch (err: any) {
+          setErrorMsg(err.response?.data?.message || err.message || 'Không thể xóa banner')
+        } finally {
+          setIsLoading(false)
+        }
+      }
+    })
+>>>>>>> ec2a86454725330e8778c3349c1509bd7d04ed92
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -491,6 +526,7 @@ export const ManageBannersPage = () => {
         </div>
       )}
 
+<<<<<<< HEAD
       {/* Delete Confirmation Modal */}
       {bannerToDelete && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-fade-in">
@@ -540,6 +576,17 @@ export const ManageBannersPage = () => {
           </div>
         </div>
       )}
+=======
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmModalData.isOpen}
+        title={confirmModalData.title}
+        message={confirmModalData.message}
+        onConfirm={confirmModalData.onConfirm}
+        onCancel={closeConfirmModal}
+        type="danger"
+      />
+>>>>>>> ec2a86454725330e8778c3349c1509bd7d04ed92
     </div>
   )
 }

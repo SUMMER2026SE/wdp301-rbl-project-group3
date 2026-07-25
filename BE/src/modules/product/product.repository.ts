@@ -72,29 +72,12 @@ export class ProductRepository {
       Product.countDocuments(query).exec(),
     ]);
 
-    // Lấy giá bán thực tế từ Inventory (lastImportCost)
-    const items: any[] = [];
-    for (const product of products) {
-      let actualPrice = product.salePrice || 0;
-      
-      if (filters.branchId) {
-        const inventory = await Inventory.findOne({
-          branchId: filters.branchId,
-          productId: product._id
-        }).select('lastImportCost').lean().exec();
-        
-        // Dùng lastImportCost làm giá bán nếu có
-        if (inventory?.lastImportCost) {
-          actualPrice = inventory.lastImportCost;
-        }
-      }
-      
-      items.push({
-        ...product,
-        price: actualPrice,  // Giá hiển thị cho khách
-        salePrice: actualPrice,
-      });
-    }
+    // Đảm bảo hiển thị giá bán niêm yết (salePrice) cho khách hàng
+    const items: any[] = products.map((product) => ({
+      ...product,
+      price: product.salePrice || 0,
+      salePrice: product.salePrice || 0,
+    }));
 
     return {
       items: items as IProduct[],

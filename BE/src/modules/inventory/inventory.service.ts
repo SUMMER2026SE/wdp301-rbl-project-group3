@@ -11,7 +11,7 @@ import { Inventory, IInventory } from '../../models/inventory.model';
 import { AppError } from '../../middlewares/errorHandler.middleware';
 import { User } from '../../models/user.model';
 import { UserRole } from '../../types/common.types';
-import { emitGlobal } from '../../config/socket.config';
+import { emitGlobal, emitToRoom } from '../../config/socket.config';
 
 type ImportItemInput = {
   productId: string;
@@ -72,7 +72,7 @@ export class InventoryService {
     const initialStatus: 'pending_approval' | 'active' =
       data.actor.role === 'admin' ? 'active' : 'pending_approval';
 
-    return await inventoryRepository.createImportReceipt({
+    const created = await inventoryRepository.createImportReceipt({
       code: this.generateReceiptCode(),
       branchId: data.branchId,
       supplierName: data.supplierName,
@@ -82,6 +82,12 @@ export class InventoryService {
       createdBy: data.createdBy,
       status: initialStatus,
     });
+
+    // Phát sự kiện realtime tới các phòng liên quan
+    emitToRoom(`branch:${data.branchId}`, 'import_receipt:updated', { action: 'created', id: created._id.toString() });
+    emitToRoom('role:admin', 'import_receipt:updated', { action: 'created', id: created._id.toString() });
+
+    return created;
   }
 
   async getImportReceipts(filters: {
@@ -137,7 +143,13 @@ export class InventoryService {
     }
 
     const detailed = await inventoryRepository.findImportReceiptDetail(id);
-    return detailed || approved;
+    const result = detailed || approved;
+
+    const bId = result.branchId.toString();
+    emitToRoom(`branch:${bId}`, 'import_receipt:updated', { action: 'approved', id: result._id.toString() });
+    emitToRoom('role:admin', 'import_receipt:updated', { action: 'approved', id: result._id.toString() });
+
+    return result;
   }
 
   async rejectImportReceipt(
@@ -166,7 +178,13 @@ export class InventoryService {
     }
 
     const detailed = await inventoryRepository.findImportReceiptDetail(id);
-    return detailed || rejected;
+    const result = detailed || rejected;
+
+    const bId = result.branchId.toString();
+    emitToRoom(`branch:${bId}`, 'import_receipt:updated', { action: 'rejected', id: result._id.toString() });
+    emitToRoom('role:admin', 'import_receipt:updated', { action: 'rejected', id: result._id.toString() });
+
+    return result;
   }
 
   async updateImportReceipt(
@@ -724,7 +742,11 @@ export class InventoryService {
     const detailed = await inventoryRepository.findImportReceiptDetail(id);
     if (!detailed) throw new AppError('Import receipt detail not found', 500);
 
-    // Phát tin cập nhật tồn kho realtime
+    // Phát tin cập nhật phiếu và tồn kho realtime
+    const bId = detailed.branchId.toString();
+    emitToRoom(`branch:${bId}`, 'import_receipt:updated', { action: 'verified', id: detailed._id.toString() });
+    emitToRoom('role:admin', 'import_receipt:updated', { action: 'verified', id: detailed._id.toString() });
+
     for (const item of updatedItems) {
       emitGlobal('inventory:updated', {
         branchId,

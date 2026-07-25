@@ -348,18 +348,18 @@ export class StatisticsRepository {
 
   async getTotalRevenue(match: Record<string, unknown> = {}): Promise<number> {
     const result = await Order.aggregate([
-      { $match: { ...match, status: 'delivered' } },
+      { $match: { ...match, status: { $ne: 'cancelled' } } },
       { $group: { _id: null, totalRevenue: { $sum: '$totalAmount' } } },
     ]).exec();
     return result.length > 0 ? result[0].totalRevenue : 0;
   }
 
-  async getRevenueTrend(range: DateRange, match: Record<string, unknown> = {}): Promise<RevenueTrendPoint[]> {
+  async getRevenueTrend(range: DateRange, match: Record<string, unknown> = {}): Promise<any[]> {
     const rows = await Order.aggregate([
       {
         $match: {
           ...match,
-          status: 'delivered',
+          status: { $ne: 'cancelled' },
           createdAt: { $gte: range.from, $lte: range.to },
         },
       },
@@ -374,16 +374,19 @@ export class StatisticsRepository {
     ]).exec();
 
     return rows.map((row) => ({
+      _id: row._id,
       date: row._id,
-      revenue: row.revenue,
-      count: row.count,
+      revenue: row.revenue ?? 0,
+      totalRevenue: row.revenue ?? 0,
+      count: row.count ?? 0,
+      orderCount: row.count ?? 0,
     }));
   }
 
   async getRevenueByBranch(match: Record<string, unknown> = {}): Promise<any[]> {
     const rows = await Order.aggregate([
-      { $match: { ...match, status: 'delivered' } },
-      { $group: { _id: '$branchId', revenue: { $sum: '$totalAmount' } } },
+      { $match: { ...match, status: { $ne: 'cancelled' } } },
+      { $group: { _id: '$branchId', revenue: { $sum: '$totalAmount' }, orderCount: { $sum: 1 } } },
       { $sort: { revenue: -1 } },
       {
         $lookup: {
@@ -399,6 +402,8 @@ export class StatisticsRepository {
           _id: 1,
           branchName: '$branch.name',
           revenue: 1,
+          totalRevenue: '$revenue',
+          orderCount: 1,
         },
       },
     ]).exec();
@@ -407,7 +412,7 @@ export class StatisticsRepository {
 
   async getTopSellingProducts(limit: number, match: Record<string, unknown> = {}): Promise<any[]> {
     const rows = await Order.aggregate([
-      { $match: { ...match, status: 'delivered' } },
+      { $match: { ...match, status: { $ne: 'cancelled' } } },
       { $unwind: '$items' },
       {
         $group: {
@@ -500,7 +505,7 @@ export class StatisticsRepository {
 
   async getTopCustomers(limit: number, match: Record<string, unknown> = {}): Promise<any[]> {
     const rows = await Order.aggregate([
-      { $match: { ...match, status: 'delivered' } },
+      { $match: { ...match, status: { $ne: 'cancelled' } } },
       {
         $group: {
           _id: '$customerId',
@@ -536,7 +541,7 @@ export class StatisticsRepository {
 
   async getTopStaff(limit: number, match: Record<string, unknown> = {}): Promise<any[]> {
     const rows = await Order.aggregate([
-      { $match: { ...match, status: 'delivered', confirmedBy: { $exists: true, $ne: null } } },
+      { $match: { ...match, status: { $ne: 'cancelled' }, confirmedBy: { $exists: true, $ne: null } } },
       {
         $group: {
           _id: '$confirmedBy',
@@ -571,7 +576,7 @@ export class StatisticsRepository {
 
   async countServedCustomers(match: Record<string, unknown> = {}): Promise<number> {
     const rows = await Order.aggregate([
-      { $match: { ...match, status: 'delivered' } },
+      { $match: { ...match, status: { $ne: 'cancelled' } } },
       { $group: { _id: '$customerId' } },
       { $count: 'total' },
     ]).exec();

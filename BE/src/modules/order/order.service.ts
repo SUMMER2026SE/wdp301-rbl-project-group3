@@ -11,13 +11,17 @@ import { promotionCalculationService } from '../promotion/services/calculation.s
 import { promotionUsageService } from '../promotion/services/usage.service';
 import { invoiceRepository } from '../invoice/invoice.repository';
 import { User } from '../../models/user.model';
+import { Branch } from '../../models/branch.model';
 import { systemSettingRepository } from '../system-setting/system-setting.repository';
 import { flashSaleRepository } from '../flash-sale/flash-sale.repository';
+import { sendOrderRefundEmail } from '../../utils/mail.util';
 import {
   BackOfficeActor,
   assertBackOfficeBranchAccess,
   resolveBackOfficeBranch,
 } from '../../utils/backOfficeAccess.util';
+import { payOSClient } from '../../config/payos.config';
+import { env } from '../../config/env.config';
 
 const allowedTransitions: Record<OrderStatus, OrderStatus[]> = {
   pending: ['confirmed', 'cancelled'],
@@ -156,55 +160,13 @@ export class OrderService {
       `Order status changed from ${order.status} to ${status}`
     );
 
-    // Tích điểm tích lũy cho khách hàng khi giao hàng thành công
-    if (status === 'delivered' && updated.customerId) {
-      const pointsEarned = Math.floor(updated.totalAmount / 10000);
-      if (pointsEarned > 0) {
-        try {
-          const user = await User.findById(updated.customerId).exec();
-          if (user) {
-            user.points = (user.points || 0) + pointsEarned;
-            user.lifetimePoints = (user.lifetimePoints || 0) + pointsEarned;
-
-            // Đọc ngưỡng thành viên từ system settings (fallback về hardcode nếu chưa có)
-            const [bronze, silver, gold, diamond] = await Promise.all([
-              systemSettingRepository.findByKey('loyalty_bronze_threshold'),
-              systemSettingRepository.findByKey('loyalty_silver_threshold'),
-              systemSettingRepository.findByKey('loyalty_gold_threshold'),
-              systemSettingRepository.findByKey('loyalty_diamond_threshold'),
-            ]);
-
-            const bronzeMin = Number(bronze?.value ?? 100);
-            const silverMin = Number(silver?.value ?? 300);
-            const goldMin   = Number(gold?.value   ?? 600);
-            const diamondMin= Number(diamond?.value ?? 1000);
-
-            // Tính toán lại hạng thành viên dựa trên điểm trọn đời
-            const lp = user.lifetimePoints;
-            let newLevel: 'new' | 'bronze' | 'silver' | 'gold' | 'diamond' = 'new';
-            if (lp >= diamondMin) {
-              newLevel = 'diamond';
-            } else if (lp >= goldMin) {
-              newLevel = 'gold';
-            } else if (lp >= silverMin) {
-              newLevel = 'silver';
-            } else if (lp >= bronzeMin) {
-              newLevel = 'bronze';
-            }
-
-            user.memberLevel = newLevel;
-            await user.save();
-
-            emitToRoom(`customer:${user._id.toString()}`, 'user:points_updated', {
-              points: user.points,
-              lifetimePoints: user.lifetimePoints,
-              memberLevel: user.memberLevel,
-            });
-          }
-        } catch (err) {
-          console.error('[LOYALTY_POINTS_AWARD_FAILED]', err);
-        }
+    // Tích điểm tích lũy cho khách hàng khi giao hàng thành công & thanh toán thành công
+    if (status === 'delivered') {
+      if (updated.paymentStatus !== 'paid') {
+        updated.paymentStatus = 'paid';
+        await updated.save();
       }
+      await this.awardLoyaltyPointsIfEligible(updated);
     }
 
     this.emitOrderUpdate(updated);
@@ -396,6 +358,8 @@ export class OrderService {
       deliveryAddress: order.deliveryAddress ?? null,
       phoneNumber: order.phoneNumber ?? null,
       paymentMethod: order.paymentMethod ?? 'COD',
+      paymentStatus: order.paymentStatus ?? 'pending',
+      payosOrderCode: order.payosOrderCode ?? null,
       note: order.note ?? null,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
@@ -418,6 +382,33 @@ export class OrderService {
     const { orders, total } = await orderRepository.findByCustomerId(
       customerId, page, limit, status
     );
+
+    // Tự động kiểm tra và cập nhật trạng thái đơn hàng PayOS chưa thanh toán với máy chủ PayOS
+    for (const order of orders) {
+      if (order.paymentMethod === 'payos' && order.paymentStatus !== 'paid' && order.payosOrderCode && payOSClient) {
+        try {
+          const info = await payOSClient.paymentRequests.get(order.payosOrderCode);
+          if (info && info.status === 'PAID') {
+            order.paymentStatus = 'paid';
+            if (order.status === 'pending') {
+              order.status = 'confirmed';
+              order.confirmedAt = new Date();
+            }
+            await order.save();
+            await orderRepository.addTrackingEvent(
+              order._id.toString(),
+              'confirmed',
+              order.customerId.toString(),
+              'Thanh toán thành công qua cổng PayOS.'
+            );
+            this.emitOrderUpdate(order);
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+    }
+
     const totalPages = Math.ceil(total / limit);
 
     return {
@@ -451,9 +442,7 @@ export class OrderService {
   }
 
   async getCustomerOrderById(orderId: string, customerId: string) {
-    const order = await orderRepository.findByIdAndCustomerId(orderId, customerId);
-    if (!order) throw new AppError('Order not found', 404);
-    return this.buildCustomerOrderResponse(order);
+    return this.syncPayOSStatus(orderId, customerId);
   }
 
   async cancelCustomerOrder(orderId: string, customerId: string, reason?: string) {
@@ -484,6 +473,32 @@ export class OrderService {
     return this.buildCustomerOrderResponse(updatedOrder);
   }
 
+  async autoCancelOverdueOrder(orderId: string, timeoutMinutes: number): Promise<void> {
+    const order = await orderRepository.findRawById(orderId);
+    if (!order || order.status !== 'pending' || order.paymentStatus === 'paid') return;
+
+    await this.increaseOrderStock(order, 'system', false);
+    await this.restoreFlashSaleQuantities(order);
+
+    const updatedOrder = await orderRepository.updateStatusIfCurrent(orderId, 'pending', {
+      status: 'cancelled',
+    });
+
+    if (!updatedOrder) {
+      await this.reconcileOrderStock(order, 'system');
+      return;
+    }
+
+    await this.recordTrackingEvent(
+      orderId,
+      'cancelled',
+      'system',
+      `Tự động hủy đơn hàng do vượt quá thời gian chờ (${timeoutMinutes} phút).`
+    );
+
+    this.emitOrderUpdate(updatedOrder);
+  }
+
   private generateOrderCode(): string {
     const date = new Date();
     const stamp = date.toISOString().slice(0, 10).replace(/-/g, '');
@@ -496,9 +511,40 @@ export class OrderService {
     shippingAddress: string;
     phoneNumber: string;
     note?: string;
-    paymentMethod: 'COD' | 'banking' | 'momo' | 'vnpay';
+    paymentMethod: 'COD' | 'payos';
     voucherCode?: string;
   }): Promise<any> {
+    // 0.5. Kiểm tra chi nhánh và giờ mở cửa / đóng cửa
+    const branch = await Branch.findById(data.branchId).exec();
+    if (!branch || branch.status === 'inactive') {
+      throw new AppError('Chi nhánh được chọn hiện đang tạm ngưng hoạt động.', 400);
+    }
+
+    const now = new Date();
+    const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const currentDayName = daysOfWeek[now.getDay()];
+
+    if (branch.activeDays && branch.activeDays.length > 0 && !branch.activeDays.includes(currentDayName)) {
+      throw new AppError(
+        `Chi nhánh ${branch.name} không hoạt động vào ngày ${currentDayName}. Vui lòng chọn chi nhánh khác!`,
+        400
+      );
+    }
+
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const currentTimeStr = `${hours}:${minutes}`;
+
+    const openTime = branch.openingTime || '08:00';
+    const closeTime = branch.closingTime || '22:00';
+
+    if (currentTimeStr < openTime || currentTimeStr >= closeTime) {
+      throw new AppError(
+        `Chi nhánh ${branch.name} hiện đã đóng cửa (Giờ hoạt động: ${openTime} - ${closeTime}). Vui lòng quay lại trong khung giờ mở cửa!`,
+        400
+      );
+    }
+
     // 1. Lấy giỏ hàng của user
     const cart = await cartRepository.findByUserId(customerId);
     if (!cart || cart.items.length === 0) {
@@ -653,13 +699,146 @@ export class OrderService {
     // 8. Xóa sạch giỏ hàng
     await cartRepository.clearCart(customerId);
 
-    const orderResponse = this.buildCustomerOrderResponse(order);
+    let payOSData: any = null;
+    if (data.paymentMethod === 'payos') {
+      try {
+        if (payOSClient) {
+          const numericCode = Number(Date.now().toString().slice(-6) + Math.floor(100 + Math.random() * 900));
+          order.payosOrderCode = numericCode;
+          await order.save();
+          const paymentLink = await payOSClient.paymentRequests.create({
+            orderCode: numericCode,
+            amount: Math.round(totalAmount),
+            description: `PMAN ${orderCode.slice(-8)}`.substring(0, 25),
+            cancelUrl: `${env.clientUrl}/dashboard/orders?payos_cancel=true&orderId=${order._id.toString()}`,
+            returnUrl: `${env.clientUrl}/dashboard/orders?payos_success=true&orderId=${order._id.toString()}`,
+          });
+          payOSData = {
+            checkoutUrl: paymentLink.checkoutUrl,
+            qrCode: paymentLink.qrCode,
+            accountName: paymentLink.accountName,
+            accountNumber: paymentLink.accountNumber,
+            bin: paymentLink.bin,
+          };
+        } else {
+          // VietQR PayOS QR fallback mode for instant scanning
+          const memo = `PMAN ${orderCode.slice(-8)}`;
+          payOSData = {
+            checkoutUrl: null,
+            qrCode: `https://img.vietqr.io/image/MB-0388888888-compact2.png?amount=${Math.round(totalAmount)}&addInfo=${encodeURIComponent(memo)}&accountName=PMAN%20MART`,
+            accountName: 'PMAN MART (PayOS Gate)',
+            accountNumber: '0388888888',
+            bin: '970422',
+            memo,
+          };
+        }
+      } catch (payosErr) {
+        console.error('[PAYOS_CREATE_PAYMENT_LINK_FAILED]', payosErr);
+      }
+    }
+
+    const orderResponse: any = this.buildCustomerOrderResponse(order);
+    if (payOSData) {
+      orderResponse.payOSData = payOSData;
+    }
+
     // Phát tin realtime cho chi nhánh được chọn và cho toàn bộ Admin/Staff
     emitToRoom(`branch:${data.branchId}`, 'order:new', orderResponse);
     emitToRoom('role:admin', 'order:created', orderResponse);
     emitToRoom('role:branch_manager', 'order:created', orderResponse);
 
     return orderResponse;
+  }
+
+  async handlePayOSWebhook(webhookData: any): Promise<any> {
+    try {
+      let verifiedData: any = webhookData;
+      if (payOSClient && payOSClient.webhooks) {
+        try {
+          verifiedData = await payOSClient.webhooks.verify(webhookData);
+        } catch (vErr) {
+          console.warn('[PAYOS_WEBHOOK_VERIFY_WARN]', vErr);
+        }
+      }
+
+      const dataObj = verifiedData.data || verifiedData;
+      if (dataObj && (verifiedData.code === '00' || verifiedData.success === true || dataObj.code === '00')) {
+        const orderCodeStr = dataObj.orderCode?.toString();
+        let order: any = await Order.findOne({
+          $or: [
+            { code: { $regex: orderCodeStr || 'NOMATCH', $options: 'i' } },
+            { code: dataObj.orderCode }
+          ]
+        }).exec();
+
+        if (!order) {
+          order = await Order.findOne({ paymentMethod: 'payos', paymentStatus: { $ne: 'paid' } }).sort({ createdAt: -1 }).exec();
+        }
+
+        if (order) {
+          order.paymentStatus = 'paid';
+          if (order.status === 'pending') {
+            order.status = 'confirmed';
+            order.confirmedAt = new Date();
+          }
+          await order.save();
+
+          await orderRepository.addTrackingEvent(
+            order._id.toString(),
+            'confirmed',
+            order.customerId.toString(),
+            'Thanh toán thành công qua cổng PayOS.'
+          );
+
+          await this.awardLoyaltyPointsIfEligible(order);
+          this.emitOrderUpdate(order);
+        }
+      }
+      return { success: true };
+    } catch (err) {
+      console.error('[PAYOS_WEBHOOK_ERROR]', err);
+      return { success: false };
+    }
+  }
+
+  async syncPayOSStatus(orderId: string, customerId?: string): Promise<any> {
+    const order: any = customerId
+      ? await orderRepository.findByIdAndCustomerId(orderId, customerId)
+      : await orderRepository.findById(orderId);
+
+    if (!order) throw new AppError('Order not found', 404);
+
+    if (order.paymentMethod === 'payos' && order.paymentStatus !== 'paid' && payOSClient) {
+      try {
+        let paymentLinkInfo: any = null;
+        if (order.payosOrderCode) {
+          paymentLinkInfo = await payOSClient.paymentRequests.get(order.payosOrderCode);
+        }
+
+        if (paymentLinkInfo && paymentLinkInfo.status === 'PAID') {
+          order.paymentStatus = 'paid';
+          if (order.status === 'pending') {
+            order.status = 'confirmed';
+            order.confirmedAt = new Date();
+          }
+          await order.save();
+
+          await orderRepository.addTrackingEvent(
+            order._id.toString(),
+            'confirmed',
+            order.customerId.toString(),
+            'Thanh toán thành công qua cổng PayOS.'
+          );
+
+          await this.awardLoyaltyPointsIfEligible(order);
+          this.emitOrderUpdate(order);
+        }
+      } catch (payosErr) {
+        console.error('[PAYOS_SYNC_STATUS_FAILED]', payosErr);
+      }
+    }
+
+    return this.buildCustomerOrderResponse(order);
   }
 
   private buildTrackingActor(value: unknown) {
@@ -705,6 +884,66 @@ export class OrderService {
       console.error('[RESTORE_FLASH_SALE_QUANTITIES_FAILED]', err);
     }
   }
+  private async awardLoyaltyPointsIfEligible(order: IOrder): Promise<void> {
+    if (!order || !order.customerId) return;
+    // Điểm thưởng CHỈ được cộng khi: Đơn hàng đã giao thành công (status = 'delivered') VÀ đã thanh toán thành công (paymentStatus = 'paid')
+    if (order.status !== 'delivered' || order.paymentStatus !== 'paid') return;
+    if (order.isPointsAwarded) return;
+
+    try {
+      const [ptsPer10kSetting, bronze, silver, gold, diamond] = await Promise.all([
+        systemSettingRepository.findByKey('loyalty_points_per_10k'),
+        systemSettingRepository.findByKey('loyalty_bronze_threshold'),
+        systemSettingRepository.findByKey('loyalty_silver_threshold'),
+        systemSettingRepository.findByKey('loyalty_gold_threshold'),
+        systemSettingRepository.findByKey('loyalty_diamond_threshold'),
+      ]);
+
+      const ptsPer10k = Number(ptsPer10kSetting?.value ?? 1);
+      const rate = ptsPer10k > 0 ? ptsPer10k : 1;
+      const pointsEarned = Math.floor(order.totalAmount / 10000) * rate;
+
+      if (pointsEarned > 0) {
+        const user = await User.findById(order.customerId).exec();
+        if (user) {
+          user.points = (user.points || 0) + pointsEarned;
+          user.lifetimePoints = (user.lifetimePoints || 0) + pointsEarned;
+
+          const bronzeMin = Number(bronze?.value ?? 100);
+          const silverMin = Number(silver?.value ?? 300);
+          const goldMin = Number(gold?.value ?? 600);
+          const diamondMin = Number(diamond?.value ?? 1000);
+
+          const lp = user.lifetimePoints;
+          let newLevel: 'new' | 'bronze' | 'silver' | 'gold' | 'diamond' = 'new';
+          if (lp >= diamondMin) {
+            newLevel = 'diamond';
+          } else if (lp >= goldMin) {
+            newLevel = 'gold';
+          } else if (lp >= silverMin) {
+            newLevel = 'silver';
+          } else if (lp >= bronzeMin) {
+            newLevel = 'bronze';
+          }
+
+          user.memberLevel = newLevel;
+          await user.save();
+
+          order.isPointsAwarded = true;
+          await order.save();
+
+          emitToRoom(`customer:${user._id.toString()}`, 'user:points_updated', {
+            points: user.points,
+            lifetimePoints: user.lifetimePoints,
+            memberLevel: user.memberLevel,
+          });
+        }
+      }
+    } catch (err) {
+      console.error('[LOYALTY_POINTS_AWARD_FAILED]', err);
+    }
+  }
+
   private emitOrderUpdate(order: any) {
     const customerId = this.getObjectIdString(order.customerId);
     const branchId = this.getObjectIdString(order.branchId);

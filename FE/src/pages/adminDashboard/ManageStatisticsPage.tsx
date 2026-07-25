@@ -33,7 +33,7 @@ export const ManageStatisticsPage = () => {
   const [selectedBranchId, setSelectedBranchId] = useState<string>('')
   const [groupBy, setGroupBy] = useState<'day' | 'month'>('day')
   const [presetRange, setPresetRange] = useState<string>('30days')
-  
+
   // Date states
   const [fromDate, setFromDate] = useState<string>('')
   const [toDate, setToDate] = useState<string>('')
@@ -42,7 +42,7 @@ export const ManageStatisticsPage = () => {
   const [branches, setBranches] = useState<Branch[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  
+
   const [adminData, setAdminData] = useState<any | null>(null)
   const [branchData, setBranchData] = useState<any | null>(null)
 
@@ -227,9 +227,16 @@ export const ManageStatisticsPage = () => {
   const areaChartSvgPoints = useMemo(() => {
     if (!chartData?.revenueTrend?.data || chartData.revenueTrend.data.length === 0) return null
 
-    const data: Array<{ _id: string; totalRevenue: number; orderCount: number }> = chartData.revenueTrend.data
-    const maxVal = Math.max(...data.map(d => d.totalRevenue), 1)
-    
+    const data: Array<any> = chartData.revenueTrend.data
+    const getRevenue = (d: any) => {
+      const val = Number(d?.totalRevenue ?? d?.revenue ?? 0)
+      return isNaN(val) ? 0 : val
+    }
+
+    const revenues = data.map(getRevenue)
+    const rawMax = Math.max(...revenues, 0)
+    const maxVal = rawMax > 0 ? rawMax : 100000 // Fallback max scale to avoid division by 0 or NaN
+
     // Width and height of viewbox
     const w = 600
     const h = 220
@@ -237,14 +244,17 @@ export const ManageStatisticsPage = () => {
     const paddingRight = 20
     const paddingTop = 20
     const paddingBottom = 40
-    
+
     const chartW = w - paddingLeft - paddingRight
     const chartH = h - paddingTop - paddingBottom
 
     const points = data.map((item, index) => {
+      const rev = getRevenue(item)
+      const label = item._id || item.date || ''
+      const orders = item.orderCount ?? item.count ?? 0
       const x = paddingLeft + (index / (data.length - 1 || 1)) * chartW
-      const y = h - paddingBottom - (item.totalRevenue / maxVal) * chartH
-      return { x, y, label: item._id, value: formatVND(item.totalRevenue), orders: item.orderCount }
+      const y = h - paddingBottom - (rev / maxVal) * chartH
+      return { x, y, label, value: formatVND(rev), orders }
     })
 
     // Construct path commands
@@ -266,33 +276,43 @@ export const ManageStatisticsPage = () => {
   const barChartSvgPoints = useMemo(() => {
     if (!chartData?.revenueByBranch || chartData.revenueByBranch.length === 0) return null
 
-    const data: Array<{ _id: string; branchName: string; totalRevenue: number; orderCount: number }> = chartData.revenueByBranch
-    const maxVal = Math.max(...data.map(d => d.totalRevenue), 1)
-    
+    const data: Array<any> = chartData.revenueByBranch
+    const getRevenue = (d: any) => {
+      const val = Number(d?.totalRevenue ?? d?.revenue ?? 0)
+      return isNaN(val) ? 0 : val
+    }
+
+    const revenues = data.map(getRevenue)
+    const rawMax = Math.max(...revenues, 0)
+    const maxVal = rawMax > 0 ? rawMax : 100000
+
     const w = 600
     const h = 220
     const paddingLeft = 60
     const paddingRight = 20
     const paddingTop = 20
     const paddingBottom = 40
-    
+
     const chartW = w - paddingLeft - paddingRight
     const chartH = h - paddingTop - paddingBottom
     const barWidth = Math.min(30, (chartW / data.length) * 0.5)
 
     const bars = data.map((item, index) => {
+      const rev = getRevenue(item)
+      const label = item.branchName || 'Chi nhánh'
+      const orders = item.orderCount ?? item.count ?? 0
       const centerX = paddingLeft + (index / (data.length || 1)) * chartW + (chartW / (data.length * 2))
       const x = centerX - barWidth / 2
-      const barH = (item.totalRevenue / maxVal) * chartH
+      const barH = (rev / maxVal) * chartH
       const y = h - paddingBottom - barH
       return {
         x,
         y,
         width: barWidth,
         height: barH,
-        label: item.branchName || 'Chi nhánh ẩn',
-        value: formatVND(item.totalRevenue),
-        orders: item.orderCount
+        label,
+        value: formatVND(rev),
+        orders
       }
     })
 
@@ -387,11 +407,10 @@ export const ManageStatisticsPage = () => {
                   key={mode}
                   type="button"
                   onClick={() => setGroupBy(mode)}
-                  className={`py-1.5 text-xs font-bold rounded-lg capitalize transition-all ${
-                    groupBy === mode
+                  className={`py-1.5 text-xs font-bold rounded-lg capitalize transition-all ${groupBy === mode
                       ? 'bg-primary text-white shadow-sm'
                       : 'text-on-surface-variant hover:text-on-surface'
-                  }`}
+                    }`}
                 >
                   {mode === 'day' ? 'Ngày' : 'Tháng'}
                 </button>
@@ -513,7 +532,7 @@ export const ManageStatisticsPage = () => {
                           fontWeight="bold"
                           className="fill-on-surface-variant font-mono"
                         >
-                          {val >= 1000000 ? `${(val / 1000000).toFixed(1)}M` : val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val.toFixed(0)}
+                          {isNaN(val) ? '0' : val >= 1000000 ? `${(val / 1000000).toFixed(1)}M` : val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val.toFixed(0)}
                         </text>
                       </g>
                     )
@@ -617,7 +636,7 @@ export const ManageStatisticsPage = () => {
                             fontWeight="bold"
                             className="fill-on-surface-variant font-mono"
                           >
-                            {val >= 1000000 ? `${(val / 1000000).toFixed(1)}M` : val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val.toFixed(0)}
+                            {isNaN(val) ? '0' : val >= 1000000 ? `${(val / 1000000).toFixed(1)}M` : val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val.toFixed(0)}
                           </text>
                         </g>
                       )

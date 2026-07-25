@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   CheckCircle,
   Clock,
@@ -82,6 +82,7 @@ export const OrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [searchParams, setSearchParams] = useSearchParams()
   
   const [selectedStatusTab, setSelectedStatusTab] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
@@ -96,6 +97,33 @@ export const OrdersPage = () => {
   useEffect(() => {
     setPage(1)
   }, [selectedStatusTab, searchQuery])
+
+  // Xử lý tự động hủy đơn khi người dùng bấm Hủy giao dịch trên cổng PayOS
+  useEffect(() => {
+    const payosCancel = searchParams.get('payos_cancel')
+    const payosSuccess = searchParams.get('payos_success')
+    const orderId = searchParams.get('orderId')
+
+    if (payosCancel === 'true' && orderId) {
+      orderService.cancelOrder(orderId, 'Khách hàng hủy thanh toán trên cổng PayOS')
+        .then(() => {
+          notify.error('Bạn đã hủy thanh toán trên PayOS. Đơn hàng đã được tự động hủy và khôi phục tồn kho.')
+          fetchOrders()
+        })
+        .catch(console.error)
+      const nextParams = new URLSearchParams(searchParams)
+      nextParams.delete('payos_cancel')
+      nextParams.delete('orderId')
+      setSearchParams(nextParams, { replace: true })
+    } else if (payosSuccess === 'true') {
+      notify.success('Thanh toán thành công qua cổng PayOS!')
+      const nextParams = new URLSearchParams(searchParams)
+      nextParams.delete('payos_success')
+      nextParams.delete('orderId')
+      setSearchParams(nextParams, { replace: true })
+      fetchOrders()
+    }
+  }, [searchParams])
 
   // Detailed Modal states
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
@@ -623,11 +651,47 @@ export const OrdersPage = () => {
                   <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/30 text-sm space-y-2">
                     <div className="flex justify-between">
                       <span className="text-on-surface-variant font-medium">Hình thức thanh toán:</span>
-                      <span className="font-bold uppercase text-xs">{selectedOrder.paymentMethod || 'COD (Tiền mặt)'}</span>
+                      <span className="font-bold uppercase text-xs font-mono">
+                        {selectedOrder.paymentMethod === 'payos'
+                          ? 'PayOS (Thanh toán trực tuyến)'
+                          : selectedOrder.paymentMethod === 'COD'
+                          ? 'COD (Tiền mặt khi nhận hàng)'
+                          : selectedOrder.paymentMethod || 'COD'}
+                      </span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="text-on-surface-variant font-medium">Trạng thái thanh toán:</span>
-                      <span className="font-bold text-xs capitalize text-tertiary">{selectedOrder.paymentStatus || 'Chưa thanh toán'}</span>
+                      <div className="flex items-center gap-2">
+                        <span className={`font-bold text-xs capitalize ${
+                          selectedOrder.paymentStatus === 'paid' ? 'text-success font-black' : 'text-amber-600 font-bold'
+                        }`}>
+                          {selectedOrder.paymentStatus === 'paid' ? 'Đã thanh toán' : 'Chưa thanh toán'}
+                        </span>
+                        {selectedOrder.paymentMethod === 'payos' && selectedOrder.paymentStatus !== 'paid' && (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                const res = await orderService.getOrderById(selectedOrder.orderId)
+                                if (res.success && res.data) {
+                                  setSelectedOrder(res.data)
+                                  if (res.data.paymentStatus === 'paid') {
+                                    notify.success('Đã xác nhận thanh toán PayOS thành công!')
+                                  } else {
+                                    notify.error('Chưa nhận được giao dịch từ PayOS. Vui lòng chuyển khoản hoặc thử lại sau ít phút.')
+                                  }
+                                  fetchOrders()
+                                }
+                              } catch (e) {
+                                console.error(e)
+                              }
+                            }}
+                            className="text-[10px] bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-md hover:bg-primary/20 transition-all border border-primary/20"
+                          >
+                            🔄 Kiểm tra PayOS
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div className="flex justify-between border-t border-outline-variant/20 pt-2 text-base font-black">
                       <span>Tổng tiền thanh toán:</span>
