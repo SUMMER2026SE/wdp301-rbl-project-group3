@@ -38,6 +38,7 @@ export interface IOrder extends Document {
   invoiceIssuedAt?: Date;
   returnMutationLockedAt?: Date;
   returnMutationLockId?: string;
+  isPointsAwarded?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -85,6 +86,7 @@ const OrderSchema = new Schema<IOrder>(
     invoiceIssuedAt: { type: Date },
     returnMutationLockedAt: { type: Date },
     returnMutationLockId: { type: String },
+    isPointsAwarded: { type: Boolean, default: false },
   },
   {
     timestamps: true,

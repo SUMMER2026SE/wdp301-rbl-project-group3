@@ -9,6 +9,7 @@ import { connectDatabase } from './config/database.config';
 import apiRoutes from './routes/index';
 import { errorHandler } from './middlewares/errorHandler.middleware';
 import { initCrawlerCron } from './modules/crawler/crawler.cron';
+import { initOrderAutoCancelCron } from './modules/order/order.cron';
 import { maintenanceModeMiddleware } from './middlewares/maintenanceMode.middleware';
 import { initSocket } from './config/socket.config';
 
@@ -53,7 +54,8 @@ app.use(errorHandler);
 const start = async () => {
   await connectDatabase();
   initCrawlerCron();
-  
+  initOrderAutoCancelCron();
+
   const httpServer = http.createServer(app);
   initSocket(httpServer);
 

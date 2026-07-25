@@ -217,6 +217,34 @@ export class StatisticsRepository {
   async countVouchersByStatus(
     match: Record<string, unknown> = {}
   ): Promise<Record<string, number>> {
+    if (match.branchId) {
+      const branchObjId = match.branchId;
+      const rows = await Voucher.aggregate([
+        {
+          $lookup: {
+            from: 'orders',
+            localField: 'orderId',
+            foreignField: '_id',
+            as: 'order',
+          },
+        },
+        {
+          $match: {
+            $or: [
+              { branchId: branchObjId },
+              { 'order.branchId': branchObjId },
+            ],
+          },
+        },
+        { $group: { _id: '$status', count: { $sum: 1 } } },
+      ]).exec();
+
+      const result: Record<string, number> = {};
+      for (const row of rows) {
+        result[row._id ?? 'unknown'] = row.count;
+      }
+      return result;
+    }
     return countByField(Voucher, 'status', match);
   }
 
@@ -272,7 +300,7 @@ export class StatisticsRepository {
 
   async getPromotionRevenue(match: Record<string, unknown> = {}): Promise<number> {
     const rows = await Voucher.aggregate([
-      { $match: { ...match, status: 'used', orderId: { $exists: true, $ne: null } } },
+      { $match: { status: 'used', orderId: { $exists: true, $ne: null } } },
       {
         $lookup: {
           from: 'orders',
@@ -282,7 +310,12 @@ export class StatisticsRepository {
         },
       },
       { $unwind: '$order' },
-      { $match: { 'order.status': 'delivered' } }, // Only count revenue for delivered orders
+      {
+        $match: {
+          'order.status': { $ne: 'cancelled' },
+          ...(match.branchId ? { 'order.branchId': match.branchId } : {}),
+        },
+      },
       { $group: { _id: null, revenue: { $sum: '$order.totalAmount' } } },
     ]).exec();
     return rows.length > 0 ? rows[0].revenue : 0;
@@ -354,7 +387,7 @@ export class StatisticsRepository {
     return result.length > 0 ? result[0].totalRevenue : 0;
   }
 
-  async getRevenueTrend(range: DateRange, match: Record<string, unknown> = {}): Promise<RevenueTrendPoint[]> {
+  async getRevenueTrend(range: DateRange, match: Record<string, unknown> = {}): Promise<any[]> {
     const rows = await Order.aggregate([
       {
         $match: {
@@ -374,16 +407,19 @@ export class StatisticsRepository {
     ]).exec();
 
     return rows.map((row) => ({
+      _id: row._id,
       date: row._id,
-      revenue: row.revenue,
-      count: row.count,
+      revenue: row.revenue ?? 0,
+      totalRevenue: row.revenue ?? 0,
+      count: row.count ?? 0,
+      orderCount: row.count ?? 0,
     }));
   }
 
   async getRevenueByBranch(match: Record<string, unknown> = {}): Promise<any[]> {
     const rows = await Order.aggregate([
       { $match: { ...match, status: { $ne: 'cancelled' } } },
-      { $group: { _id: '$branchId', revenue: { $sum: '$totalAmount' } } },
+      { $group: { _id: '$branchId', revenue: { $sum: '$totalAmount' }, orderCount: { $sum: 1 } } },
       { $sort: { revenue: -1 } },
       {
         $lookup: {
@@ -398,7 +434,10 @@ export class StatisticsRepository {
         $project: {
           _id: 1,
           branchName: '$branch.name',
+          branchCode: '$branch.code',
           revenue: 1,
+          totalRevenue: '$revenue',
+          orderCount: 1,
         },
       },
     ]).exec();
