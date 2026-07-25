@@ -87,6 +87,11 @@ export class CompetitorProductService {
 
     return { importedCount };
   }
+
+  async deleteCompetitorProducts(ids: string[]): Promise<{ deletedCount: number }> {
+    const result = await CompetitorProduct.deleteMany({ _id: { $in: ids } });
+    return { deletedCount: result.deletedCount || 0 };
+  }
 }
 
 export const competitorProductService = new CompetitorProductService();
