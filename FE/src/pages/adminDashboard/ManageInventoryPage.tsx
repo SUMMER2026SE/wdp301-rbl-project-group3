@@ -49,6 +49,34 @@ const formatVND = (num: number) => {
     currency: 'VND',
   }).format(num)
 }
+const TableSkeleton = ({ columns = 8, rows = 5 }) => (
+  <div className="overflow-hidden bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm w-full">
+    <div className="overflow-x-auto">
+      <table className="w-full text-left border-collapse">
+        <thead>
+          <tr className="border-b border-outline-variant bg-surface-container-low/50">
+            {Array.from({ length: columns }).map((_, i) => (
+              <th key={i} className="p-4">
+                <div className="h-4 bg-outline-variant/30 rounded animate-pulse w-3/4"></div>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-outline-variant/60">
+          {Array.from({ length: rows }).map((_, i) => (
+            <tr key={i}>
+              {Array.from({ length: columns }).map((_, j) => (
+                <td key={j} className="p-4">
+                  <div className="h-10 bg-outline-variant/20 rounded animate-pulse w-full"></div>
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+)
 
 export const ManageInventoryPage = () => {
   const { user, loading: authLoading } = useAuth()
@@ -274,7 +302,7 @@ export const ManageInventoryPage = () => {
       } else if (!data.isRunning) {
         notify.success('Bot cào dữ liệu đã hoàn thành nhiệm vụ!')
       }
-      
+
       if (activeTab === 'crawled') {
         fetchCrawledProducts(1, crawledKeyword)
       }
@@ -285,7 +313,7 @@ export const ManageInventoryPage = () => {
       setIsCrawling(data.isRunning)
       setCrawledCount(data.crawledCount)
       setLastCrawledProduct(data.lastCrawledProduct)
-      
+
       if (activeTab === 'crawled') {
         fetchCrawledProducts(1, crawledKeyword)
       }
@@ -1770,10 +1798,7 @@ export const ManageInventoryPage = () => {
           )}
 
           {stockLoading ? (
-            <div className="flex flex-col items-center justify-center py-20 bg-surface-container-lowest rounded-2xl border border-outline-variant">
-              <Loader2 size={36} className="text-primary animate-spin mb-3" />
-              <p className="text-sm text-on-surface-variant font-medium">Đang kiểm kho chi nhánh...</p>
-            </div>
+            <TableSkeleton columns={9} rows={5} />
           ) : filteredStock.length === 0 ? (
             <div className="text-center py-16 bg-surface-container-lowest rounded-2xl border border-dashed border-outline-variant">
               <Package size={48} className="mx-auto mb-4 text-on-surface-variant opacity-60" />
@@ -1990,10 +2015,7 @@ export const ManageInventoryPage = () => {
           )}
 
           {receiptsLoading ? (
-            <div className="flex flex-col items-center justify-center py-20 bg-surface-container-lowest rounded-2xl border border-outline-variant">
-              <Loader2 size={36} className="text-primary animate-spin mb-3" />
-              <p className="text-sm text-on-surface-variant font-medium">Đang tải lịch sử nhập hàng...</p>
-            </div>
+            <TableSkeleton columns={9} rows={5} />
           ) : receiptsStats.filtered.length === 0 ? (
             <div className="text-center py-16 bg-surface-container-lowest rounded-2xl border border-dashed border-outline-variant">
               <History size={48} className="mx-auto mb-4 text-on-surface-variant opacity-60" />
@@ -2188,10 +2210,7 @@ export const ManageInventoryPage = () => {
           )}
 
           {catalogLoading ? (
-            <div className="flex flex-col items-center justify-center py-20 bg-surface-container-lowest rounded-2xl border border-outline-variant">
-              <Loader2 size={36} className="text-primary animate-spin mb-3" />
-              <p className="text-sm text-on-surface-variant font-medium">Đang tải danh mục gốc...</p>
-            </div>
+            <TableSkeleton columns={8} rows={5} />
           ) : products.length === 0 ? (
             <div className="text-center py-16 bg-surface-container-lowest rounded-2xl border border-dashed border-outline-variant">
               <Package size={48} className="mx-auto mb-4 text-on-surface-variant opacity-60" />
@@ -2481,10 +2500,7 @@ export const ManageInventoryPage = () => {
             {/* Table Content */}
             <div className="overflow-x-auto">
               {crawledLoading ? (
-                <div className="flex flex-col items-center justify-center py-20">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" />
-                  <p className="text-sm text-on-surface-variant font-medium">Đang tải dữ liệu...</p>
-                </div>
+                <TableSkeleton columns={8} rows={5} />
               ) : crawledProducts.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-on-surface-variant border-dashed border-outline-variant border-t">
                   <Bot className="h-12 w-12 text-on-surface-variant opacity-40 mb-3" />
