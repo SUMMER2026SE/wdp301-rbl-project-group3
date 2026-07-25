@@ -300,8 +300,9 @@ export const ManageOrdersPage = () => {
             setSelectedOrder(updatedOrder.data)
           }
         }
+        notify.success('Duyệt đơn hàng thành công.')
       } else {
-        notify.success(response.message || 'Duyệt đơn hàng không thành công.')
+        notify.error(response.message || 'Duyệt đơn hàng không thành công.')
       }
     } catch (err: any) {
       notify.error(err.message || 'Lỗi kết nối khi duyệt đơn.')
@@ -343,8 +344,9 @@ export const ManageOrdersPage = () => {
             setSelectedOrder(updatedOrder.data)
           }
         }
+        notify.success('Cập nhật trạng thái thành công.')
       } else {
-        notify.success(response.message || 'Cập nhật trạng thái không thành công.')
+        notify.error(response.message || 'Cập nhật trạng thái không thành công.')
       }
     } catch (err: any) {
       notify.error(err.message || 'Lỗi kết nối khi cập nhật trạng thái.')

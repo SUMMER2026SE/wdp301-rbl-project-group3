@@ -1034,6 +1034,7 @@ export const ManageInventoryPage = () => {
         setViewingReceipt(res.data)
         // Refresh receipts list
         fetchReceipts()
+        notify.success('Gửi báo cáo kiểm hàng thành công.')
       } else {
         setVerifyError(res.message || 'Không thể xác nhận kiểm hàng.')
       }
