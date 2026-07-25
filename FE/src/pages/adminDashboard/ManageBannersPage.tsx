@@ -36,6 +36,7 @@ export const ManageBannersPage = () => {
   // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null)
+  const [bannerToDelete, setBannerToDelete] = useState<Banner | null>(null)
 
   const [confirmModalData, setConfirmModalData] = useState<{
     isOpen: boolean;
@@ -142,12 +143,32 @@ export const ManageBannersPage = () => {
     }
   }
 
-  const handleDelete = async (banner: Banner) => {
+  const handleDelete = async () => {
+    if (isStaff || !bannerToDelete) return
+
+    try {
+      setIsLoading(true)
+      const id = bannerToDelete._id || bannerToDelete.id
+      const res = await bannerService.deleteBanner(id)
+      if (res.success) {
+        showSuccess('Đã xóa banner thành công!')
+        fetchBanners()
+      }
+    } catch (err: any) {
+      setErrorMsg(err.response?.data?.message || err.message || 'Không thể xóa banner')
+    } finally {
+      setIsLoading(false)
+      setBannerToDelete(null)
+    }
+  }
+
+  // Generic delete handler using ConfirmModal (kept from demo branch for reference/completeness)
+  const handleDeleteWithConfirmModal = async (banner: Banner) => {
     if (isStaff) return
     setConfirmModalData({
       isOpen: true,
       title: 'Xóa Banner',
-      message: 'Bạn có chắc chắn muốn xóa banner này?',
+      message: `Bạn có chắc chắn muốn xóa banner này?\n\n${banner.title} - ${banner.subtitle}`,
       onConfirm: async () => {
         closeConfirmModal()
         try {
@@ -353,7 +374,7 @@ export const ManageBannersPage = () => {
                         <Edit2 size={16} />
                       </button>
                       <button
-                        onClick={() => handleDelete(banner)}
+                        onClick={() => handleDeleteWithConfirmModal(banner)}
                         className="p-2 hover:bg-red-50 rounded-xl text-red-500 transition-all border border-red-100"
                         title="Xóa"
                       >
@@ -522,7 +543,57 @@ export const ManageBannersPage = () => {
         </div>
       )}
 
-      {/* Confirm Modal */}
+      {/* Delete Confirmation Modal */}
+      {bannerToDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-surface-container-lowest max-w-sm w-full rounded-2xl border border-outline-variant shadow-2xl overflow-hidden flex flex-col text-on-surface">
+            <div className="p-5 flex items-center justify-between border-b border-outline-variant bg-error-container text-on-error-container">
+              <h3 className="text-lg font-black flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5" />
+                Xác nhận xóa
+              </h3>
+              <button
+                type="button"
+                onClick={() => setBannerToDelete(null)}
+                className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-black/10 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 text-sm">
+              <p className="mb-2">Bạn có chắc chắn muốn xóa banner này không?</p>
+              <div className="rounded-xl border border-outline-variant bg-surface-container-low p-3 mb-4">
+                <p className="font-bold text-on-surface">{bannerToDelete.title}</p>
+                <p className="text-on-surface-variant text-xs mt-1">{bannerToDelete.subtitle}</p>
+              </div>
+              <p className="text-xs text-on-surface-variant">
+                Hành động này không thể hoàn tác. Banner sẽ bị xóa vĩnh viễn khỏi hệ thống.
+              </p>
+            </div>
+            <div className="p-4 bg-surface-container-low border-t border-outline-variant flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setBannerToDelete(null)}
+                disabled={isLoading}
+                className="px-4 py-2 rounded-xl text-sm font-bold bg-surface hover:bg-surface-container-highest transition-colors disabled:opacity-50 cursor-pointer text-on-surface border border-outline-variant"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isLoading}
+                className="px-4 py-2 rounded-xl text-sm font-bold text-white transition-colors disabled:opacity-50 cursor-pointer flex items-center gap-2 shadow-sm bg-error hover:bg-error/90"
+              >
+                {isLoading && <RefreshCw size={16} className="animate-spin" />}
+                Xác nhận xóa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Modal (Reusable component from demo branch) */}
       <ConfirmModal
         isOpen={confirmModalData.isOpen}
         title={confirmModalData.title}
