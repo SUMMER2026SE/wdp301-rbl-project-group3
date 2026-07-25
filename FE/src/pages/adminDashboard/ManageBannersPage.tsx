@@ -357,7 +357,7 @@ export const ManageBannersPage = () => {
                         <Edit2 size={16} />
                       </button>
                       <button
-                        onClick={() => setBannerToDelete(banner)}
+                        onClick={() => handleDeleteWithConfirmModal(banner)}
                         className="p-2 hover:bg-red-50 rounded-xl text-red-500 transition-all border border-red-100"
                         title="Xóa"
                       >
