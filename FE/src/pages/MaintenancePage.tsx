@@ -4,19 +4,37 @@ import { Link } from 'react-router-dom'
 /**
  * Shows the maintenance state when the backend temporarily disables normal access.
  * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ * Trang thông báo bảo trì hệ thống.
+ * Được hiển thị khi toàn bộ hệ thống hoặc các chức năng phía người dùng đang được bảo trì.
+ * Ngăn chặn người dùng truy cập vào các trang chính, nhưng vẫn cung cấp đường dẫn để quản trị viên (Admin/Manager) có thể đăng nhập.
+ * Tính năng này được kiểm soát thông qua Settings từ phía Admin.
+ *
+ * @author MinhLD
  */
 export const MaintenancePage = () => {
+  /** 
+   * Trạng thái (state) cục bộ lưu trữ tên của cửa hàng.
+   * Dữ liệu mặc định (fallback) là 'PMAN-Mart' đề phòng trường hợp API cấu hình cũng bị sập/bảo trì.
+   */
   const [storeName, setStoreName] = useState('PMAN-Mart')
 
+  /**
+   * Hook vòng đời (Lifecycle hook) chạy một lần duy nhất khi component được gắn vào DOM (mount).
+   * Nhiệm vụ: Gọi API lấy thông tin cài đặt chung public (chẳng hạn như tên hiển thị của cửa hàng)
+   * để cập nhật lên giao diện bảo trì, giúp trang bảo trì trông chuyên nghiệp và đúng thương hiệu.
+   */
   useEffect(() => {
     fetch('/api/settings/public')
       .then((res) => res.json())
       .then((data) => {
+        // Cập nhật tên cửa hàng nếu API trả về thành công và có dữ liệu
         if (data?.success && data?.data?.settings?.store_name) {
           setStoreName(data.data.settings.store_name)
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        // Bỏ qua lỗi nếu không fetch được, giữ nguyên tên mặc định
+      })
   }, [])
 
   return (

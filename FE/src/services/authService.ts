@@ -13,19 +13,36 @@ import type {
  * Request construction and response normalization stay here so UI code remains presentation-focused.
  */
 export const authService = {
-  // Register new user
+  /**
+   * Đăng ký tài khoản người dùng mới vào hệ thống.
+   * API này sẽ gửi thông tin cơ bản (email, mật khẩu, tên) để khởi tạo một bản ghi User mới.
+   * @param data Payload chứa thông tin đăng ký (RegisterData)
+   * @returns ApiResponse chứa message thông báo thành công hoặc lỗi từ server.
+   */
   register: async (data: RegisterData): Promise<ApiResponse<{ message: string }>> => {
     const response = await apiClient.post('/api/auth/register', data)
     return response.data
   },
 
-  // Verify email with email and otp
+  /**
+   * Xác thực địa chỉ email ngay sau khi đăng ký bằng mã OTP 6 số.
+   * Đây là bước bắt buộc để kích hoạt tài khoản và cho phép đăng nhập (tránh spam account).
+   * @param email Địa chỉ email của người dùng
+   * @param otp Mã xác thực gửi về email
+   * @returns ApiResponse chứa trạng thái kích hoạt
+   */
   verifyEmail: async (email: string, otp: string): Promise<ApiResponse<{ message: string }>> => {
     const response = await apiClient.post('/api/auth/verify-email', { email, otp })
     return response.data
   },
 
-  // Login with email and password
+  /**
+   * Xử lý luồng đăng nhập truyền thống (Email/Password).
+   * Nếu thành công, hàm sẽ tự động trích xuất accessToken từ payload và lưu vào `localStorage`
+   * để sử dụng cho các request cần xác thực (authenticated requests) tiếp theo.
+   * @param data Đối tượng chứa email và mật khẩu của người dùng.
+   * @returns ApiResponse chứa thông tin AuthResponse (token và user profile).
+   */
   login: async (data: LoginData): Promise<ApiResponse<AuthResponse>> => {
     const response = await apiClient.post('/api/auth/login', data)
     if (response.data.success && response.data.data.accessToken) {
@@ -34,7 +51,12 @@ export const authService = {
     return response.data
   },
 
-  // Login with Google
+  /**
+   * Đăng nhập thông qua tài khoản Google (OAuth2).
+   * Client (Frontend) sẽ sử dụng Google SDK lấy `idToken` và đẩy xuống Backend để xác thực.
+   * Sau khi verify token thành công, backend cấp accessToken của hệ thống.
+   * @param idToken Chuỗi token JWT được trả về từ máy chủ Google.
+   */
   googleLogin: async (idToken: string): Promise<ApiResponse<AuthResponse>> => {
     const response = await apiClient.post('/api/auth/google-login', { idToken })
     if (response.data.success && response.data.data.accessToken) {
@@ -43,7 +65,11 @@ export const authService = {
     return response.data
   },
 
-  // Refresh access token
+  /**
+   * Cấp lại (Refresh) một accessToken mới khi token cũ đã hết hạn.
+   * Thường phụ thuộc vào refreshToken được lưu trữ an toàn bằng HttpOnly Cookie ở phía Backend.
+   * Hàm này sẽ lưu token mới trực tiếp vào localStorage.
+   */
   refreshToken: async (): Promise<ApiResponse<{ accessToken: string }>> => {
     const response = await apiClient.post('/api/auth/refresh-token')
     if (response.data.success && response.data.data.accessToken) {
@@ -52,7 +78,10 @@ export const authService = {
     return response.data
   },
 
-  // Logout current session
+  /**
+   * Đăng xuất người dùng ra khỏi thiết bị hiện tại (Xóa phiên làm việc hiện tại).
+   * Gọi API báo hiệu backend vô hiệu hóa token và xóa accessToken ở localStorage (Frontend).
+   */
   logout: async (): Promise<ApiResponse<null>> => {
     const response = await apiClient.post('/api/auth/logout')
     localStorage.removeItem('accessToken')
@@ -66,7 +95,11 @@ export const authService = {
     return response.data
   },
 
-  // Request password reset
+  /**
+   * Khởi tạo luồng Khôi phục Mật khẩu. 
+   * Gửi email yêu cầu đến backend, backend sẽ sinh ra một mã OTP và gửi về email tương ứng.
+   * @param email Email của tài khoản bị quên mật khẩu
+   */
   forgotPassword: async (email: string): Promise<ApiResponse<null>> => {
     const response = await apiClient.post('/api/auth/forgot-password', { email })
     return response.data
@@ -94,7 +127,11 @@ export const authService = {
     return response.data
   },
 
-  // Get current user info
+  /**
+   * Lấy thông tin cá nhân của người dùng hiện đang đăng nhập (Current Session).
+   * Yêu cầu gửi kèm Authorization Header (accessToken).
+   * Được dùng rất nhiều trong Context/Redux để lấy Role và Avatar hiển thị lên Navbar/Sidebar.
+   */
   getCurrentUser: async (): Promise<ApiResponse<{ user: User }>> => {
     const response = await apiClient.get('/api/users/me')
     return response.data

@@ -21,27 +21,51 @@ import { notify } from '../../utils/toast';
 /**
  * Administers customer accounts and their access-related status.
  * Data loading, mutation feedback, and screen-specific state are coordinated at this page boundary.
+ * Component Quản lý Khách hàng & Nhân viên (Dành cho Admin/Manager).
+ * Hiển thị danh sách toàn bộ tài khoản trong hệ thống.
+ * Cho phép tìm kiếm, lọc theo vai trò (role) và trạng thái (status).
+ * Hỗ trợ tính năng khóa (banned) và mở khóa tài khoản người dùng vi phạm.
+ *
+ * @author MinhLD
  */
 export const ManageUsersPage = () => {
   const { user: currentUser } = useAuth()
   
-  // State variables
+  /** Mảng lưu trữ danh sách các Users lấy được từ backend để render ra bảng (Data Grid) */
   const [usersList, setUsersList] = useState<User[]>([])
+  
+  /** Cờ trạng thái hiển thị loading spinner cho toàn bộ màn hình Quản lý thành viên */
   const [loading, setLoading] = useState(false)
+  
+  /** Biến tạm lưu trữ đối tượng User đang được người quản trị chọn để tiến hành Khóa hoặc Mở khóa */
   const [confirmLockUser, setConfirmLockUser] = useState<User | null>(null)
+  
+  /** Trạng thái lưu trữ lỗi HTTP Error từ backend trả về nếu API sập */
   const [error, setError] = useState<string | null>(null)
   
-  // Search & Filter state
+  /** State lưu trữ giá trị text tìm kiếm người dùng (theo email, SĐT, tên) */
   const [searchQuery, setSearchQuery] = useState('')
+  
+  /** State lưu trữ tùy chọn phân quyền (Role Filter) như Admin, Staff, Customer đang được chọn */
   const [selectedRole, setSelectedRole] = useState<string>('')
+  
+  /** State lưu trữ tùy chọn lọc theo trạng thái tài khoản (Active, Inactive, Banned) */
   const [selectedStatus, setSelectedStatus] = useState<string>('')
   
-  // Pagination state
+  /** State quản lý số thứ tự trang hiện tại (Mặc định khởi tạo là trang số 1) */
   const [page, setPage] = useState(1)
+  
+  /** State quản lý tổng số lượng trang, phụ thuộc vào công thức: Tổng record / Limit */
   const [totalPages, setTotalPages] = useState(1)
+  
+  /** Biến đếm tổng lượng tài khoản có trong DB khớp với bộ lọc truy vấn hiện tại */
   const [totalCount, setTotalCount] = useState(0)
 
   // Fetch users from backend
+  /**
+   * Gọi API lấy danh sách người dùng với các tham số phân trang, 
+   * từ khóa tìm kiếm, vai trò và trạng thái tương ứng.
+   */
   const fetchUsers = async () => {
     try {
       setLoading(true)
@@ -108,6 +132,11 @@ export const ManageUsersPage = () => {
     setConfirmLockUser(user)
   }
 
+  /**
+   * Xử lý xác nhận khóa/mở khóa tài khoản.
+   * Gọi API tương ứng dựa trên trạng thái hiện tại của tài khoản.
+   * Cập nhật lại danh sách ngay sau khi thao tác thành công.
+   */
   const confirmLockAction = async () => {
     if (!confirmLockUser) return
 

@@ -252,10 +252,16 @@ export const ManageStatisticsPage = () => {
     const chartW = w - paddingLeft - paddingRight
     const chartH = h - paddingTop - paddingBottom
 
-    const points = data.map((item, index) => {
+    const points: Array<{
+      x: number
+      y: number
+      label: string
+      value: string
+      orders: number
+    }> = data.map((item: any, index: number) => {
       const rev = getRevenue(item)
-      const label = item._id || item.date || ''
-      const orders = item.orderCount ?? item.count ?? 0
+      const label = String(item._id || item.date || '')
+      const orders = Number(item.orderCount ?? item.count ?? 0)
       const x = paddingLeft + (index / (data.length - 1 || 1)) * chartW
       const y = h - paddingBottom - (rev / maxVal) * chartH
       return { x, y, label, value: formatVND(rev), orders }
@@ -301,10 +307,22 @@ export const ManageStatisticsPage = () => {
     const chartH = h - paddingTop - paddingBottom
     const barWidth = Math.min(30, (chartW / data.length) * 0.5)
 
-    const bars = data.map((item, index) => {
+    const bars: Array<{
+      x: number
+      y: number
+      width: number
+      height: number
+      label: string
+      fullName: string
+      value: string
+      orders: number
+    }> = data.map((item: any, index: number) => {
       const rev = getRevenue(item)
-      const label = item.branchName || 'Chi nhánh'
-      const orders = item.orderCount ?? item.count ?? 0
+      const code = String(item.branchCode || item.code || '')
+      const fullName = String(item.branchName || 'Chi nhánh')
+      const displayLabel = code ? code : fullName
+      const tooltipTitle = code ? `${fullName} (${code})` : fullName
+      const orders = Number(item.orderCount ?? item.count ?? 0)
       const centerX = paddingLeft + (index / (data.length || 1)) * chartW + (chartW / (data.length * 2))
       const x = centerX - barWidth / 2
       const barH = (rev / maxVal) * chartH
@@ -314,7 +332,8 @@ export const ManageStatisticsPage = () => {
         y,
         width: barWidth,
         height: barH,
-        label,
+        label: displayLabel,
+        fullName: tooltipTitle,
         value: formatVND(rev),
         orders
       }
@@ -661,7 +680,7 @@ export const ManageStatisticsPage = () => {
                             setHoveredBar({
                               x: rect.left + window.scrollX - 70,
                               y: rect.top + window.scrollY - 75,
-                              label: bar.label,
+                              label: bar.fullName || bar.label,
                               value: bar.value
                             });
                           }}
@@ -672,15 +691,15 @@ export const ManageStatisticsPage = () => {
                   </svg>
 
                   {/* SVG Label Axis X for Branches */}
-                  <div className="flex justify-between pl-[60px] pr-[20px] text-[8px] font-black text-on-surface-variant truncate">
+                  <div className="flex justify-around pl-[60px] pr-[20px] pt-1.5 text-[11px] font-bold text-on-surface-variant">
                     {barChartSvgPoints.bars.map((bar, idx) => (
                       <span
                         key={idx}
-                        className="truncate text-center block"
+                        className="truncate text-center block px-1"
                         style={{ width: `${100 / barChartSvgPoints.bars.length}%` }}
                         title={bar.label}
                       >
-                        {bar.label.split(' ')[0]} {/* Shorten label */}
+                        {bar.label}
                       </span>
                     ))}
                   </div>

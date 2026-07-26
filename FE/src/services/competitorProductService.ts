@@ -23,6 +23,12 @@ export const competitorProductService = {
   importToCatalog: async (ids: string[]): Promise<ApiResponse<{ importedCount: number }>> => {
     const response = await apiClient.post('/api/competitor-products/import', { ids })
     return response.data
+  },
+
+  // Delete selected competitor products
+  deleteCompetitorProducts: async (ids: string[]): Promise<ApiResponse<{ deletedCount: number }>> => {
+    const response = await apiClient.post('/api/competitor-products/delete', { ids })
+    return response.data
   }
 }
 /**

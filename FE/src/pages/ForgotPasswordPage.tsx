@@ -4,6 +4,10 @@ import { authService } from '@services/authService'
 import { Mail, Lock, AlertCircle, Loader, CheckCircle, ArrowLeft, Eye, EyeOff } from 'lucide-react'
 import { notify } from '@utils/toast'
 
+/**
+ * Định nghĩa cấu trúc lỗi trả về từ API backend.
+ * Giúp TypeScript hiểu và gợi ý code chính xác khi bắt lỗi (catch error).
+ */
 type ApiError = {
   response?: {
     data?: {
@@ -13,6 +17,15 @@ type ApiError = {
   message?: string
 }
 
+/**
+ * Hàm tiện ích để trích xuất thông báo lỗi an toàn từ đối tượng error.
+ * Nếu API trả về message cụ thể, sử dụng message đó.
+ * Ngược lại, sử dụng câu thông báo mặc định (fallback).
+ * 
+ * @param {unknown} error - Đối tượng lỗi (có thể từ axios hoặc logic code)
+ * @param {string} fallback - Thông báo lỗi mặc định
+ * @returns {string} Thông báo lỗi cuối cùng để hiển thị cho người dùng
+ */
 const getErrorMessage = (error: unknown, fallback: string) => {
   const apiError = error as ApiError
   return apiError.response?.data?.message || apiError.message || fallback
@@ -21,27 +34,60 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 /**
  * Guides a user through requesting and completing password recovery.
  * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ * Component hiển thị trang Quên mật khẩu.
+ * Cho phép người dùng nhập email để nhận mã OTP và đặt lại mật khẩu mới.
+ * Quy trình gồm 2 bước:
+ * 1. Nhập email -> Gửi yêu cầu OTP
+ * 2. Nhập mã OTP + Mật khẩu mới -> Cập nhật mật khẩu
+ *
+ * @author MinhLD
  */
 export const ForgotPasswordPage = () => {
   const navigate = useNavigate()
   
+  /** Trạng thái điều hướng luồng: 'email' (Nhập email) hoặc 'otp' (Nhập mã xác thực & Đổi mật khẩu) */
   const [step, setStep] = useState<'email' | 'otp'>('email')
+  
+  /** Trạng thái lưu trữ địa chỉ email do người dùng nhập vào để xin cấp lại mật khẩu */
   const [email, setEmail] = useState('')
+  
+  /** Trạng thái lưu trữ mã OTP 6 số nhận được từ email */
   const [otp, setOtp] = useState('')
+  
+  /** Trạng thái lưu trữ mật khẩu mới người dùng muốn đặt */
   const [newPassword, setNewPassword] = useState('')
+  
+  /** Trạng thái lưu trữ mật khẩu nhập lại để đối chiếu (confirm) với mật khẩu mới */
   const [confirmPassword, setConfirmPassword] = useState('')
+  
+  /** Cờ (boolean) quản lý việc hiển thị (nhìn thấy) hoặc ẩn (dấu sao) mật khẩu mới */
   const [showNewPassword, setShowNewPassword] = useState(false)
+  
+  /** Cờ (boolean) quản lý việc hiển thị (nhìn thấy) hoặc ẩn (dấu sao) xác nhận mật khẩu mới */
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   
+  /** Trạng thái loading (true/false) khi đang gọi API, dùng để khóa nút bấm và hiển thị spinner */
   const [loading, setLoading] = useState(false)
+  
+  /** Trạng thái lưu trữ thông báo lỗi để hiển thị lên giao diện (UI) */
   const [error, setError] = useState('')
+  
+  /** Trạng thái lưu trữ thông báo thành công (Success Message) sau khi API phản hồi tốt */
   const [success, setSuccess] = useState('')
 
+  /**
+   * Xử lý gửi yêu cầu cấp mã OTP đến email của người dùng.
+   * Kiểm tra tính hợp lệ của email và gọi API tương ứng.
+   *
+   * @param {FormEvent} e - Sự kiện submit form
+   */
   const handleRequestOtp = async (e: FormEvent) => {
     e.preventDefault()
+    // Đặt lại trạng thái thông báo trước khi gửi yêu cầu mới
     setError('')
     setSuccess('')
     
+    // Validate dữ liệu đầu vào: Bắt buộc phải có email
     if (!email) {
       setError('Vui lòng nhập địa chỉ email của bạn')
       return
@@ -59,11 +105,20 @@ export const ForgotPasswordPage = () => {
     }
   }
 
+  /**
+   * Xử lý xác nhận mã OTP và đặt lại mật khẩu mới.
+   * Validate độ dài mật khẩu và xác nhận mật khẩu khớp nhau trước khi gọi API.
+   * Nếu thành công, chuyển hướng người dùng về trang Đăng nhập sau 3 giây.
+   *
+   * @param {FormEvent} e - Sự kiện submit form
+   */
   const handleResetPassword = async (e: FormEvent) => {
     e.preventDefault()
+    // Reset thông báo lỗi/thành công
     setError('')
     setSuccess('')
 
+    // Kiểm tra xem mật khẩu mới và mật khẩu xác nhận có khớp không
     if (newPassword !== confirmPassword) {
       setError('Mật khẩu xác nhận không khớp')
       return

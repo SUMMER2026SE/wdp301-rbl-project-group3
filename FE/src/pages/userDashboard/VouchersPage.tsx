@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useSocket } from '@/contexts/SocketContext'
 import type { Promotion } from '@/types'
 import { notify } from '../../utils/toast';
+import { ConfirmModal } from '../../components/ConfirmModal';
 
 const formatVND = (num: number) => {
   return new Intl.NumberFormat('vi-VN', {
@@ -99,6 +100,15 @@ export const VouchersPage = () => {
   const [error, setError] = useState<string | null>(null)
   const { user, refreshUser } = useAuth()
 
+  // Confirm Modal State
+  const [confirmModalData, setConfirmModalData] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} })
+  const closeConfirmModal = () => setConfirmModalData(prev => ({ ...prev, isOpen: false }))
+
   const levelInfo = user ? getLevelInfo(user.memberLevel, user.lifetimePoints || 0) : null
 
   const { socket } = useSocket()
@@ -150,22 +160,7 @@ export const VouchersPage = () => {
 
   const [claimLoadingId, setClaimLoadingId] = useState<string | null>(null)
 
-  const handleClaimVoucher = async (promoId: string, code: string, pointCost: number) => {
-    if (pointCost > 0) {
-      if (!user) {
-        notify.error('Vui lòng đăng nhập để thực hiện đổi điểm tích lũy lấy Voucher.')
-        return
-      }
-      if ((user.points || 0) < pointCost) {
-        notify.error(`Bạn không đủ điểm tích lũy để quy đổi! (Cần ${pointCost} điểm, hiện có ${user.points || 0} điểm)`)
-        return
-      }
-      const confirmClaim = window.confirm(
-        `Bạn có chắc chắn muốn sử dụng ${pointCost} điểm tích lũy để đổi lấy Voucher "${code}" không?`
-      )
-      if (!confirmClaim) return
-    }
-
+  const executeClaim = async (promoId: string, code: string, pointCost: number) => {
     try {
       setClaimLoadingId(promoId)
       const res = await promotionService.claimVoucher(code)
@@ -195,6 +190,31 @@ export const VouchersPage = () => {
     } finally {
       setClaimLoadingId(null)
     }
+  }
+
+  const handleClaim = async (promoId: string, code: string, pointCost: number = 0) => {
+    if (pointCost > 0) {
+      if (!user) {
+        notify.error('Vui lòng đăng nhập để thực hiện đổi điểm tích lũy lấy Voucher.')
+        return
+      }
+      if ((user.points || 0) < pointCost) {
+        notify.error(`Bạn không đủ điểm tích lũy để quy đổi! (Cần ${pointCost} điểm, hiện có ${user.points || 0} điểm)`)
+        return
+      }
+      setConfirmModalData({
+        isOpen: true,
+        title: 'Xác nhận đổi điểm',
+        message: `Bạn có chắc chắn muốn sử dụng ${pointCost} điểm tích lũy để đổi lấy Voucher "${code}" không?`,
+        onConfirm: () => {
+          closeConfirmModal()
+          executeClaim(promoId, code, pointCost)
+        }
+      })
+      return
+    }
+
+    executeClaim(promoId, code, pointCost)
   }
 
   // Curated, beautiful gradients for voucher tones
@@ -477,7 +497,7 @@ export const VouchersPage = () => {
                       <button
                         type="button"
                         disabled={claimLoadingId === promo.id}
-                        onClick={() => handleClaimVoucher(promo.id, voucherCode, pointCost)}
+                        onClick={() => handleClaim(promo.id, voucherCode, pointCost)}
                         className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-black transition-all shadow-sm cursor-pointer disabled:opacity-50 ${
                           isPointsVoucher 
                             ? 'bg-amber-600 hover:bg-amber-700 text-white' 
@@ -503,6 +523,16 @@ export const VouchersPage = () => {
           })}
         </section>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmModalData.isOpen}
+        title={confirmModalData.title}
+        message={confirmModalData.message}
+        onConfirm={confirmModalData.onConfirm}
+        onCancel={closeConfirmModal}
+        type="info"
+      />
     </div>
   )
 }

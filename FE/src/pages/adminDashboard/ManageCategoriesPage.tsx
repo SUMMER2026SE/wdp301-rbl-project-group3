@@ -21,46 +21,84 @@ import { notify } from '../../utils/toast';
 /**
  * Maintains the product category catalog used throughout the storefront.
  * Data loading, mutation feedback, and screen-specific state are coordinated at this page boundary.
+ * Component Quản lý Danh mục Sản phẩm (Dành cho Admin).
+ * Cho phép xem danh sách, tìm kiếm, lọc theo trạng thái.
+ * Hỗ trợ các thao tác CRUD (Thêm, Sửa, Xóa) danh mục.
+ * Khi xóa, kiểm tra xem danh mục có đang chứa sản phẩm hay không.
+ *
+ * @author MinhLD
  */
 export const ManageCategoriesPage = () => {
   const { user: currentUser } = useAuth()
   const isAdmin = currentUser?.role === 'admin'
 
-  // State variables
+  /** Mảng lưu trữ danh sách các danh mục (Categories) hiện tại lấy được từ backend để render ra bảng */
   const [categoriesList, setCategoriesList] = useState<Category[]>([])
+  
+  /** Cờ trạng thái tải dữ liệu, hiển thị Spinner quay khi đang chờ API phản hồi */
   const [loading, setLoading] = useState(false)
+  
+  /** Trạng thái báo lỗi hệ thống/mạng (nếu có) hiển thị cảnh báo đỏ trên cùng */
   const [error, setError] = useState<string | null>(null)
   
-  // Search & Filter state
+  /** Trạng thái lưu trữ từ khóa tìm kiếm mà Admin gõ vào ô Search Box */
   const [searchQuery, setSearchQuery] = useState('')
+  
+  /** Trạng thái lưu trữ bộ lọc trạng thái (Active / Inactive / Tất cả) được chọn từ Dropdown */
   const [selectedStatus, setSelectedStatus] = useState<string>('')
 
-  // Pagination states
+  /** Biến state lưu số thứ tự trang hiện tại (Pagination) */
   const [page, setPage] = useState(1)
+  
+  /** Biến state lưu tổng số trang (Total pages) do server tính toán và trả về */
   const [totalPages, setTotalPages] = useState(1)
+  
+  /** Biến state lưu tổng số lượng bản ghi danh mục thực tế đang có trong Database */
   const [totalCount, setTotalCount] = useState(0)
+  
+  /** Hằng số giới hạn số phần tử trên mỗi trang hiển thị (Mặc định 10 dòng/bảng) */
   const limit = 10
 
-  // Reset page to 1 when filters change
+  /** Effect tự động đẩy người dùng về trang 1 (Reset Pagination) mỗi khi Admin thay đổi bộ lọc tìm kiếm */
   useEffect(() => {
     setPage(1)
   }, [searchQuery, selectedStatus])
 
-  // Modal states
+  /** Cờ bật/tắt (boolean) hộp thoại (Modal) dùng chung cho cả chức năng Thêm Mới và Chỉnh Sửa danh mục */
   const [modalOpen, setModalOpen] = useState(false)
+  
+  /** Lưu trữ đối tượng danh mục (Category Object) đang được chọn để chỉnh sửa. Nếu null nghĩa là đang Thêm mới. */
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+  
+  /** Lưu đối tượng danh mục đang được chuẩn bị Xóa để hiển thị vào Modal Xác nhận Xóa */
   const [confirmDeleteCategory, setConfirmDeleteCategory] = useState<Category | null>(null)
   
-  // Form states
+  /** State quản lý giá trị Tên danh mục trong Form */
   const [name, setName] = useState('')
+  
+  /** State quản lý giá trị Mã danh mục (Code) - bắt buộc viết hoa liền không dấu */
   const [code, setCode] = useState('')
+  
+  /** State quản lý đoạn văn bản mô tả sơ lược về danh mục */
   const [description, setDescription] = useState('')
+  
+  /** State quản lý tỷ lệ lợi nhuận kỳ vọng (Min Margin) cho danh mục này (dạng phần trăm %) */
   const [minMargin, setMinMargin] = useState<number>(0)
+  
+  /** State quản lý tình trạng kích hoạt danh mục lúc tạo form (Mặc định là active) */
   const [status, setStatus] = useState<'active' | 'inactive'>('active')
+  
+  /** Cờ trạng thái cấm bấm đúp nút Lưu (Disable Button) trong quá trình đang đẩy dữ liệu lên máy chủ */
   const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  /** Lưu trữ các chuỗi cảnh báo báo lỗi Validate form (ví dụ: Tên quá ngắn) */
   const [formError, setFormError] = useState<string | null>(null)
 
   // Fetch categories from backend
+  /**
+   * Gọi API tải danh sách danh mục.
+   * Có hỗ trợ phân trang (pagination), tìm kiếm theo từ khóa và lọc theo trạng thái.
+   */
   const fetchCategories = async () => {
     try {
       setLoading(true)
@@ -133,6 +171,13 @@ export const ManageCategoriesPage = () => {
   }
 
   // Save form handler (create or update)
+  /**
+   * Xử lý lưu danh mục mới hoặc cập nhật danh mục hiện tại.
+   * Validate dữ liệu đầu vào cơ bản trước khi gọi API.
+   * Tự động làm mới danh sách nếu lưu thành công.
+   *
+   * @param {React.FormEvent} e - Sự kiện submit form
+   */
   const handleSaveCategory = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!isAdmin) return

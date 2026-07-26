@@ -14,6 +14,10 @@ import {
   User as UserIcon,
 } from 'lucide-react'
 
+/**
+ * Định nghĩa cấu trúc lỗi trả về từ API backend.
+ * Giúp TypeScript hiểu và gợi ý code chính xác khi bắt lỗi (catch error).
+ */
 type ApiError = {
   response?: {
     data?: {
@@ -23,6 +27,15 @@ type ApiError = {
   message?: string
 }
 
+/**
+ * Hàm tiện ích để trích xuất thông báo lỗi an toàn từ đối tượng error.
+ * Nếu API trả về message cụ thể, sử dụng message đó.
+ * Ngược lại, sử dụng câu thông báo mặc định (fallback).
+ * 
+ * @param {unknown} error - Đối tượng lỗi (có thể từ axios hoặc logic code)
+ * @param {string} fallback - Thông báo lỗi mặc định
+ * @returns {string} Thông báo lỗi cuối cùng để hiển thị cho người dùng
+ */
 const getErrorMessage = (error: unknown, fallback: string) => {
   const apiError = error as ApiError
   return apiError.response?.data?.message || apiError.message || fallback
@@ -31,24 +44,52 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 /**
  * Displays and updates the customer's personal profile information.
  * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ * Component Quản lý Thông tin cá nhân (Profile).
+ * Cho phép người dùng cập nhật họ tên, số điện thoại, ảnh đại diện (avatar).
+ * Hỗ trợ chức năng xác thực email thông qua mã OTP (nếu email chưa được xác thực).
+ *
+ * @author MinhLD
  */
 export const DashboardProfilePage = () => {
   const { user, refreshUser } = useAuth()
 
+  /** Trạng thái lưu trữ họ và tên của người dùng đang chỉnh sửa trên form */
   const [fullName, setFullName] = useState('')
+  
+  /** Trạng thái lưu trữ số điện thoại liên hệ của người dùng */
   const [phone, setPhone] = useState('')
+  
+  /** Trạng thái đối tượng File vật lý khi người dùng chọn tải ảnh đại diện lên */
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  
+  /** Trạng thái lưu trữ URL dạng Data URI (base64) để hiển thị ảnh xem trước trên giao diện */
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
 
+  /** Trạng thái loading toàn trang khi đang lưu form Profile */
   const [loading, setLoading] = useState(false)
+  
+  /** Trạng thái lưu trữ nội dung thông báo lỗi khi cập nhật thất bại */
   const [error, setError] = useState('')
+  
+  /** Trạng thái lưu trữ nội dung thông báo thành công khi cập nhật Profile hoàn tất */
   const [success, setSuccess] = useState('')
 
+  /** Cờ bật/tắt (boolean) hộp thoại (modal) xác thực mã OTP cho email */
   const [showOtpModal, setShowOtpModal] = useState(false)
+  
+  /** Trạng thái lưu trữ chuỗi 6 số OTP do người dùng nhập vào ô xác thực */
   const [otp, setOtp] = useState('')
+  
+  /** Trạng thái loading riêng biệt dành riêng cho nút bấm gửi OTP */
   const [otpLoading, setOtpLoading] = useState(false)
+  
+  /** Trạng thái lưu trữ lỗi xác thực OTP (nếu nhập sai mã) */
   const [otpError, setOtpError] = useState('')
 
+  /**
+   * Hook đồng bộ dữ liệu (Sync hook): Tự động điền dữ liệu của user vào form
+   * mỗi khi component được mount hoặc khi object `user` thay đổi.
+   */
   useEffect(() => {
     if (user) {
       setFullName(user.fullName)
@@ -69,6 +110,13 @@ export const DashboardProfilePage = () => {
     reader.readAsDataURL(file)
   }
 
+  /**
+   * Xử lý lưu thông tin cá nhân (Họ tên, Số điện thoại) và Ảnh đại diện lên server.
+   * Nếu có upload ảnh mới, gọi API updateAvatar trước.
+   * Sau khi thành công, gọi refreshUser() để cập nhật lại context toàn cục.
+   *
+   * @param {FormEvent} event - Sự kiện submit form
+   */
   const handleUpdateProfile = async (event: FormEvent) => {
     event.preventDefault()
     setError('')

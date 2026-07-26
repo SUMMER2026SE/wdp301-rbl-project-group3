@@ -20,6 +20,7 @@ import { employeeService } from '@/services/employeeService'
 import { branchService } from '@/services/branchService'
 import type { Employee, Branch } from '@/types'
 import { notify } from '../../utils/toast';
+import { ConfirmModal } from '../../components/ConfirmModal';
 
 /**
  * Supports employee administration, branch assignment, and operational status changes.
@@ -27,19 +28,19 @@ import { notify } from '../../utils/toast';
  */
 export const ManageEmployeesPage = () => {
   const { user: currentUser } = useAuth()
-  
+
   // State variables
   const [employees, setEmployees] = useState<Employee[]>([])
   const [branches, setBranches] = useState<Branch[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  
+
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedBranch, setSelectedBranch] = useState<string>('')
   const [selectedRole, setSelectedRole] = useState<string>('')
   const [selectedStatus, setSelectedStatus] = useState<string>('')
-  
+
   // Pagination state
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
@@ -58,6 +59,15 @@ export const ManageEmployeesPage = () => {
   const [status, setStatus] = useState<'active' | 'inactive'>('active')
   const [modalError, setModalError] = useState<string | null>(null)
   const [modalSubmitting, setModalSubmitting] = useState(false)
+
+  // Confirm Modal State
+  const [confirmModalData, setConfirmModalData] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => { } })
+  const closeConfirmModal = () => setConfirmModalData(prev => ({ ...prev, isOpen: false }))
 
   const isManager = currentUser?.role === 'branch_manager'
   const managerBranchId = currentUser?.branchId || ''
@@ -82,16 +92,16 @@ export const ManageEmployeesPage = () => {
     try {
       setLoading(true)
       setError(null)
-      
+
       const params: any = {
         page,
         limit: 10
       }
-      
+
       if (searchQuery.trim()) {
         params.keyword = searchQuery.trim()
       }
-      
+
       // Scoping based on role
       if (isManager) {
         params.branchId = managerBranchId
@@ -104,7 +114,7 @@ export const ManageEmployeesPage = () => {
       if (selectedStatus) {
         params.status = selectedStatus
       }
-      
+
       const response = await employeeService.listEmployees(params)
       if (response.success && response.data) {
         setEmployees(response.data.employees)
@@ -125,7 +135,7 @@ export const ManageEmployeesPage = () => {
     const delayDebounce = setTimeout(() => {
       fetchEmployees()
     }, 400)
-    
+
     return () => clearTimeout(delayDebounce)
   }, [page, searchQuery, selectedBranch, selectedRole, selectedStatus])
 
@@ -188,7 +198,7 @@ export const ManageEmployeesPage = () => {
         }
         if (branchId) payload.branchId = branchId
         if (password) payload.password = password
-        
+
         const res = await employeeService.updateEmployee(editingEmployee.id, payload)
         if (res.success) {
           setIsModalOpen(false)
@@ -234,18 +244,26 @@ export const ManageEmployeesPage = () => {
       notify.error('Bạn không thể tự vô hiệu hóa tài khoản của chính mình!')
       return
     }
-    if (!window.confirm(`Bạn có chắc chắn muốn ngưng hoạt động nhân viên "${name}"?`)) return
-    try {
-      const res = await employeeService.deactivateEmployee(id)
-      if (res.success) {
-        notify.success('Ngưng hoạt động nhân viên thành công.')
-        fetchEmployees()
-      } else {
-        notify.error(res.message || 'Thao tác thất bại.')
+
+    setConfirmModalData({
+      isOpen: true,
+      title: 'Xác nhận ngưng hoạt động',
+      message: `Bạn có chắc chắn muốn ngưng hoạt động nhân viên "${name}"?`,
+      onConfirm: async () => {
+        closeConfirmModal()
+        try {
+          const res = await employeeService.deactivateEmployee(id)
+          if (res.success) {
+            notify.success('Ngưng hoạt động nhân viên thành công.')
+            fetchEmployees()
+          } else {
+            notify.error(res.message || 'Thao tác thất bại.')
+          }
+        } catch (err: any) {
+          notify.error(err.response?.data?.message || err.message || 'Đã có lỗi xảy ra.')
+        }
       }
-    } catch (err: any) {
-      notify.error(err.response?.data?.message || err.message || 'Đã có lỗi xảy ra.')
-    }
+    })
   }
 
   // Helper labels
@@ -272,8 +290,8 @@ export const ManageEmployeesPage = () => {
             Quản lý Nhân sự Chi nhánh
           </h1>
           <p className="mt-1 text-sm text-on-surface-variant">
-            {isManager 
-              ? `Danh sách nhân viên tại chi nhánh: ${currentBranchName}.` 
+            {isManager
+              ? `Danh sách nhân viên tại chi nhánh: ${currentBranchName}.`
               : 'Quản lý tài khoản Trưởng chi nhánh và Nhân viên tại tất cả các cửa hàng PMAN-Mart.'}
           </p>
         </div>
@@ -392,7 +410,7 @@ export const ManageEmployeesPage = () => {
                 {employees.map((emp, idx) => {
                   const isSelf = currentUser?.id === emp.id
                   const isActive = emp.status === 'active'
-                  
+
                   return (
                     <tr key={emp.id} className={`hover:bg-surface-container-low/20 transition-colors ${isSelf ? 'bg-primary/5' : ''}`}>
                       <td className="p-4 text-center font-semibold text-on-surface-variant">
@@ -436,9 +454,8 @@ export const ManageEmployeesPage = () => {
                         </div>
                       </td>
                       <td className="p-4 text-center">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                          isActive ? 'bg-success/10 text-success' : 'bg-outline-variant/30 text-on-surface-variant'
-                        }`}>
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${isActive ? 'bg-success/10 text-success' : 'bg-outline-variant/30 text-on-surface-variant'
+                          }`}>
                           {isActive ? <CheckCircle size={12} /> : <XCircle size={12} />}
                           {isActive ? 'Hoạt động' : 'Tạm khóa'}
                         </span>
@@ -649,6 +666,16 @@ export const ManageEmployeesPage = () => {
           </div>
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmModalData.isOpen}
+        title={confirmModalData.title}
+        message={confirmModalData.message}
+        onConfirm={confirmModalData.onConfirm}
+        onCancel={closeConfirmModal}
+        type="danger"
+      />
     </div>
   )
 }

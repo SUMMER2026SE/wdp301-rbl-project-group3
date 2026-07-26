@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { competitorProductService } from './competitor-product.service';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { sendSuccess } from '../../utils/response.util';
+import { AppError } from '../../middlewares/errorHandler.middleware';
 
 /**
  * HTTP adapter that validates request context and delegates business work.
@@ -29,6 +30,17 @@ export class CompetitorProductController {
 
     const result = await competitorProductService.importToCatalog(ids);
     sendSuccess(res, result, `Successfully imported ${result.importedCount} products to catalog`, 200);
+  });
+
+  deleteCompetitorProducts = asyncHandler(async (req: Request, res: Response) => {
+    const { ids } = req.body;
+    
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      throw new AppError('Please provide an array of competitor product IDs', 400);
+    }
+
+    const result = await competitorProductService.deleteCompetitorProducts(ids);
+    sendSuccess(res, result, `Successfully deleted ${result.deletedCount} products`, 200);
   });
 }
 

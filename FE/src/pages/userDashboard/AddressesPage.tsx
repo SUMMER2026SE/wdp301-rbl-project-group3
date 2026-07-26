@@ -3,6 +3,7 @@ import { Edit2, MapPin, Plus, Trash2, Loader2, AlertCircle, X, Check } from 'luc
 import { addressService } from '@/services/addressService'
 import type { UserAddress } from '@/types'
 import { notify } from '../../utils/toast';
+import { ConfirmModal } from '../../components/ConfirmModal';
 
 /**
  * Lets the signed-in customer view, create, edit, and remove delivery addresses.
@@ -22,6 +23,15 @@ export const AddressesPage = () => {
   const [isDefault, setIsDefault] = useState(false)
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+
+  // Confirm Modal State
+  const [confirmModalData, setConfirmModalData] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} })
+  const closeConfirmModal = () => setConfirmModalData(prev => ({ ...prev, isOpen: false }))
 
   const loadAddresses = async () => {
     try {
@@ -66,17 +76,24 @@ export const AddressesPage = () => {
   }
 
   const handleDelete = async (addressId: string) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa địa chỉ này?')) return
-    try {
-      const res = await addressService.deleteAddress(addressId)
-      if (res.success) {
-        setAddresses((prev) => prev.filter((a) => a.addressId !== addressId))
-      } else {
-        notify.error(res.message || 'Xóa địa chỉ thất bại')
+    setConfirmModalData({
+      isOpen: true,
+      title: 'Xóa địa chỉ',
+      message: 'Bạn có chắc chắn muốn xóa địa chỉ này?',
+      onConfirm: async () => {
+        closeConfirmModal()
+        try {
+          const res = await addressService.deleteAddress(addressId)
+          if (res.success) {
+            setAddresses((prev) => prev.filter((a) => a.addressId !== addressId))
+          } else {
+            notify.error(res.message || 'Xóa địa chỉ thất bại')
+          }
+        } catch (err: any) {
+          notify.error(err.response?.data?.message || err.message || 'Đã có lỗi xảy ra')
+        }
       }
-    } catch (err: any) {
-      notify.error(err.response?.data?.message || err.message || 'Đã có lỗi xảy ra')
-    }
+    })
   }
 
   const handleSetDefault = async (addressId: string) => {
@@ -350,6 +367,16 @@ export const AddressesPage = () => {
           </div>
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmModalData.isOpen}
+        title={confirmModalData.title}
+        message={confirmModalData.message}
+        onConfirm={confirmModalData.onConfirm}
+        onCancel={closeConfirmModal}
+        type="danger"
+      />
     </div>
   )
 }

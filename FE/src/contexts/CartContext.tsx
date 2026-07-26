@@ -163,6 +163,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await cartService.addToCart(productId, quantity, branchId)
       if (response.success) {
         setCart(response.data)
+        import('../utils/toast').then(({ notify }) => {
+          notify.success('Thêm vào giỏ hàng thành công!')
+        })
       } else {
         setError(response.message || 'Failed to add item to cart')
       }

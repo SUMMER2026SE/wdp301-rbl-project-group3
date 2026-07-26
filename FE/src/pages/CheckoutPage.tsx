@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useCart } from '@/contexts/CartContext'
+import { useAuth } from '@/hooks/useAuth'
 import { orderService } from '@/services/orderService'
 import { promotionService } from '@/services/promotionService'
 import { branchService } from '@/services/branchService'
@@ -49,6 +50,7 @@ const productImageMap: Record<string, string> = {
 export const CheckoutPage = () => {
   const navigate = useNavigate()
   const { cart, clearCart, refreshCart } = useCart()
+  const { user } = useAuth()
 
   const hasUnavailableItems = useMemo(() => {
     return cart?.items?.some(item => item.product.isAvailable === false) ?? false;
@@ -493,7 +495,7 @@ export const CheckoutPage = () => {
 
           <div className="flex gap-4">
             <Link
-              to="/dashboard/orders"
+              to={user && ['admin', 'branch_manager', 'staff'].includes(user.role) ? "/admin/orders-history" : "/dashboard/orders"}
               className="flex-1 bg-surface-container-highest hover:bg-surface-container-high-variant text-on-surface px-4 py-3 rounded-xl font-bold text-sm transition-all text-center border border-outline-variant/30"
             >
               Theo dõi đơn hàng
