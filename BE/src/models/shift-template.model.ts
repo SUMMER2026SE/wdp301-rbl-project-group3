@@ -36,3 +36,7 @@ const ShiftTemplateSchema = new Schema<IShiftTemplate>(
 ShiftTemplateSchema.index({ branchId: 1, status: 1 });
 
 export const ShiftTemplate = mongoose.model<IShiftTemplate>('ShiftTemplate', ShiftTemplateSchema);
+/**
+ * Defines the Mongoose schema, TypeScript contract, and persistence rules for this domain entity.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

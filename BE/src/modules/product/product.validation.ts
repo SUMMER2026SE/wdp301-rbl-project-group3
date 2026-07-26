@@ -78,3 +78,7 @@ export const suggestPriceBulkSchema = z.object({
 });
 
 export { validate };
+/**
+ * Declares request validation rules so invalid input is rejected before business logic runs.
+ * Feature boundary: product.
+ */

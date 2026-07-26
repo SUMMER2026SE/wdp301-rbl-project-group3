@@ -43,3 +43,7 @@ export const validate = <T extends z.ZodTypeAny>(schema: T) =>
             next(error);
         }
     };
+/**
+ * Declares request validation rules so invalid input is rejected before business logic runs.
+ * Feature boundary: address.
+ */

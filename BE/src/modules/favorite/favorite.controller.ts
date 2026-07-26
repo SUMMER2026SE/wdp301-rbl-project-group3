@@ -3,6 +3,10 @@ import { favoriteService } from './favorite.service';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { sendSuccess } from '../../utils/response.util';
 
+/**
+ * HTTP adapter that validates request context and delegates business work.
+ * Feature boundary: Favorite.
+ */
 export class FavoriteController {
     getFavorites = asyncHandler(async (req: Request, res: Response) => {
         const userId = req.user!.userId;
@@ -26,3 +30,7 @@ export class FavoriteController {
 }
 
 export const favoriteController = new FavoriteController();
+/**
+ * Translates validated HTTP requests into service calls and standardized API responses.
+ * Feature boundary: favorite.
+ */

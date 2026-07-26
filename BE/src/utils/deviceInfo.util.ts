@@ -1,6 +1,10 @@
 import { Request } from 'express';
 import { DeviceInfo, DeviceType } from '../types/common.types';
 
+/**
+ * Normalizes client request headers into session-device metadata.
+ * The implementation is shared to keep this cross-cutting behavior consistent.
+ */
 export const extractDeviceInfo = (req: Request): DeviceInfo => {
   const userAgent = req.headers['user-agent'] || '';
   const ipAddress =
@@ -31,3 +35,7 @@ export const extractDeviceInfo = (req: Request): DeviceInfo => {
 
   return { deviceType, deviceName, ipAddress, userAgent };
 };
+/**
+ * Shared backend utility that keeps this concern consistent across feature modules.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

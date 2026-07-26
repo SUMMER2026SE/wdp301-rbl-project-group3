@@ -1,6 +1,10 @@
 import apiClient from '@services/api'
 import type { ApiResponse, FlashSale } from '@/types'
 
+/**
+ * Manages time-limited sales and retrieves their customer-facing offers.
+ * Request construction and response normalization stay here so UI code remains presentation-focused.
+ */
 export const flashSaleService = {
   createFlashSale: async (data: any): Promise<ApiResponse<{ flashSale: FlashSale }>> => {
     const response = await apiClient.post('/api/flash-sales', data)
@@ -35,3 +39,7 @@ export const flashSaleService = {
   },
 }
 export default flashSaleService
+/**
+ * Frontend API client module that centralizes requests and response contracts for one feature.
+ * Keeping this concern isolated makes feature code easier to reuse and maintain.
+ */

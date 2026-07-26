@@ -5,6 +5,10 @@ import { BackOfficeActor, assertBackOfficeBranchAccess } from '../../utils/backO
 import { createInvoicePdf } from '../../utils/pdf.util';
 import { invoiceRepository } from './invoice.repository';
 
+/**
+ * Application service that coordinates business rules, authorization, and side effects.
+ * Feature boundary: Invoice.
+ */
 export class InvoiceService {
   async issueInvoice(orderId: string, actor: BackOfficeActor): Promise<IInvoice> {
     const existing = await invoiceRepository.findByOrderId(orderId);

@@ -1,6 +1,10 @@
 import apiClient from '@services/api'
 import type { ApiResponse, VoucherLookupResponse, ActivePromotionsResponse, Promotion, Voucher } from '@/types'
 
+/**
+ * Connects promotion configuration and checkout eligibility data to the API.
+ * Request construction and response normalization stay here so UI code remains presentation-focused.
+ */
 export const promotionService = {
   // Get all active promotions for client display
   getActivePromotions: async (params?: {
@@ -136,3 +140,7 @@ export const promotionService = {
     return response.data
   },
 }
+/**
+ * Frontend API client module that centralizes requests and response contracts for one feature.
+ * Keeping this concern isolated makes feature code easier to reuse and maintain.
+ */

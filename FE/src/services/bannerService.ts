@@ -1,6 +1,10 @@
 import apiClient from '@services/api'
 import type { ApiResponse, Banner } from '@/types'
 
+/**
+ * Retrieves and maintains promotional banners shown in storefront and admin views.
+ * Request construction and response normalization stay here so UI code remains presentation-focused.
+ */
 export const bannerService = {
   createBanner: async (data: FormData): Promise<ApiResponse<{ banner: Banner }>> => {
     const response = await apiClient.post('/api/banners', data, {
@@ -42,3 +46,7 @@ export const bannerService = {
 }
 
 export default bannerService
+/**
+ * Frontend API client module that centralizes requests and response contracts for one feature.
+ * Keeping this concern isolated makes feature code easier to reuse and maintain.
+ */

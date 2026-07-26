@@ -89,6 +89,10 @@ const getLevelInfo = (level: string = 'new', lifetimePoints: number = 0) => {
   }
 }
 
+/**
+ * Presents available vouchers and their eligibility information to the customer.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ */
 export const VouchersPage = () => {
   const [promotions, setPromotions] = useState<Promotion[]>([])
   const [loading, setLoading] = useState(true)
@@ -502,3 +506,7 @@ export const VouchersPage = () => {
     </div>
   )
 }
+/**
+ * Customer dashboard view or route composition for account-specific data and actions.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

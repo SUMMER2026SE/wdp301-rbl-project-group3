@@ -46,3 +46,7 @@ BranchSchema.index({ code: 1 });
 BranchSchema.index({ status: 1 });
 
 export const Branch = mongoose.model<IBranch>('Branch', BranchSchema);
+/**
+ * Defines the Mongoose schema, TypeScript contract, and persistence rules for this domain entity.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

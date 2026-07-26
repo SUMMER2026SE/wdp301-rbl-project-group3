@@ -4,6 +4,10 @@ interface LayoutProps {
   children: ReactNode
 }
 
+/**
+ * Renders the shared customer-facing shell around routed page content.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ */
 export const Layout = ({ children }: LayoutProps) => {
   return (
     <div className="layout">
@@ -19,3 +23,7 @@ export const Layout = ({ children }: LayoutProps) => {
     </div>
   )
 }
+/**
+ * Composes the frontend application shell, global providers, and top-level navigation.
+ * Keeping this concern isolated makes feature code easier to reuse and maintain.
+ */

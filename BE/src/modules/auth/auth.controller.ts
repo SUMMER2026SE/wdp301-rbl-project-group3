@@ -18,6 +18,10 @@ const clearRefreshCookie = (res: Response): void => {
   res.clearCookie('refreshToken', { path: '/api/auth' });
 };
 
+/**
+ * HTTP adapter that validates request context and delegates business work.
+ * Feature boundary: Auth.
+ */
 export class AuthController {
   register = asyncHandler(async (req: Request, res: Response) => {
     const result = await authService.register(req.body);
@@ -149,3 +153,11 @@ export class AuthController {
 }
 
 export const authController = new AuthController();
+/**
+ * Translates validated HTTP requests into service calls and standardized API responses.
+ * Feature boundary: auth.
+ */
+/**
+ * Business-support component for the auth feature.
+ * It centralizes this concern so controllers and other modules reuse one consistent workflow.
+ */

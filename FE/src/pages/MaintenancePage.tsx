@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 
+/**
+ * Shows the maintenance state when the backend temporarily disables normal access.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ */
 export const MaintenancePage = () => {
   const [storeName, setStoreName] = useState('PMAN-Mart')
 
@@ -83,3 +87,7 @@ export const MaintenancePage = () => {
     </div>
   )
 }
+/**
+ * Customer-facing route component responsible for this standalone application screen.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

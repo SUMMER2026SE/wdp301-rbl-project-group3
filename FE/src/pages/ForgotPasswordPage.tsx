@@ -18,6 +18,10 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   return apiError.response?.data?.message || apiError.message || fallback
 }
 
+/**
+ * Guides a user through requesting and completing password recovery.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ */
 export const ForgotPasswordPage = () => {
   const navigate = useNavigate()
   
@@ -239,3 +243,7 @@ export const ForgotPasswordPage = () => {
     </div>
   )
 }
+/**
+ * Customer-facing route component responsible for this standalone application screen.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

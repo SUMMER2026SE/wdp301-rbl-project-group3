@@ -10,6 +10,10 @@ export interface RegistrationFilters {
   status?: string;
 }
 
+/**
+ * Persistence gateway that centralizes database access for this domain.
+ * Feature boundary: Shift.
+ */
 export class ShiftRepository {
   // --- Shift Templates ---
   async createTemplate(data: Partial<IShiftTemplate>): Promise<IShiftTemplate> {
@@ -126,3 +130,11 @@ export class ShiftRepository {
 }
 
 export const shiftRepository = new ShiftRepository();
+/**
+ * Encapsulates database queries for this module and keeps persistence details out of services.
+ * Feature boundary: shift.
+ */
+/**
+ * Business-support component for the shift feature.
+ * It centralizes this concern so controllers and other modules reuse one consistent workflow.
+ */

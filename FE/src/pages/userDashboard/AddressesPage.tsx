@@ -4,6 +4,10 @@ import { addressService } from '@/services/addressService'
 import type { UserAddress } from '@/types'
 import { notify } from '../../utils/toast';
 
+/**
+ * Lets the signed-in customer view, create, edit, and remove delivery addresses.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ */
 export const AddressesPage = () => {
   const [addresses, setAddresses] = useState<UserAddress[]>([])
   const [loading, setLoading] = useState(true)
@@ -349,3 +353,7 @@ export const AddressesPage = () => {
     </div>
   )
 }
+/**
+ * Customer dashboard view or route composition for account-specific data and actions.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

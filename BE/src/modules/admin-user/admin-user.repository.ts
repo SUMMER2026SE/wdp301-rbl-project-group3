@@ -18,6 +18,10 @@ export interface PaginatedUsers {
 
 const userListProjection = '-passwordHash -emailVerifyToken -emailVerifyTokenExpires';
 
+/**
+ * Persistence gateway that centralizes database access for this domain.
+ * Feature boundary: AdminUser.
+ */
 export class AdminUserRepository {
   async findPaginated(
     filters: AdminUserListFilters,
@@ -99,3 +103,7 @@ export class AdminUserRepository {
 }
 
 export const adminUserRepository = new AdminUserRepository();
+/**
+ * Encapsulates database queries for this module and keeps persistence details out of services.
+ * Feature boundary: admin-user.
+ */

@@ -1,5 +1,9 @@
 import { Branch, IBranch } from '../../models/branch.model';
 
+/**
+ * Persistence gateway that centralizes database access for this domain.
+ * Feature boundary: Branch.
+ */
 export class BranchRepository {
   async create(data: Partial<IBranch>): Promise<IBranch> {
     return new Branch(data).save();
@@ -34,3 +38,7 @@ export class BranchRepository {
 }
 
 export const branchRepository = new BranchRepository();
+/**
+ * Encapsulates database queries for this module and keeps persistence details out of services.
+ * Feature boundary: branch.
+ */

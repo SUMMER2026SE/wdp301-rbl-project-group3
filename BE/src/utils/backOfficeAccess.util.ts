@@ -7,6 +7,10 @@ export interface BackOfficeActor {
   role: UserRole;
 }
 
+/**
+ * Resolves an optional branch request while honoring the caller's branch scope.
+ * The implementation is shared to keep this cross-cutting behavior consistent.
+ */
 export async function resolveBackOfficeBranch(
   actor: BackOfficeActor,
   requestedBranchId?: string,
@@ -44,9 +48,17 @@ export async function resolveBackOfficeBranch(
   return assignedBranchId;
 }
 
+/**
+ * Fails when a back-office actor attempts to access an unauthorized branch.
+ * The implementation is shared to keep this cross-cutting behavior consistent.
+ */
 export async function assertBackOfficeBranchAccess(
   actor: BackOfficeActor,
   branchId: string
 ): Promise<void> {
   await resolveBackOfficeBranch(actor, branchId, true);
 }
+/**
+ * Shared backend utility that keeps this concern consistent across feature modules.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

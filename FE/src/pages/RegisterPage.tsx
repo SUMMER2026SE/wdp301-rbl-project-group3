@@ -22,6 +22,10 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   return firstValidationMessage || apiError.response?.data?.message || apiError.message || fallback
 }
 
+/**
+ * Collects account details and starts the email-verification registration flow.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ */
 export const RegisterPage = () => {
   const navigate = useNavigate()
   const { register, loading } = useAuth()
@@ -404,3 +408,7 @@ export const RegisterPage = () => {
     </div>
   )
 }
+/**
+ * Customer-facing route component responsible for this standalone application screen.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

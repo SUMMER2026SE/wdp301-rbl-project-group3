@@ -3,6 +3,10 @@ import { crawlerService } from './crawler.service';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { sendSuccess } from '../../utils/response.util';
 
+/**
+ * HTTP adapter that validates request context and delegates business work.
+ * Feature boundary: Crawler.
+ */
 export class CrawlerController {
   startManualCrawl = asyncHandler(async (req: Request, res: Response) => {
     // Gọi crawler chạy nền (không await để không block request)
@@ -23,3 +27,7 @@ export class CrawlerController {
 }
 
 export const crawlerController = new CrawlerController();
+/**
+ * Translates validated HTTP requests into service calls and standardized API responses.
+ * Feature boundary: crawler.
+ */

@@ -47,3 +47,7 @@ apiClient.interceptors.response.use(
 )
 
 export default apiClient
+/**
+ * Frontend API client module that centralizes requests and response contracts for one feature.
+ * Keeping this concern isolated makes feature code easier to reuse and maintain.
+ */

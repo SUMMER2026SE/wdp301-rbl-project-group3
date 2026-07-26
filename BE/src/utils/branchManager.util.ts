@@ -94,3 +94,7 @@ export async function releaseBranchManagerWithRetry(
     error: lastError,
   });
 }
+/**
+ * Shared backend utility that keeps this concern consistent across feature modules.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

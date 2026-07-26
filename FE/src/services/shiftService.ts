@@ -42,6 +42,10 @@ export interface ShiftRegistration {
   updatedAt: string;
 }
 
+/**
+ * Provides shift templates, registrations, and staff scheduling actions.
+ * Request construction and response normalization stay here so UI code remains presentation-focused.
+ */
 export const shiftService = {
   // --- Templates ---
   getTemplates: async (params?: { branchId?: string }): Promise<ApiResponse<{ templates: ShiftTemplate[] }>> => {
@@ -93,3 +97,7 @@ export const shiftService = {
 }
 
 export default shiftService
+/**
+ * Frontend API client module that centralizes requests and response contracts for one feature.
+ * Keeping this concern isolated makes feature code easier to reuse and maintain.
+ */

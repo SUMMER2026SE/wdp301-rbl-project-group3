@@ -7,6 +7,10 @@ import {
   ReturnStatus,
 } from '../../models/returnRequest.model';
 
+/**
+ * Persistence gateway that centralizes database access for this domain.
+ * Feature boundary: Return.
+ */
 export class ReturnRepository {
   async findOrder(orderId: string): Promise<IOrder | null> {
     return Order.findById(orderId)

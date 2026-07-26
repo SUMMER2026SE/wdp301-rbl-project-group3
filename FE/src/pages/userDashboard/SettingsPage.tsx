@@ -18,6 +18,10 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   return apiError.response?.data?.message || apiError.message || fallback
 }
 
+/**
+ * Manages account preferences and security-related customer settings.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ */
 export const SettingsPage = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -262,3 +266,7 @@ export const SettingsPage = () => {
     </div>
   )
 }
+/**
+ * Customer dashboard view or route composition for account-specific data and actions.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

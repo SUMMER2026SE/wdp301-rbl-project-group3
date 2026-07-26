@@ -40,3 +40,7 @@ router.get('/:id/vouchers', authenticate, authorize('admin', 'branch_manager'), 
 router.patch('/vouchers/:voucherId/disable', authenticate, authorize('admin', 'branch_manager'), validate(voucherIdParamSchema), promotionController.disableVoucher);
 
 export default router;
+/**
+ * Defines the HTTP endpoints and middleware chain for this feature module.
+ * Feature boundary: promotion.
+ */

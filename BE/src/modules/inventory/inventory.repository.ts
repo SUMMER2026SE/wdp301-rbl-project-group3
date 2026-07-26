@@ -3,6 +3,10 @@ import { Inventory, IInventory } from '../../models/inventory.model';
 import { Product } from '../../models/product.model';
 import { ImportReceipt, IImportReceipt, IImportReceiptItem } from '../../models/importReceipt.model';
 
+/**
+ * Persistence gateway that centralizes database access for this domain.
+ * Feature boundary: Inventory.
+ */
 export class InventoryRepository {
   async findInventory(filters: { branchId?: string; productId?: string; lowStock?: boolean }): Promise<IInventory[]> {
     const query: Record<string, unknown> = {};
@@ -562,3 +566,7 @@ export class InventoryRepository {
 }
 
 export const inventoryRepository = new InventoryRepository();
+/**
+ * Encapsulates database queries for this module and keeps persistence details out of services.
+ * Feature boundary: inventory.
+ */

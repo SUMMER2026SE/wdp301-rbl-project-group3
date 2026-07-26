@@ -95,3 +95,7 @@ VoucherSchema.index({ branchId: 1, status: 1 });
 VoucherSchema.index({ 'claims.userId': 1, 'claims.status': 1 });
 
 export const Voucher = mongoose.model<IVoucher>('Voucher', VoucherSchema);
+/**
+ * Defines the Mongoose schema, TypeScript contract, and persistence rules for this domain entity.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

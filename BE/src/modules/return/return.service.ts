@@ -22,6 +22,10 @@ type ReturnItemInput = {
   condition: ReturnItemCondition;
 };
 
+/**
+ * Application service that coordinates business rules, authorization, and side effects.
+ * Feature boundary: Return.
+ */
 export class ReturnService {
   async listReturns(
     filters: {

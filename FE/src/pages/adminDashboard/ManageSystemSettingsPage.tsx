@@ -125,6 +125,10 @@ const formatVND = (val: number) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val)
 
 // ─── Toggle Switch component ─────────────────────────────────────────────────
+/**
+ * Renders an accessible boolean setting control shared by the settings screen.
+ * Data loading, mutation feedback, and screen-specific state are coordinated at this page boundary.
+ */
 const ToggleSwitch = ({
   checked,
   onChange,
@@ -153,6 +157,10 @@ const ToggleSwitch = ({
 )
 
 // ─── Main Page ───────────────────────────────────────────────────────────────
+/**
+ * Edits system-wide settings while grouping controls by operational concern.
+ * Data loading, mutation feedback, and screen-specific state are coordinated at this page boundary.
+ */
 export const ManageSystemSettingsPage = () => {
   const [groups, setGroups] = useState<Partial<Record<SettingGroup, SystemSetting[]>>>({})
   const [localValues, setLocalValues] = useState<Record<string, string | number | boolean>>({})
@@ -576,3 +584,7 @@ export const ManageSystemSettingsPage = () => {
     </div>
   )
 }
+/**
+ * Administrative dashboard view that presents and manages a specific back-office feature.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

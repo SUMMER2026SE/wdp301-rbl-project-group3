@@ -32,6 +32,10 @@ export interface UpdatePromotionData {
   updatedBy?: Types.ObjectId;
 }
 
+/**
+ * Persistence gateway that centralizes database access for this domain.
+ * Feature boundary: Promotion.
+ */
 export class PromotionRepository {
   // ─── Promotion ────────────────────────────────────────────
 
@@ -151,3 +155,7 @@ export class PromotionRepository {
 }
 
 export const promotionRepository = new PromotionRepository();
+/**
+ * Encapsulates database queries for this module and keeps persistence details out of services.
+ * Feature boundary: promotion.
+ */

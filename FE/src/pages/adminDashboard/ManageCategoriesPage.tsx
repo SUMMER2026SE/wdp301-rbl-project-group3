@@ -18,6 +18,10 @@ import { useAuth } from '@hooks/useAuth'
 import type { Category } from '@/types'
 import { notify } from '../../utils/toast';
 
+/**
+ * Maintains the product category catalog used throughout the storefront.
+ * Data loading, mutation feedback, and screen-specific state are coordinated at this page boundary.
+ */
 export const ManageCategoriesPage = () => {
   const { user: currentUser } = useAuth()
   const isAdmin = currentUser?.role === 'admin'
@@ -652,3 +656,7 @@ export const ManageCategoriesPage = () => {
     </div>
   )
 }
+/**
+ * Administrative dashboard view that presents and manages a specific back-office feature.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

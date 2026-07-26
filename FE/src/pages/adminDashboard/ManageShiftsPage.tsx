@@ -24,6 +24,10 @@ import type { Branch, Employee } from '@/types'
 import { useSocket } from '../../contexts/SocketContext'
 import { notify } from '../../utils/toast'
 
+/**
+ * Manages shift templates, registrations, and staff scheduling workflows.
+ * Data loading, mutation feedback, and screen-specific state are coordinated at this page boundary.
+ */
 export const ManageShiftsPage = () => {
   const { user } = useAuth()
   const { socket } = useSocket()
@@ -1428,3 +1432,7 @@ export const ManageShiftsPage = () => {
     </div>
   )
 }
+/**
+ * Administrative dashboard view that presents and manages a specific back-office feature.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

@@ -3,6 +3,10 @@ import { shiftService } from './shift.service';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { sendSuccess } from '../../utils/response.util';
 
+/**
+ * HTTP adapter that validates request context and delegates business work.
+ * Feature boundary: Shift.
+ */
 export class ShiftController {
   // --- Shift Templates ---
   createTemplate = asyncHandler(async (req: Request, res: Response) => {
@@ -113,3 +117,7 @@ export class ShiftController {
 }
 
 export const shiftController = new ShiftController();
+/**
+ * Translates validated HTTP requests into service calls and standardized API responses.
+ * Feature boundary: shift.
+ */

@@ -10,3 +10,7 @@ router.get('/', authenticate, authorize('admin'), competitorProductController.ge
 router.post('/import', authenticate, authorize('admin'), competitorProductController.importToCatalog);
 
 export default router;
+/**
+ * Defines the HTTP endpoints and middleware chain for this feature module.
+ * Feature boundary: competitor-product.
+ */

@@ -18,6 +18,10 @@ import { useAuth } from '@hooks/useAuth'
 import type { User } from '@/types'
 import { notify } from '../../utils/toast';
 
+/**
+ * Administers customer accounts and their access-related status.
+ * Data loading, mutation feedback, and screen-specific state are coordinated at this page boundary.
+ */
 export const ManageUsersPage = () => {
   const { user: currentUser } = useAuth()
   
@@ -489,3 +493,7 @@ export const ManageUsersPage = () => {
     </div>
   )
 }
+/**
+ * Administrative dashboard view that presents and manages a specific back-office feature.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

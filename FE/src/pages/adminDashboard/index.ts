@@ -11,3 +11,7 @@ export { ManageBannersPage } from './ManageBannersPage'
 export { ManageEmployeesPage } from './ManageEmployeesPage'
 export { ManageStatisticsPage } from './ManageStatisticsPage'
 export { ManageShiftsPage } from './ManageShiftsPage'
+/**
+ * Administrative dashboard view that presents and manages a specific back-office feature.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

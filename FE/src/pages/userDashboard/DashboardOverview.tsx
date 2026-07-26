@@ -72,6 +72,10 @@ const statusMeta: Record<
   },
 }
 
+/**
+ * Summarizes account activity, recent orders, and customer-facing metrics.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ */
 export const DashboardOverview = () => {
   const { user } = useAuth()
   const displayName = user?.fullName || 'Customer'
@@ -379,3 +383,7 @@ export const DashboardOverview = () => {
     </div>
   )
 }
+/**
+ * Customer dashboard view or route composition for account-specific data and actions.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

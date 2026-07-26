@@ -34,7 +34,12 @@ type InventoryActor = {
   role: UserRole;
 };
 
+/**
+ * Owns stock records and the import-receipt workflow. Receipt mutations use
+ * snapshots and compensating operations to keep branch stock consistent.
+ */
 export class InventoryService {
+  /** Lists stock at branches the current back-office actor may access. */
   async getInventory(filters: {
     branchId?: string;
     productId?: string;
@@ -52,6 +57,7 @@ export class InventoryService {
     });
   }
 
+  /** Creates a draft receipt; stock is not changed until it is approved. */
   async createImportReceipt(data: {
     branchId: string;
     supplierName?: string;
@@ -118,6 +124,7 @@ export class InventoryService {
     return receipt;
   }
 
+  /** Applies receipt quantities to inventory and marks the receipt approved. */
   async approveImportReceipt(
     id: string,
     approvedBy: string,
@@ -152,6 +159,7 @@ export class InventoryService {
     return result;
   }
 
+  /** Rejects a pending receipt without affecting physical stock. */
   async rejectImportReceipt(
     id: string,
     rejectedBy: string,
@@ -187,6 +195,7 @@ export class InventoryService {
     return result;
   }
 
+  /** Updates a draft receipt only after verifying its stock assumptions remain valid. */
   async updateImportReceipt(
     id: string,
     data: {
@@ -292,6 +301,7 @@ export class InventoryService {
     }
   }
 
+  /** Cancels an approved receipt and reverses its previously applied stock. */
   async cancelImportReceipt(
     id: string,
     cancelledBy: string,
@@ -341,6 +351,7 @@ export class InventoryService {
     }
   }
 
+  /** Produces a human-readable import-receipt identifier. */
   private generateReceiptCode(): string {
     const date = new Date();
     const stamp = date.toISOString().slice(0, 10).replace(/-/g, '');
@@ -348,6 +359,7 @@ export class InventoryService {
     return `IR-${stamp}-${random}`;
   }
 
+  /** Validates products and normalizes receipt lines before persistence. */
   private async prepareItems(
     items: ImportItemInput[]
   ): Promise<IImportReceiptItem[]> {
@@ -370,6 +382,7 @@ export class InventoryService {
     return preparedItems;
   }
 
+  /** Atomically applies approved receipt quantities to branch inventory. */
   private async applyImportedStock(
     branchId: string,
     items: ImportItemInput[],
@@ -389,6 +402,7 @@ export class InventoryService {
     return appliedInventory;
   }
 
+  /** Compensates a prior import by subtracting the quantities it introduced. */
   private async reverseReceiptStock(
     receiptId: string,
     branchId: string,
@@ -423,6 +437,7 @@ export class InventoryService {
     }
   }
 
+  /** Captures pre-mutation inventory values so a later failure can be restored. */
   private async captureInventorySnapshots(
     locations: { branchId: string; productId: string }[]
   ): Promise<Map<string, InventorySnapshot>> {
@@ -450,6 +465,7 @@ export class InventoryService {
     return snapshots;
   }
 
+  /** Restores a captured inventory state during a failed multi-item operation. */
   private async restoreInventorySnapshots(
     snapshots: Map<string, InventorySnapshot>,
     updatedBy: string
@@ -475,6 +491,7 @@ export class InventoryService {
     }
   }
 
+  /** Resolves a precise error when a receipt changed during a concurrent update. */
   private async throwImportReceiptMutationError(id: string): Promise<never> {
     const existing = await inventoryRepository.findImportReceiptById(id);
     if (!existing) throw new AppError('Import receipt not found', 404);
@@ -487,6 +504,7 @@ export class InventoryService {
     throw new AppError('Import receipt is being modified by another request', 409);
   }
 
+  /** Ensures stock is never altered for a missing or inactive branch. */
   private async ensureActiveBranch(branchId: string): Promise<void> {
     const branch = await branchService.getBranchById(branchId);
     if (branch.status !== 'active') {
@@ -494,6 +512,7 @@ export class InventoryService {
     }
   }
 
+  /** Resolves the requested branch while enforcing the caller's branch scope. */
   private async resolveAccessibleBranch(
     actor: InventoryActor,
     requestedBranchId?: string
@@ -521,6 +540,7 @@ export class InventoryService {
     return assignedBranchId;
   }
 
+  /** Detects stock drift before a draft receipt is modified or approved. */
   private async ensureReceiptStockUnchanged(receipt: IImportReceipt): Promise<void> {
     const branchId = receipt.branchId.toString();
 
@@ -558,6 +578,7 @@ export class InventoryService {
     }
   }
 
+  /** Creates an inventory record after resolving the authorized target branch. */
   async createInventory(data: {
     branchId: string;
     productId: string;
@@ -601,6 +622,7 @@ export class InventoryService {
     return result;
   }
 
+  /** Updates a stock record and publishes the new quantity to connected clients. */
   async updateInventory(
     id: string,
     data: {
@@ -634,6 +656,7 @@ export class InventoryService {
     return result;
   }
 
+  /** Removes an inventory record after validating branch-level permission. */
   async deleteInventory(
     id: string,
     actor: InventoryActor
@@ -654,6 +677,7 @@ export class InventoryService {
     });
   }
 
+  /** Performs the staff verification step required before receipt approval. */
   async verifyImportReceipt(
     id: string,
     data: {

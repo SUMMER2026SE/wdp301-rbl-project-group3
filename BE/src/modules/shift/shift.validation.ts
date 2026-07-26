@@ -44,3 +44,7 @@ export const approveRejectShiftSchema = z.object({
 });
 
 export { validate } from '../auth/auth.validation';
+/**
+ * Declares request validation rules so invalid input is rejected before business logic runs.
+ * Feature boundary: shift.
+ */

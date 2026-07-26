@@ -11,6 +11,10 @@ export interface ShiftActor {
   branchId?: string;
 }
 
+/**
+ * Application service that coordinates business rules, authorization, and side effects.
+ * Feature boundary: Shift.
+ */
 export class ShiftService {
   private getMidnightDate(dateStr: string): Date {
     const parts = dateStr.split('-');

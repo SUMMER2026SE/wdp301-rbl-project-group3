@@ -2,6 +2,10 @@ import { Request, Response, NextFunction } from 'express';
 import { UserRole } from '../types/common.types';
 import { AppError } from './errorHandler.middleware';
 
+/**
+ * Builds a middleware guard that restricts an endpoint to the listed roles.
+ * The implementation is shared to keep this cross-cutting behavior consistent.
+ */
 export const authorize = (...roles: UserRole[]) => {
   return (req: Request, _res: Response, next: NextFunction): void => {
     if (!req.user) {
@@ -15,3 +19,7 @@ export const authorize = (...roles: UserRole[]) => {
     next();
   };
 };
+/**
+ * Express middleware that enforces a cross-cutting request-processing concern.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

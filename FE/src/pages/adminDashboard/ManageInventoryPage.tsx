@@ -50,6 +50,10 @@ const formatVND = (num: number) => {
   }).format(num)
 }
 
+/**
+ * Displays branch inventory and coordinates receipt-driven stock operations.
+ * Data loading, mutation feedback, and screen-specific state are coordinated at this page boundary.
+ */
 export const ManageInventoryPage = () => {
   const { user, loading: authLoading } = useAuth()
   const { socket } = useSocket()
@@ -4266,3 +4270,7 @@ export const ManageInventoryPage = () => {
     </div>
   )
 }
+/**
+ * Administrative dashboard view that presents and manages a specific back-office feature.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

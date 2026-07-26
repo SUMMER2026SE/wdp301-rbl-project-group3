@@ -11,3 +11,7 @@ router.post('/stop', authenticate, authorize('admin'), crawlerController.stopMan
 router.get('/status', authenticate, authorize('admin'), crawlerController.getCrawlerStatus);
 
 export default router;
+/**
+ * Defines the HTTP endpoints and middleware chain for this feature module.
+ * Feature boundary: crawler.
+ */

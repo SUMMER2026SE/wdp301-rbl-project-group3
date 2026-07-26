@@ -16,6 +16,10 @@ export interface ParsedProduct {
   categoryName?: string;
 }
 
+/**
+ * Application service that coordinates business rules, authorization, and side effects.
+ * Feature boundary: Ai.
+ */
 export class AiService {
   async parseProductData(rawText: string, retryCount = 0): Promise<ParsedProduct | null> {
     if (!ai) {
@@ -97,3 +101,7 @@ ${rawText.substring(0, 20000)}
 }
 
 export const aiService = new AiService();
+/**
+ * Business-support component for the crawler feature.
+ * It centralizes this concern so controllers and other modules reuse one consistent workflow.
+ */

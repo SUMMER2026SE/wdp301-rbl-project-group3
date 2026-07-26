@@ -3,6 +3,10 @@ import { competitorProductService } from './competitor-product.service';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { sendSuccess } from '../../utils/response.util';
 
+/**
+ * HTTP adapter that validates request context and delegates business work.
+ * Feature boundary: CompetitorProduct.
+ */
 export class CompetitorProductController {
   getCompetitorProducts = asyncHandler(async (req: Request, res: Response) => {
     const { page, limit, keyword } = req.query;
@@ -29,3 +33,7 @@ export class CompetitorProductController {
 }
 
 export const competitorProductController = new CompetitorProductController();
+/**
+ * Translates validated HTTP requests into service calls and standardized API responses.
+ * Feature boundary: competitor-product.
+ */

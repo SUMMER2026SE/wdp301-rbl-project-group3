@@ -71,6 +71,10 @@ async function countByField(
   return result;
 }
 
+/**
+ * Persistence gateway that centralizes database access for this domain.
+ * Feature boundary: Statistics.
+ */
 export class StatisticsRepository {
   // ═══════════════════════════════════════════════════════════════════════════
   // USER STATISTICS (admin)

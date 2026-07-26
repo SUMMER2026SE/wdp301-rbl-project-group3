@@ -25,3 +25,7 @@ router.patch('/:id/status', backOffice, validate(updateOrderStatusSchema), order
 router.get('/:id', backOffice, validate(orderIdParamSchema), orderController.getById);
 
 export default router;
+/**
+ * Defines the HTTP endpoints and middleware chain for this feature module.
+ * Feature boundary: order.
+ */

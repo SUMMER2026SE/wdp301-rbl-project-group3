@@ -88,3 +88,7 @@ router.get(
 router.get('/me', validate(myStatsQuerySchema), statisticsController.getMyStatistics);
 
 export default router;
+/**
+ * Defines the HTTP endpoints and middleware chain for this feature module.
+ * Feature boundary: statistics.
+ */

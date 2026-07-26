@@ -1,5 +1,9 @@
 import { IVoucher } from '../../../models/voucher.model';
 
+/**
+ * Application service that coordinates business rules, authorization, and side effects.
+ * Feature boundary: PromotionCalculation.
+ */
 export class PromotionCalculationService {
   /**
    * Tính toán số tiền được giảm dựa trên voucher và tổng giá trị đơn hàng
@@ -29,3 +33,7 @@ export class PromotionCalculationService {
 }
 
 export const promotionCalculationService = new PromotionCalculationService();
+/**
+ * Business-support component for the promotion feature.
+ * It centralizes this concern so controllers and other modules reuse one consistent workflow.
+ */

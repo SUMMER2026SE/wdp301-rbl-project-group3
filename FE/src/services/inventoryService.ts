@@ -6,6 +6,10 @@ const unwrapReceiptResponse = (raw: any): ApiResponse<ImportReceipt> => ({
   data: raw.data?.receipt ?? raw.data,
 })
 
+/**
+ * Provides inventory queries and import-receipt workflow actions.
+ * Request construction and response normalization stay here so UI code remains presentation-focused.
+ */
 export const inventoryService = {
   // Get inventory records (lowStock, branchId, productId)
   getInventory: async (params?: {
@@ -132,3 +136,7 @@ export const inventoryService = {
     return unwrapReceiptResponse(response.data)
   },
 }
+/**
+ * Frontend API client module that centralizes requests and response contracts for one feature.
+ * Keeping this concern isolated makes feature code easier to reuse and maintain.
+ */

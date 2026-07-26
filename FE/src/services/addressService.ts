@@ -1,6 +1,10 @@
 import apiClient from '@services/api'
 import type { UserAddress, ApiResponse } from '@/types'
 
+/**
+ * Exposes customer address operations used by checkout and account management.
+ * Request construction and response normalization stay here so UI code remains presentation-focused.
+ */
 export const addressService = {
   // Get all saved addresses for the current user
   getAddresses: async (): Promise<ApiResponse<UserAddress[]>> => {
@@ -45,3 +49,7 @@ export const addressService = {
     return response.data
   },
 }
+/**
+ * Frontend API client module that centralizes requests and response contracts for one feature.
+ * Keeping this concern isolated makes feature code easier to reuse and maintain.
+ */

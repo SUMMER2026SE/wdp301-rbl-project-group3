@@ -12,8 +12,16 @@ const SocketContext = createContext<SocketContextProps>({
   connected: false,
 })
 
+/**
+ * Exposes the active Socket.IO connection to components that need live updates.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ */
 export const useSocket = () => useContext(SocketContext)
 
+/**
+ * Creates and cleans up the real-time connection for the active user session.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ */
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [socket, setSocket] = useState<Socket | null>(null)
   const [connected, setConnected] = useState(false)
@@ -103,3 +111,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     </SocketContext.Provider>
   )
 }
+/**
+ * Provides shared client state and side effects to descendant React components.
+ * Keeping this concern isolated makes feature code easier to reuse and maintain.
+ */

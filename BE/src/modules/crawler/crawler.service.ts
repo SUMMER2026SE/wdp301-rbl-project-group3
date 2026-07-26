@@ -7,6 +7,10 @@ import { Category } from '../../models/category.model';
 import { normalizeString } from '../../utils/string.util';
 import { emitToRoom, emitGlobal } from '../../config/socket.config';
 
+/**
+ * Application service that coordinates business rules, authorization, and side effects.
+ * Feature boundary: Crawler.
+ */
 export class CrawlerService {
   private isRunning = false;
   private crawlerInstance: PlaywrightCrawler | null = null;

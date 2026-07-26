@@ -4,6 +4,10 @@ import { ICategory } from '../../models/category.model';
 import { Product } from '../../models/product.model';
 import { emitGlobal } from '../../config/socket.config';
 
+/**
+ * Application service that coordinates business rules, authorization, and side effects.
+ * Feature boundary: Category.
+ */
 export class CategoryService {
   async createCategory(data: Partial<ICategory>): Promise<ICategory> {
     const code = String(data.code).toUpperCase();
@@ -80,3 +84,7 @@ export class CategoryService {
 }
 
 export const categoryService = new CategoryService();
+/**
+ * Business-support component for the category feature.
+ * It centralizes this concern so controllers and other modules reuse one consistent workflow.
+ */

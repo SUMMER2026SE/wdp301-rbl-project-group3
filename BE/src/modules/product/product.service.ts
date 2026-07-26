@@ -32,6 +32,10 @@ export interface ProductFile {
   mimetype: string;
 }
 
+/**
+ * Application service that coordinates business rules, authorization, and side effects.
+ * Feature boundary: Product.
+ */
 export class ProductService {
   private uploadProductImage(buffer: Buffer, publicId: string): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -166,3 +170,7 @@ export class ProductService {
 }
 
 export const productService = new ProductService();
+/**
+ * Business-support component for the product feature.
+ * It centralizes this concern so controllers and other modules reuse one consistent workflow.
+ */

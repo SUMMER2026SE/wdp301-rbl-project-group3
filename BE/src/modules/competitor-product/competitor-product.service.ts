@@ -3,6 +3,10 @@ import { Product } from '../../models/product.model';
 import { generateUniqueSku } from '../../utils/sku.util';
 import { normalizeString } from '../../utils/string.util';
 
+/**
+ * Application service that coordinates business rules, authorization, and side effects.
+ * Feature boundary: CompetitorProduct.
+ */
 export class CompetitorProductService {
   async getCompetitorProducts(query: {
     page?: number;
@@ -90,3 +94,7 @@ export class CompetitorProductService {
 }
 
 export const competitorProductService = new CompetitorProductService();
+/**
+ * Business-support component for the competitor-product feature.
+ * It centralizes this concern so controllers and other modules reuse one consistent workflow.
+ */

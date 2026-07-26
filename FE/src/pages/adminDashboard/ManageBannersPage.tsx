@@ -16,6 +16,10 @@ import { bannerService } from '@/services/bannerService'
 import { useAuth } from '@hooks/useAuth'
 import type { Banner } from '@/types'
 
+/**
+ * Manages promotional banner records and their display lifecycle.
+ * Data loading, mutation feedback, and screen-specific state are coordinated at this page boundary.
+ */
 export const ManageBannersPage = () => {
   const { user } = useAuth()
   const isStaff = user?.role === 'staff'
@@ -492,3 +496,7 @@ export const ManageBannersPage = () => {
     </div>
   )
 }
+/**
+ * Administrative dashboard view that presents and manages a specific back-office feature.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

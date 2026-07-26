@@ -31,6 +31,10 @@ const formatVND = (num: number) => {
   }).format(num)
 }
 
+/**
+ * Configures promotion rules, eligibility, activation, and campaign lifecycle.
+ * Data loading, mutation feedback, and screen-specific state are coordinated at this page boundary.
+ */
 export const ManagePromotionsPage = () => {
   const { user } = useAuth()
   // State lists
@@ -1370,3 +1374,7 @@ export const ManagePromotionsPage = () => {
     </div>
   )
 }
+/**
+ * Administrative dashboard view that presents and manages a specific back-office feature.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

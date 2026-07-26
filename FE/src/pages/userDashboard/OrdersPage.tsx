@@ -78,6 +78,10 @@ const statusTabs: { value: string; label: string }[] = [
   { value: 'cancelled', label: 'Đã hủy' },
 ]
 
+/**
+ * Lists customer orders and exposes allowed tracking or cancellation actions.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ */
 export const OrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(false)
@@ -939,3 +943,7 @@ export const OrdersPage = () => {
     </div>
   )
 }
+/**
+ * Customer dashboard view or route composition for account-specific data and actions.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

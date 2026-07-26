@@ -1,5 +1,9 @@
 import { Category, ICategory } from '../../models/category.model';
 
+/**
+ * Persistence gateway that centralizes database access for this domain.
+ * Feature boundary: Category.
+ */
 export class CategoryRepository {
   async create(data: Partial<ICategory>): Promise<ICategory> {
     return new Category(data).save();
@@ -62,3 +66,7 @@ export class CategoryRepository {
 }
 
 export const categoryRepository = new CategoryRepository();
+/**
+ * Encapsulates database queries for this module and keeps persistence details out of services.
+ * Feature boundary: category.
+ */

@@ -14,6 +14,10 @@ export interface PaginatedBanners {
   totalPages: number;
 }
 
+/**
+ * Persistence gateway that centralizes database access for this domain.
+ * Feature boundary: Banner.
+ */
 export class BannerRepository {
   async create(data: Partial<IBanner>): Promise<IBanner> {
     return new Banner(data).save();
@@ -66,3 +70,7 @@ export class BannerRepository {
 }
 
 export const bannerRepository = new BannerRepository();
+/**
+ * Encapsulates database queries for this module and keeps persistence details out of services.
+ * Feature boundary: banner.
+ */

@@ -1,6 +1,10 @@
 import apiClient from '@services/api'
 import type { ApiResponse, SystemSetting, SystemSettingGroups } from '@/types'
 
+/**
+ * Reads and updates system-wide operational settings.
+ * Request construction and response normalization stay here so UI code remains presentation-focused.
+ */
 export const systemSettingService = {
   // GET /api/admin/settings/groups — fetch all settings grouped by category
   getSettingsByGroup: async (): Promise<ApiResponse<SystemSettingGroups>> => {
@@ -25,3 +29,7 @@ export const systemSettingService = {
     return response.data
   },
 }
+/**
+ * Frontend API client module that centralizes requests and response contracts for one feature.
+ * Keeping this concern isolated makes feature code easier to reuse and maintain.
+ */

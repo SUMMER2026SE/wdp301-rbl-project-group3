@@ -107,6 +107,10 @@ async function buildCartResponse(cart: any, branchId?: string): Promise<CartResp
     };
 }
 
+/**
+ * Application service that coordinates business rules, authorization, and side effects.
+ * Feature boundary: Cart.
+ */
 export class CartService {
     // ─── UC07: Thêm vào giỏ hàng ─────────────────────────────────────────────
     async addToCart(
@@ -205,3 +209,7 @@ export class CartService {
 }
 
 export const cartService = new CartService();
+/**
+ * Business-support component for the cart feature.
+ * It centralizes this concern so controllers and other modules reuse one consistent workflow.
+ */

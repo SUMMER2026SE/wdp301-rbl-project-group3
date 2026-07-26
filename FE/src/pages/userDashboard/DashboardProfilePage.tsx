@@ -28,6 +28,10 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   return apiError.response?.data?.message || apiError.message || fallback
 }
 
+/**
+ * Displays and updates the customer's personal profile information.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ */
 export const DashboardProfilePage = () => {
   const { user, refreshUser } = useAuth()
 
@@ -340,3 +344,7 @@ export const DashboardProfilePage = () => {
     </div>
   )
 }
+/**
+ * Customer dashboard view or route composition for account-specific data and actions.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

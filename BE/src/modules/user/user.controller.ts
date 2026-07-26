@@ -4,6 +4,10 @@ import { asyncHandler } from '../../utils/asyncHandler';
 import { sendSuccess } from '../../utils/response.util';
 import { AppError } from '../../middlewares/errorHandler.middleware';
 
+/**
+ * HTTP adapter that validates request context and delegates business work.
+ * Feature boundary: User.
+ */
 export class UserController {
   getProfile = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!.userId;
@@ -33,3 +37,7 @@ export class UserController {
 }
 
 export const userController = new UserController();
+/**
+ * Translates validated HTTP requests into service calls and standardized API responses.
+ * Feature boundary: user.
+ */

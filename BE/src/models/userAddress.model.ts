@@ -25,3 +25,7 @@ const UserAddressSchema = new Schema<IUserAddress>(
 UserAddressSchema.index({ userId: 1 });
 
 export const UserAddress = mongoose.model<IUserAddress>('UserAddress', UserAddressSchema);
+/**
+ * Defines the Mongoose schema, TypeScript contract, and persistence rules for this domain entity.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

@@ -23,6 +23,10 @@ function generateOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+/**
+ * Application service that coordinates business rules, authorization, and side effects.
+ * Feature boundary: Auth.
+ */
 export class AuthService {
   // ─── Register ────────────────────────────────────────────
   // Đăng ký → gửi OTP xác thực email, chưa active account

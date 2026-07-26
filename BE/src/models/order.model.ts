@@ -99,3 +99,7 @@ OrderSchema.index({ customerId: 1, createdAt: -1 });
 OrderSchema.index({ branchId: 1, status: 1 });
 
 export const Order = mongoose.model<IOrder>('Order', OrderSchema);
+/**
+ * Defines the Mongoose schema, TypeScript contract, and persistence rules for this domain entity.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

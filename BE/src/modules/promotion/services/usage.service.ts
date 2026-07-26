@@ -2,6 +2,10 @@ import { promotionRepository } from '../promotion.repository';
 import { AppError } from '../../../middlewares/errorHandler.middleware';
 import { Types } from 'mongoose';
 
+/**
+ * Application service that coordinates business rules, authorization, and side effects.
+ * Feature boundary: PromotionUsage.
+ */
 export class PromotionUsageService {
   /**
    * Đánh dấu voucher là đã sử dụng, gắn với user và order, đồng thời tăng usageCount của promotion
@@ -24,3 +28,7 @@ export class PromotionUsageService {
 }
 
 export const promotionUsageService = new PromotionUsageService();
+/**
+ * Business-support component for the promotion feature.
+ * It centralizes this concern so controllers and other modules reuse one consistent workflow.
+ */

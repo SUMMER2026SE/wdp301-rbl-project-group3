@@ -12,6 +12,10 @@ export type AvatarUpdateData = {
   avatarUrl: string;
 };
 
+/**
+ * Persistence gateway that centralizes database access for this domain.
+ * Feature boundary: User.
+ */
 export class UserRepository {
   async findById(id: string): Promise<IUser | null> {
     return User.findById(id).exec();
@@ -37,3 +41,7 @@ export class UserRepository {
 }
 
 export const userRepository = new UserRepository();
+/**
+ * Encapsulates database queries for this module and keeps persistence details out of services.
+ * Feature boundary: user.
+ */

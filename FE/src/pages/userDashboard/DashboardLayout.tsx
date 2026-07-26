@@ -36,6 +36,10 @@ const getInitials = (name?: string) => {
     .join('')
 }
 
+/**
+ * Provides account navigation and a protected layout for customer dashboard routes.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ */
 export const DashboardLayout = () => {
   const location = useLocation()
   const navigate = useNavigate()
@@ -280,3 +284,7 @@ export const DashboardLayout = () => {
     </div>
   )
 }
+/**
+ * Customer dashboard view or route composition for account-specific data and actions.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */
