@@ -95,6 +95,10 @@ const getStatusConfig = (status: AdminOrderStatus) => {
   }
 }
 
+/**
+ * Supports staff order review and permitted fulfilment status transitions.
+ * Data loading, mutation feedback, and screen-specific state are coordinated at this page boundary.
+ */
 export const ManageOrdersPage = () => {
   const { user, loading: authLoading } = useAuth()
   const isManagerOrStaff = user?.role === 'branch_manager' || user?.role === 'staff'
@@ -1242,3 +1246,7 @@ export const ManageOrdersPage = () => {
     </div>
   )
 }
+/**
+ * Administrative dashboard view that presents and manages a specific back-office feature.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

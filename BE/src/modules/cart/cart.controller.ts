@@ -3,6 +3,10 @@ import { cartService } from './cart.service';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { sendSuccess } from '../../utils/response.util';
 
+/**
+ * HTTP adapter that validates request context and delegates business work.
+ * Feature boundary: Cart.
+ */
 export class CartController {
     // UC07 — POST /api/cart/items
     addToCart = asyncHandler(async (req: Request, res: Response) => {
@@ -50,3 +54,7 @@ export class CartController {
 }
 
 export const cartController = new CartController();
+/**
+ * Translates validated HTTP requests into service calls and standardized API responses.
+ * Feature boundary: cart.
+ */

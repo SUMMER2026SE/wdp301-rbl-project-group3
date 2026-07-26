@@ -19,6 +19,8 @@ import type { Category } from '@/types'
 import { notify } from '../../utils/toast';
 
 /**
+ * Maintains the product category catalog used throughout the storefront.
+ * Data loading, mutation feedback, and screen-specific state are coordinated at this page boundary.
  * Component Quản lý Danh mục Sản phẩm (Dành cho Admin).
  * Cho phép xem danh sách, tìm kiếm, lọc theo trạng thái.
  * Hỗ trợ các thao tác CRUD (Thêm, Sửa, Xóa) danh mục.
@@ -699,3 +701,7 @@ export const ManageCategoriesPage = () => {
     </div>
   )
 }
+/**
+ * Administrative dashboard view that presents and manages a specific back-office feature.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

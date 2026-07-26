@@ -1,5 +1,9 @@
 import { useState, useCallback } from 'react'
 
+/**
+ * Reads and updates a localStorage value while keeping React state synchronized.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ */
 export const useLocalStorage = (key: string, initialValue?: string) => {
   const [storedValue, setStoredValue] = useState<string | null>(() => {
     try {
@@ -30,3 +34,7 @@ export const useLocalStorage = (key: string, initialValue?: string) => {
 
   return [storedValue, setValue] as const
 }
+/**
+ * Custom React hook that encapsulates reusable stateful client behavior.
+ * Keeping this concern isolated makes feature code easier to reuse and maintain.
+ */

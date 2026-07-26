@@ -27,3 +27,7 @@ router.get('/:id/pdf', validate(invoiceIdParamSchema), invoiceController.downloa
 router.get('/:id', validate(invoiceIdParamSchema), invoiceController.getById);
 
 export default router;
+/**
+ * Defines the HTTP endpoints and middleware chain for this feature module.
+ * Feature boundary: invoice.
+ */

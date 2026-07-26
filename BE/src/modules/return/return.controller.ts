@@ -16,6 +16,10 @@ function actorFrom(req: Request) {
   return { userId: req.user!.userId, role: req.user!.role };
 }
 
+/**
+ * HTTP adapter that validates request context and delegates business work.
+ * Feature boundary: Return.
+ */
 export class ReturnController {
   list = asyncHandler(async (req: Request, res: Response) => {
     const { query } = listReturnsSchema.parse({ query: req.query });
@@ -104,3 +108,7 @@ export class ReturnController {
 }
 
 export const returnController = new ReturnController();
+/**
+ * Translates validated HTTP requests into service calls and standardized API responses.
+ * Feature boundary: return.
+ */

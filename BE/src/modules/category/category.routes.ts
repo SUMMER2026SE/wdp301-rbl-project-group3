@@ -33,3 +33,7 @@ router.delete(
 );
 
 export default router;
+/**
+ * Defines the HTTP endpoints and middleware chain for this feature module.
+ * Feature boundary: category.
+ */

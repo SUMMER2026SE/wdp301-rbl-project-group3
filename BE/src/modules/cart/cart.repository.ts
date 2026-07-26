@@ -1,6 +1,10 @@
 import { Types } from 'mongoose';
 import { Cart, ICart } from '../../models/cart.model';
 
+/**
+ * Persistence gateway that centralizes database access for this domain.
+ * Feature boundary: Cart.
+ */
 export class CartRepository {
     /** Lấy cart của user (có populate product) */
     async findByUserId(userId: string): Promise<ICart | null> {
@@ -116,3 +120,7 @@ export class CartRepository {
 }
 
 export const cartRepository = new CartRepository();
+/**
+ * Encapsulates database queries for this module and keeps persistence details out of services.
+ * Feature boundary: cart.
+ */

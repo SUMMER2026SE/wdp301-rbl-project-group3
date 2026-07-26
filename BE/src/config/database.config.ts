@@ -13,6 +13,10 @@ try {
   console.warn('Failed to configure DNS servers:', dnsErr);
 }
 
+/**
+ * Connects Mongoose before the server begins accepting API traffic.
+ * The implementation is shared to keep this cross-cutting behavior consistent.
+ */
 export const connectDatabase = async (): Promise<void> => {
   try {
     await mongoose.connect(env.mongodbUri);
@@ -22,3 +26,7 @@ export const connectDatabase = async (): Promise<void> => {
     process.exit(1);
   }
 };
+/**
+ * Centralizes configuration and initialization for this external infrastructure integration.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

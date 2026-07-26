@@ -51,3 +51,7 @@ ProductSchema.index({ name: 'text' });
 ProductSchema.index({ status: 1 });
 
 export const Product = mongoose.model<IProduct>('Product', ProductSchema);
+/**
+ * Defines the Mongoose schema, TypeScript contract, and persistence rules for this domain entity.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

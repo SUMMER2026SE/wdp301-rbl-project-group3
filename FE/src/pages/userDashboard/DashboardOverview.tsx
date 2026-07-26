@@ -89,6 +89,8 @@ const statusMeta: Record<
 }
 
 /**
+ * Summarizes account activity, recent orders, and customer-facing metrics.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
  * Component hiển thị trang Tổng quan (Dashboard Overview) của người dùng.
  * Cung cấp cái nhìn toàn cảnh về tài khoản: thống kê đơn hàng, tổng chi tiêu,
  * đơn hàng gần đây và các phím tắt nhanh tới các chức năng khác.
@@ -426,3 +428,7 @@ export const DashboardOverview = () => {
     </div>
   )
 }
+/**
+ * Customer dashboard view or route composition for account-specific data and actions.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

@@ -8,3 +8,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <App />
   </React.StrictMode>,
 )
+/**
+ * Composes the frontend application shell, global providers, and top-level navigation.
+ * Keeping this concern isolated makes feature code easier to reuse and maintain.
+ */

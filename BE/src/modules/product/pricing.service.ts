@@ -6,6 +6,10 @@ import { CompetitorProduct } from '../../models/competitor-product.model';
 import mongoose from 'mongoose';
 import { normalizeString } from '../../utils/string.util';
 
+/**
+ * Application service that coordinates business rules, authorization, and side effects.
+ * Feature boundary: Pricing.
+ */
 export class PricingService {
   async suggestPrice(data: {
     costPrice: number;

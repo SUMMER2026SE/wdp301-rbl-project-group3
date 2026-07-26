@@ -39,3 +39,7 @@ UserTokenSchema.index({ userId: 1 });
 UserTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export const UserToken = mongoose.model<IUserToken>('UserToken', UserTokenSchema);
+/**
+ * Defines the Mongoose schema, TypeScript contract, and persistence rules for this domain entity.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

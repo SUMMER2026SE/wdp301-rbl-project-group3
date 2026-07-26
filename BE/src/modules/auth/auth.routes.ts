@@ -52,3 +52,7 @@ router.post('/request-password-change-otp', authenticate, authController.request
 router.post('/change-password-otp', authenticate, validate(changePasswordWithOtpSchema), authController.changePasswordWithOtp);
 
 export default router;
+/**
+ * Defines the HTTP endpoints and middleware chain for this feature module.
+ * Feature boundary: auth.
+ */

@@ -126,6 +126,10 @@ export interface BranchDashboardData {
   generatedAt: string
 }
 
+/**
+ * Retrieves the reporting datasets displayed by administrative dashboards.
+ * Request construction and response normalization stay here so UI code remains presentation-focused.
+ */
 export const statisticsService = {
   getAdminDashboard: async (params?: DashboardParams): Promise<ApiResponse<AdminDashboardData>> => {
     const response = await apiClient.get('/api/statistics/admin/dashboard', { params })
@@ -137,3 +141,7 @@ export const statisticsService = {
     return response.data
   }
 }
+/**
+ * Frontend API client module that centralizes requests and response contracts for one feature.
+ * Keeping this concern isolated makes feature code easier to reuse and maintain.
+ */

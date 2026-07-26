@@ -19,6 +19,8 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 }
 
 /**
+ * Manages account preferences and security-related customer settings.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
  * Component Cài đặt tài khoản (Settings).
  * Cho phép người dùng cấu hình các tùy chọn cá nhân như:
  * - Bật/tắt thông báo đẩy
@@ -293,3 +295,7 @@ export const SettingsPage = () => {
     </div>
   )
 }
+/**
+ * Customer dashboard view or route composition for account-specific data and actions.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

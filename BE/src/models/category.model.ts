@@ -36,3 +36,7 @@ CategorySchema.index({ status: 1 });
 CategorySchema.index({ name: 'text' });
 
 export const Category = mongoose.model<ICategory>('Category', CategorySchema);
+/**
+ * Defines the Mongoose schema, TypeScript contract, and persistence rules for this domain entity.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

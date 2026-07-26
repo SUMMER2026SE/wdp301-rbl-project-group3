@@ -42,6 +42,8 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 }
 
 /**
+ * Displays and updates the customer's personal profile information.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
  * Component Quản lý Thông tin cá nhân (Profile).
  * Cho phép người dùng cập nhật họ tên, số điện thoại, ảnh đại diện (avatar).
  * Hỗ trợ chức năng xác thực email thông qua mã OTP (nếu email chưa được xác thực).
@@ -390,3 +392,7 @@ export const DashboardProfilePage = () => {
     </div>
   )
 }
+/**
+ * Customer dashboard view or route composition for account-specific data and actions.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

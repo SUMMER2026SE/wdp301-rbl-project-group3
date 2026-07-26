@@ -5,6 +5,10 @@ import { cloudinary } from '../../config/cloudinary.config';
 import { AppError } from '../../middlewares/errorHandler.middleware';
 import { emitGlobal } from '../../config/socket.config';
 
+/**
+ * Application service that coordinates business rules, authorization, and side effects.
+ * Feature boundary: Banner.
+ */
 export class BannerService {
   private uploadBannerImage(buffer: Buffer, publicId: string): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -88,3 +92,7 @@ export class BannerService {
 }
 
 export const bannerService = new BannerService();
+/**
+ * Business-support component for the banner feature.
+ * It centralizes this concern so controllers and other modules reuse one consistent workflow.
+ */

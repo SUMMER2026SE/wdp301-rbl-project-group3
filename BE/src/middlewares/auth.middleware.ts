@@ -3,6 +3,10 @@ import { verifyAccessToken } from '../utils/token.util';
 import { AppError } from './errorHandler.middleware';
 import { User } from '../models/user.model';
 
+/**
+ * Authenticates a request from its access token and attaches the verified user context.
+ * The implementation is shared to keep this cross-cutting behavior consistent.
+ */
 export const authenticate = async (
   req: Request,
   _res: Response,
@@ -56,3 +60,7 @@ export const authenticate = async (
     next(error);
   }
 };
+/**
+ * Express middleware that enforces a cross-cutting request-processing concern.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

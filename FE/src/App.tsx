@@ -69,6 +69,10 @@ function useMaintenanceMode(): boolean {
   return isMaintenanceActive
 }
 
+/**
+ * Resolves the public, customer, and back-office route trees while applying access guards.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ */
 function AppRoutes() {
   const isMaintenanceActive = useMaintenanceMode()
   const location = useLocation()
@@ -135,6 +139,10 @@ function AppRoutes() {
   )
 }
 
+/**
+ * Initializes application-wide providers, maintenance polling, and router infrastructure.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ */
 function App() {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
@@ -153,3 +161,7 @@ function App() {
 }
 
 export default App
+/**
+ * Composes the frontend application shell, global providers, and top-level navigation.
+ * Keeping this concern isolated makes feature code easier to reuse and maintain.
+ */

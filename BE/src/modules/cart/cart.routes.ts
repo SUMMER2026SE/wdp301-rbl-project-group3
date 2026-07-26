@@ -30,3 +30,7 @@ router.delete('/items/:itemId', validate(removeCartItemSchema), cartController.r
 router.delete('/', cartController.clearCart);
 
 export default router;
+/**
+ * Defines the HTTP endpoints and middleware chain for this feature module.
+ * Feature boundary: cart.
+ */

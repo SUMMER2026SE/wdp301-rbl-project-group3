@@ -18,6 +18,10 @@ export interface PaginatedProducts {
   totalPages: number;
 }
 
+/**
+ * Persistence gateway that centralizes database access for this domain.
+ * Feature boundary: Product.
+ */
 export class ProductRepository {
   async create(data: Partial<IProduct>): Promise<IProduct> {
     return new Product(data).save();
@@ -102,3 +106,7 @@ export class ProductRepository {
 }
 
 export const productRepository = new ProductRepository();
+/**
+ * Encapsulates database queries for this module and keeps persistence details out of services.
+ * Feature boundary: product.
+ */

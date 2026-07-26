@@ -19,3 +19,7 @@ if (env.payos.clientId && env.payos.apiKey && env.payos.checksumKey) {
 }
 
 export { payOSClient };
+/**
+ * Centralizes configuration and initialization for this external infrastructure integration.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

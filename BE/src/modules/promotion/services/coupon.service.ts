@@ -27,6 +27,10 @@ function toVoucherResponse(v: IVoucher) {
   };
 }
 
+/**
+ * Application service that coordinates business rules, authorization, and side effects.
+ * Feature boundary: Coupon.
+ */
 export class CouponService {
   async generateVouchers(
     promotionId: string,

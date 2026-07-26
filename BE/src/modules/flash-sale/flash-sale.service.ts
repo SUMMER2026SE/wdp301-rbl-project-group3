@@ -11,6 +11,10 @@ export interface CallerContext {
   branchId?: string;
 }
 
+/**
+ * Application service that coordinates business rules, authorization, and side effects.
+ * Feature boundary: FlashSale.
+ */
 export class FlashSaleService {
   async buildCallerContext(userId: string, role: string): Promise<CallerContext> {
     if (role === 'branch_manager') {
@@ -170,3 +174,7 @@ export class FlashSaleService {
 }
 
 export const flashSaleService = new FlashSaleService();
+/**
+ * Business-support component for the flash-sale feature.
+ * It centralizes this concern so controllers and other modules reuse one consistent workflow.
+ */

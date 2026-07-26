@@ -88,6 +88,10 @@ const formatActiveDays = (days?: string[]) => {
     .join(', ')
 }
 
+/**
+ * Lets administrators configure branches, operating details, and branch availability.
+ * Data loading, mutation feedback, and screen-specific state are coordinated at this page boundary.
+ */
 export const ManageBranchesPage = () => {
   const { user } = useAuth()
   // Master states
@@ -776,3 +780,7 @@ export const ManageBranchesPage = () => {
     </div>
   )
 }
+/**
+ * Administrative dashboard view that presents and manages a specific back-office feature.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

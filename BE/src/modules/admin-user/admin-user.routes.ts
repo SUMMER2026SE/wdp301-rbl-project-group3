@@ -21,3 +21,7 @@ router.patch('/:id/unlock', validate(userIdParamSchema), adminUserController.unl
 router.patch('/:id/role', validate(changeRoleSchema), adminUserController.changeRole);
 
 export default router;
+/**
+ * Defines the HTTP endpoints and middleware chain for this feature module.
+ * Feature boundary: admin-user.
+ */

@@ -46,6 +46,10 @@ function toProfileResponse(user: IUser): ProfileResponse {
   };
 }
 
+/**
+ * Application service that coordinates business rules, authorization, and side effects.
+ * Feature boundary: User.
+ */
 export class UserService {
   async getProfile(userId: string): Promise<ProfileResponse> {
     const user = await userRepository.findById(userId);
@@ -103,3 +107,7 @@ export class UserService {
 }
 
 export const userService = new UserService();
+/**
+ * Business-support component for the user feature.
+ * It centralizes this concern so controllers and other modules reuse one consistent workflow.
+ */

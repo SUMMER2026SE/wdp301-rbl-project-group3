@@ -7,6 +7,10 @@ function actorFrom(req: Request) {
   return { userId: req.user!.userId, role: req.user!.role };
 }
 
+/**
+ * HTTP adapter that validates request context and delegates business work.
+ * Feature boundary: Invoice.
+ */
 export class InvoiceController {
   issue = asyncHandler(async (req: Request, res: Response) => {
     const invoice = await invoiceService.issueInvoice(
@@ -48,3 +52,7 @@ export class InvoiceController {
 }
 
 export const invoiceController = new InvoiceController();
+/**
+ * Translates validated HTTP requests into service calls and standardized API responses.
+ * Feature boundary: invoice.
+ */

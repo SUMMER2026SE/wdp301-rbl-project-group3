@@ -2,6 +2,10 @@ import { Request, Response, NextFunction } from 'express';
 import { ZodError, ZodIssue } from 'zod';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 
+/**
+ * Creates a typed operational error that the global handler can convert into a safe HTTP response.
+ * The implementation is shared to keep this cross-cutting behavior consistent.
+ */
 export class AppError extends Error {
   statusCode: number;
   isOperational: boolean;
@@ -83,3 +87,7 @@ export const errorHandler = (
     message: 'Internal server error',
   });
 };
+/**
+ * Express middleware that enforces a cross-cutting request-processing concern.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

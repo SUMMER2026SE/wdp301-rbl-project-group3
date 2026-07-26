@@ -12,3 +12,7 @@ router.post('/', favoriteController.addToFavorites);
 router.delete('/:productId', favoriteController.removeFromFavorites);
 
 export default router;
+/**
+ * Defines the HTTP endpoints and middleware chain for this feature module.
+ * Feature boundary: favorite.
+ */

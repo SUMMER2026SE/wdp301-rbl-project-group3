@@ -9,6 +9,10 @@ function queryStr(value: unknown): string | undefined {
   return undefined;
 }
 
+/**
+ * HTTP adapter that validates request context and delegates business work.
+ * Feature boundary: FlashSale.
+ */
 export class FlashSaleController {
   createFlashSale = asyncHandler(async (req: Request, res: Response) => {
     const { userId, role } = req.user!;
@@ -78,3 +82,7 @@ export class FlashSaleController {
 }
 
 export const flashSaleController = new FlashSaleController();
+/**
+ * Translates validated HTTP requests into service calls and standardized API responses.
+ * Feature boundary: flash-sale.
+ */

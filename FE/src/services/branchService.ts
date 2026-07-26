@@ -1,6 +1,10 @@
 import apiClient from '@services/api'
 import type { ApiResponse, Branch } from '@/types'
 
+/**
+ * Provides branch discovery and branch-management operations.
+ * Request construction and response normalization stay here so UI code remains presentation-focused.
+ */
 export const branchService = {
   // Get list of branches (filterable by status/keyword)
   getBranches: async (params?: { status?: 'active' | 'inactive'; keyword?: string }): Promise<ApiResponse<Branch[]>> => {
@@ -72,3 +76,7 @@ export const branchService = {
     return response.data
   },
 }
+/**
+ * Frontend API client module that centralizes requests and response contracts for one feature.
+ * Keeping this concern isolated makes feature code easier to reuse and maintain.
+ */

@@ -8,6 +8,10 @@ import type {
   ApiResponse,
 } from '@/types'
 
+/**
+ * Owns client requests for authentication, session recovery, and identity verification.
+ * Request construction and response normalization stay here so UI code remains presentation-focused.
+ */
 export const authService = {
   /**
    * Đăng ký tài khoản người dùng mới vào hệ thống.
@@ -158,3 +162,7 @@ export const authService = {
     return response.data
   },
 }
+/**
+ * Frontend API client module that centralizes requests and response contracts for one feature.
+ * Keeping this concern isolated makes feature code easier to reuse and maintain.
+ */

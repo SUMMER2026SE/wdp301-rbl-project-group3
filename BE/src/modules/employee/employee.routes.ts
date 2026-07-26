@@ -22,3 +22,7 @@ router.patch('/:id', validate(updateEmployeeSchema), employeeController.update);
 router.delete('/:id', validate(employeeIdParamSchema), employeeController.deactivate);
 
 export default router;
+/**
+ * Defines the HTTP endpoints and middleware chain for this feature module.
+ * Feature boundary: employee.
+ */

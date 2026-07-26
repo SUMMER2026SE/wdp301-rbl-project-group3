@@ -1,6 +1,10 @@
 import apiClient from '@services/api'
 import type { ApiResponse, Category } from '@/types'
 
+/**
+ * Retrieves and maintains product taxonomy used for catalog navigation.
+ * Request construction and response normalization stay here so UI code remains presentation-focused.
+ */
 export const categoryService = {
   /**
    * Lấy danh sách toàn bộ hoặc một phần danh mục sản phẩm từ cơ sở dữ liệu.
@@ -83,3 +87,7 @@ export const categoryService = {
     return response.data
   },
 }
+/**
+ * Frontend API client module that centralizes requests and response contracts for one feature.
+ * Keeping this concern isolated makes feature code easier to reuse and maintain.
+ */

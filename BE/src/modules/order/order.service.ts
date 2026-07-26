@@ -23,6 +23,10 @@ import {
 import { payOSClient } from '../../config/payos.config';
 import { env } from '../../config/env.config';
 
+/**
+ * Order state machine. Keeping legal next states in one table prevents route
+ * handlers from accidentally bypassing the fulfilment workflow.
+ */
 const allowedTransitions: Record<OrderStatus, OrderStatus[]> = {
   pending: ['confirmed', 'cancelled'],
   confirmed: ['preparing', 'cancelled'],
@@ -32,7 +36,12 @@ const allowedTransitions: Record<OrderStatus, OrderStatus[]> = {
   cancelled: [],
 };
 
+/**
+ * Coordinates order lifecycle operations across inventory, promotions,
+ * payments, invoices, delivery tracking, and real-time notifications.
+ */
 export class OrderService {
+  /** Resolves scoped back-office filters and returns a paginated order list. */
   async getOrders(
     filters: { branchId?: string; status?: string; keyword?: string; startDate?: string; endDate?: string; page?: number; limit?: number },
     actor: BackOfficeActor
@@ -57,6 +66,7 @@ export class OrderService {
     };
   }
 
+  /** Loads one order and enforces branch access when the caller is staff. */
   async getOrderById(id: string, actor?: BackOfficeActor): Promise<IOrder> {
     const order = await orderRepository.findById(id);
     if (!order) throw new AppError('Order not found', 404);
@@ -66,6 +76,10 @@ export class OrderService {
     return order;
   }
 
+  /**
+   * Confirms a pending order while reserving stock. Stock is reconciled if the
+   * conditional status write fails, avoiding an orphaned stock deduction.
+   */
   async confirmOrder(id: string, actor: BackOfficeActor): Promise<IOrder> {
     const order = await this.getOrderById(id, actor);
     if (order.status !== 'pending') {
@@ -100,6 +114,10 @@ export class OrderService {
     return updated;
   }
 
+  /**
+   * Applies a legal staff-driven status transition and executes its side
+   * effects, including inventory, tracking, refunds, loyalty, and sockets.
+   */
   async updateStatus(
     id: string,
     status: OrderStatus,
@@ -173,6 +191,7 @@ export class OrderService {
     return updated;
   }
 
+  /** Deducts every aggregated line item; rolls back prior deductions on error. */
   private async decreaseOrderStock(order: IOrder, staffId: string): Promise<void> {
     const branchId = this.getObjectIdString(order.branchId);
 
@@ -205,6 +224,7 @@ export class OrderService {
     }
   }
 
+  /** Restores prior stock deductions and compensates if a restoration fails. */
   private async increaseOrderStock(
     order: IOrder,
     staffId: string,
@@ -252,6 +272,7 @@ export class OrderService {
     }
   }
 
+  /** Restores the persisted order's stock state after a failed status mutation. */
   private async reconcileOrderStock(
     order: IOrder,
     staffId: string
@@ -271,6 +292,7 @@ export class OrderService {
     }
   }
 
+  /** Merges duplicate product lines so inventory is adjusted exactly once per SKU. */
   private aggregateOrderItems(
     order: IOrder
   ): { productId: string; quantity: number }[] {
@@ -285,6 +307,7 @@ export class OrderService {
     }));
   }
 
+  /** Normalizes populated and unpopulated Mongoose identifiers into strings. */
   private getObjectIdString(value: unknown): string {
     if (value instanceof Types.ObjectId) return value.toString();
     if (value && typeof value === 'object' && '_id' in value) {
@@ -293,6 +316,7 @@ export class OrderService {
     return String(value);
   }
 
+  /** Creates an auditable delivery-tracking event for a completed transition. */
   private async recordTrackingEvent(
     orderId: string,
     status: TrackingStatus,
@@ -315,6 +339,7 @@ export class OrderService {
     });
   }
 
+  /** Blocks cancellation once an invoice has been issued for the order. */
   private async ensureNoIssuedInvoice(orderId: string): Promise<void> {
     const invoice = await invoiceRepository.findByOrderId(orderId);
     if (invoice) {
@@ -326,6 +351,7 @@ export class OrderService {
     await invoiceRepository.releaseStaleOrderInvoiceReservation(orderId);
   }
 
+  /** Shapes an order into the safe, customer-facing response contract. */
   private buildCustomerOrderResponse(order: IOrder) {
     const branch = order.branchId as any;
     return {
@@ -366,6 +392,7 @@ export class OrderService {
     };
   }
 
+  /** Returns only the authenticated customer's historical orders. */
   async getOrderHistory(
     customerId: string,
     page: number,
@@ -421,6 +448,7 @@ export class OrderService {
     };
   }
 
+  /** Retrieves tracking information after proving customer ownership. */
   async trackOrder(orderId: string, customerId: string) {
     const order = await orderRepository.findByIdAndCustomerId(orderId, customerId);
     if (!order) throw new AppError('Order not found', 404);
@@ -445,6 +473,7 @@ export class OrderService {
     return this.syncPayOSStatus(orderId, customerId);
   }
 
+  /** Lets a customer cancel only an eligible order and restores reservations. */
   async cancelCustomerOrder(orderId: string, customerId: string, reason?: string) {
     const order = await orderRepository.findByIdAndCustomerId(orderId, customerId);
     if (!order) throw new AppError('Order not found', 404);
@@ -473,6 +502,7 @@ export class OrderService {
     return this.buildCustomerOrderResponse(updatedOrder);
   }
 
+  /** Cancels unpaid overdue orders from the scheduled timeout job. */
   async autoCancelOverdueOrder(orderId: string, timeoutMinutes: number): Promise<void> {
     const order = await orderRepository.findRawById(orderId);
     if (!order || order.status !== 'pending' || order.paymentStatus === 'paid') return;
@@ -499,6 +529,7 @@ export class OrderService {
     this.emitOrderUpdate(updatedOrder);
   }
 
+  /** Produces a human-readable, timestamp-based order reference. */
   private generateOrderCode(): string {
     const date = new Date();
     const stamp = date.toISOString().slice(0, 10).replace(/-/g, '');
@@ -506,6 +537,10 @@ export class OrderService {
     return `ORD-${stamp}-${random}`;
   }
 
+  /**
+   * Validates checkout input, calculates promotions and totals, persists the
+   * order, then creates the payment flow required by the chosen method.
+   */
   async placeOrder(customerId: string, data: {
     branchId: string;
     shippingAddress: string;
@@ -750,6 +785,7 @@ export class OrderService {
     return orderResponse;
   }
 
+  /** Processes a verified PayOS callback and idempotently updates payment state. */
   async handlePayOSWebhook(webhookData: any): Promise<any> {
     try {
       let verifiedData: any = webhookData;
@@ -801,6 +837,7 @@ export class OrderService {
     }
   }
 
+  /** Queries PayOS to reconcile a payment whose callback may be delayed. */
   async syncPayOSStatus(orderId: string, customerId?: string): Promise<any> {
     const order: any = customerId
       ? await orderRepository.findByIdAndCustomerId(orderId, customerId)
@@ -841,6 +878,7 @@ export class OrderService {
     return this.buildCustomerOrderResponse(order);
   }
 
+  /** Converts an optional actor reference into a stable tracking payload. */
   private buildTrackingActor(value: unknown) {
     if (value && typeof value === 'object' && '_id' in value) {
       const actor = value as {
@@ -859,6 +897,7 @@ export class OrderService {
     return value ? { userId: String(value) } : null;
   }
 
+  /** Returns flash-sale allocations when a confirmed order is cancelled. */
   private async restoreFlashSaleQuantities(order: IOrder): Promise<void> {
     try {
       const orderDate = order.createdAt;
@@ -884,6 +923,7 @@ export class OrderService {
       console.error('[RESTORE_FLASH_SALE_QUANTITIES_FAILED]', err);
     }
   }
+  /** Awards loyalty points once for paid, successfully delivered orders. */
   private async awardLoyaltyPointsIfEligible(order: IOrder): Promise<void> {
     if (!order || !order.customerId) return;
     // Điểm thưởng CHỈ được cộng khi: Đơn hàng đã giao thành công (status = 'delivered') VÀ đã thanh toán thành công (paymentStatus = 'paid')
@@ -944,6 +984,7 @@ export class OrderService {
     }
   }
 
+  /** Broadcasts an order change to the relevant branch and customer rooms. */
   private emitOrderUpdate(order: any) {
     const customerId = this.getObjectIdString(order.customerId);
     const branchId = this.getObjectIdString(order.branchId);

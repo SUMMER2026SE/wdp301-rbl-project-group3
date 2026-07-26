@@ -1,6 +1,10 @@
 import apiClient from '@services/api'
 import type { ApiResponse, Product } from '@/types'
 
+/**
+ * Provides catalog retrieval and product-management requests.
+ * Request construction and response normalization stay here so UI code remains presentation-focused.
+ */
 export const productService = {
   // Get products (active or all, filterable by keyword)
   getProducts: async (params?: { keyword?: string; status?: string; page?: number; limit?: number; branchId?: string }): Promise<ApiResponse<Product[]> & { pagination?: any }> => {
@@ -132,3 +136,7 @@ export const productService = {
     return response.data
   }
 }
+/**
+ * Frontend API client module that centralizes requests and response contracts for one feature.
+ * Keeping this concern isolated makes feature code easier to reuse and maintain.
+ */

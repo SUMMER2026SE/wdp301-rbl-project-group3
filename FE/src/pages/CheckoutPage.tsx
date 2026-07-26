@@ -43,6 +43,10 @@ const productImageMap: Record<string, string> = {
   'Fresh Whole Sea Bass': '/assets/winmart/sea-bass.png',
 }
 
+/**
+ * Coordinates checkout data, payment selection, order submission, and confirmation UX.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ */
 export const CheckoutPage = () => {
   const navigate = useNavigate()
   const { cart, clearCart, refreshCart } = useCart()
@@ -1202,3 +1206,7 @@ export const CheckoutPage = () => {
     </div>
   )
 }
+/**
+ * Customer-facing route component responsible for this standalone application screen.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

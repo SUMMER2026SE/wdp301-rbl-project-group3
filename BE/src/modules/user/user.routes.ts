@@ -14,3 +14,7 @@ router.patch('/me', validate(updateProfileSchema), userController.updateProfile)
 router.patch('/me/avatar', uploadAvatar, userController.updateAvatar);
 
 export default router;
+/**
+ * Defines the HTTP endpoints and middleware chain for this feature module.
+ * Feature boundary: user.
+ */

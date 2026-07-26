@@ -34,3 +34,7 @@ PasswordResetSchema.index({ userId: 1, type: 1 });
 PasswordResetSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export const PasswordReset = mongoose.model<IPasswordReset>('PasswordReset', PasswordResetSchema);
+/**
+ * Defines the Mongoose schema, TypeScript contract, and persistence rules for this domain entity.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

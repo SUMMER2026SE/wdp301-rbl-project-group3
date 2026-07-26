@@ -22,6 +22,10 @@ import type { Employee, Branch } from '@/types'
 import { notify } from '../../utils/toast';
 import { ConfirmModal } from '../../components/ConfirmModal';
 
+/**
+ * Supports employee administration, branch assignment, and operational status changes.
+ * Data loading, mutation feedback, and screen-specific state are coordinated at this page boundary.
+ */
 export const ManageEmployeesPage = () => {
   const { user: currentUser } = useAuth()
 
@@ -675,3 +679,7 @@ export const ManageEmployeesPage = () => {
     </div>
   )
 }
+/**
+ * Administrative dashboard view that presents and manages a specific back-office feature.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

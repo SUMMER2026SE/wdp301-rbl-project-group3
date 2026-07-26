@@ -23,3 +23,7 @@ const FavoriteSchema = new Schema<IFavorite>(
 FavoriteSchema.index({ userId: 1, productId: 1 }, { unique: true });
 
 export const Favorite = mongoose.model<IFavorite>('Favorite', FavoriteSchema);
+/**
+ * Defines the Mongoose schema, TypeScript contract, and persistence rules for this domain entity.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

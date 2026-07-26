@@ -50,3 +50,7 @@ export const env = {
     checksumKey: process.env.PAYOS_CHECKSUM_KEY || '',
   },
 };
+/**
+ * Centralizes configuration and initialization for this external infrastructure integration.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

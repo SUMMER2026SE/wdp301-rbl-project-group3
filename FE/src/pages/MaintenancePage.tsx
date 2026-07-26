@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 
 /**
+ * Shows the maintenance state when the backend temporarily disables normal access.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
  * Trang thông báo bảo trì hệ thống.
  * Được hiển thị khi toàn bộ hệ thống hoặc các chức năng phía người dùng đang được bảo trì.
  * Ngăn chặn người dùng truy cập vào các trang chính, nhưng vẫn cung cấp đường dẫn để quản trị viên (Admin/Manager) có thể đăng nhập.
@@ -103,3 +105,7 @@ export const MaintenancePage = () => {
     </div>
   )
 }
+/**
+ * Customer-facing route component responsible for this standalone application screen.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

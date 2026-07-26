@@ -12,6 +12,10 @@ function actorFrom(req: Request) {
   return { userId: req.user!.userId, role: req.user!.role };
 }
 
+/**
+ * HTTP adapter that validates request context and delegates business work.
+ * Feature boundary: Employee.
+ */
 export class EmployeeController {
   list = asyncHandler(async (req: Request, res: Response) => {
     const { query } = listEmployeesSchema.parse({ query: req.query });
@@ -56,3 +60,7 @@ export class EmployeeController {
 }
 
 export const employeeController = new EmployeeController();
+/**
+ * Translates validated HTTP requests into service calls and standardized API responses.
+ * Feature boundary: employee.
+ */

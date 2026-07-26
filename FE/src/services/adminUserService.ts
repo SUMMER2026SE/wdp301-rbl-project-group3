@@ -19,6 +19,10 @@ export interface ListUsersResult {
   }
 }
 
+/**
+ * Exposes administrative account-management operations for back-office screens.
+ * Request construction and response normalization stay here so UI code remains presentation-focused.
+ */
 export const adminUserService = {
   /**
    * Dịch vụ dành riêng cho Admin (Backend sẽ kiểm tra RBAC - Role Based Access Control).
@@ -54,3 +58,7 @@ export const adminUserService = {
     return response.data
   },
 }
+/**
+ * Frontend API client module that centralizes requests and response contracts for one feature.
+ * Keeping this concern isolated makes feature code easier to reuse and maintain.
+ */

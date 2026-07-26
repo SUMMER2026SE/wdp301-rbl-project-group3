@@ -87,3 +87,7 @@ UserSchema.index(
 );
 
 export const User = mongoose.model<IUser>('User', UserSchema);
+/**
+ * Defines the Mongoose schema, TypeScript contract, and persistence rules for this domain entity.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

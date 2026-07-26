@@ -11,3 +11,7 @@ router.post('/import', authenticate, authorize('admin'), competitorProductContro
 router.post('/delete', authenticate, authorize('admin'), competitorProductController.deleteCompetitorProducts);
 
 export default router;
+/**
+ * Defines the HTTP endpoints and middleware chain for this feature module.
+ * Feature boundary: competitor-product.
+ */

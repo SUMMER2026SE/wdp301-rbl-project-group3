@@ -4,6 +4,10 @@ import { UserToken, IUserToken } from '../../models/userToken.model';
 import { PasswordReset, IPasswordReset, PasswordResetType } from '../../models/passwordReset.model';
 import { DeviceInfo } from '../../types/common.types';
 
+/**
+ * Persistence gateway that centralizes database access for this domain.
+ * Feature boundary: Auth.
+ */
 export class AuthRepository {
   // ─── User ───────────────────────────────────────────────
   async findUserByEmail(email: string, includePassword = false): Promise<IUser | null> {
@@ -148,3 +152,11 @@ export class AuthRepository {
 }
 
 export const authRepository = new AuthRepository();
+/**
+ * Encapsulates database queries for this module and keeps persistence details out of services.
+ * Feature boundary: auth.
+ */
+/**
+ * Business-support component for the auth feature.
+ * It centralizes this concern so controllers and other modules reuse one consistent workflow.
+ */

@@ -20,3 +20,7 @@ router.delete('/:addressId', validate(addressIdParamSchema), addressController.d
 router.patch('/:addressId/default', validate(addressIdParamSchema), addressController.setDefault);
 
 export default router;
+/**
+ * Defines the HTTP endpoints and middleware chain for this feature module.
+ * Feature boundary: address.
+ */

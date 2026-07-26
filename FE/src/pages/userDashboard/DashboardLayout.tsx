@@ -50,6 +50,8 @@ const getInitials = (name?: string) => {
 }
 
 /**
+ * Provides account navigation and a protected layout for customer dashboard routes.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
  * Component Layout chính cho giao diện Dashboard của người dùng (Customer).
  * Chứa Sidebar điều hướng, Header với thanh tìm kiếm và khu vực hiển thị nội dung chính (Outlet).
  * Tự động chuyển hướng Admin/Staff sang trang /admin.
@@ -307,3 +309,7 @@ export const DashboardLayout = () => {
     </div>
   )
 }
+/**
+ * Customer dashboard view or route composition for account-specific data and actions.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

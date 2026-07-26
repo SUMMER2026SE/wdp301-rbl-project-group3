@@ -4,6 +4,10 @@ import { IOrder, Order, OrderStatus } from '../../models/order.model';
 import { DeliveryTracking, IDeliveryTracking, TrackingStatus } from '../../models/deliveryTracking.model';
 import { User } from '../../models/user.model';
 
+/**
+ * Persistence gateway that centralizes database access for this domain.
+ * Feature boundary: Order.
+ */
 export class OrderRepository {
   async findAll(filters: { branchId?: string; status?: string }): Promise<IOrder[]> {
     const query: Record<string, unknown> = {};
@@ -224,3 +228,7 @@ export class OrderRepository {
 }
 
 export const orderRepository = new OrderRepository();
+/**
+ * Encapsulates database queries for this module and keeps persistence details out of services.
+ * Feature boundary: order.
+ */

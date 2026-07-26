@@ -29,3 +29,7 @@ adminRouter.patch('/:key', validate(updateSettingSchema), systemSettingControlle
 adminRouter.delete('/:key', validate(settingKeyParamSchema), systemSettingController.delete);
 
 export { adminRouter as adminSystemSettingRoutes, publicRouter as publicSystemSettingRoutes };
+/**
+ * Defines the HTTP endpoints and middleware chain for this feature module.
+ * Feature boundary: system-setting.
+ */

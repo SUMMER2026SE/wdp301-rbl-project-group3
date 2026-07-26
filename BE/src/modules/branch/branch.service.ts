@@ -7,6 +7,10 @@ import { Inventory } from '../../models/inventory.model';
 import { Order } from '../../models/order.model';
 import { emitGlobal } from '../../config/socket.config';
 
+/**
+ * Application service that coordinates business rules, authorization, and side effects.
+ * Feature boundary: Branch.
+ */
 export class BranchService {
   async createBranch(data: Partial<IBranch>): Promise<IBranch> {
     const existing = await branchRepository.findByCode(String(data.code));
@@ -123,3 +127,7 @@ export class BranchService {
 }
 
 export const branchService = new BranchService();
+/**
+ * Business-support component for the branch feature.
+ * It centralizes this concern so controllers and other modules reuse one consistent workflow.
+ */

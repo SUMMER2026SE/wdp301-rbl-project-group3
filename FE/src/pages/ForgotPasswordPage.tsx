@@ -32,6 +32,8 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 }
 
 /**
+ * Guides a user through requesting and completing password recovery.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
  * Component hiển thị trang Quên mật khẩu.
  * Cho phép người dùng nhập email để nhận mã OTP và đặt lại mật khẩu mới.
  * Quy trình gồm 2 bước:
@@ -296,3 +298,7 @@ export const ForgotPasswordPage = () => {
     </div>
   )
 }
+/**
+ * Customer-facing route component responsible for this standalone application screen.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

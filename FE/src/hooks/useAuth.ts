@@ -16,6 +16,10 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   return apiError.response?.data?.message || apiError.message || fallback
 }
 
+/**
+ * Provides a single auth-state interface for role checks and session-aware UI.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ */
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
@@ -139,3 +143,7 @@ export const useAuth = () => {
     refreshUser,
   }
 }
+/**
+ * Custom React hook that encapsulates reusable stateful client behavior.
+ * Keeping this concern isolated makes feature code easier to reuse and maintain.
+ */

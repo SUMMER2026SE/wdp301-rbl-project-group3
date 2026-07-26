@@ -3,6 +3,10 @@ import { IInvoice, Invoice } from '../../models/invoice.model';
 import { IOrder, Order } from '../../models/order.model';
 import { IUser, User } from '../../models/user.model';
 
+/**
+ * Persistence gateway that centralizes database access for this domain.
+ * Feature boundary: Invoice.
+ */
 export class InvoiceRepository {
   async findOrderForInvoice(orderId: string): Promise<IOrder | null> {
     return Order.findById(orderId)
@@ -163,3 +167,11 @@ export class InvoiceRepository {
 }
 
 export const invoiceRepository = new InvoiceRepository();
+/**
+ * Encapsulates database queries for this module and keeps persistence details out of services.
+ * Feature boundary: invoice.
+ */
+/**
+ * Business-support component for the invoice feature.
+ * It centralizes this concern so controllers and other modules reuse one consistent workflow.
+ */
