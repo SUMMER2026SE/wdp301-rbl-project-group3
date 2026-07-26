@@ -63,3 +63,7 @@ FlashSaleSchema.index({ branchId: 1, status: 1 });
 FlashSaleSchema.index({ scope: 1, status: 1 });
 
 export const FlashSale = mongoose.model<IFlashSale>('FlashSale', FlashSaleSchema);
+/**
+ * Defines the Mongoose schema, TypeScript contract, and persistence rules for this domain entity.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

@@ -4,6 +4,10 @@ import { asyncHandler } from '../../utils/asyncHandler';
 import { sendSuccess } from '../../utils/response.util';
 import { OrderStatus } from '../../models/order.model';
 
+/**
+ * HTTP adapter that validates request context and delegates business work.
+ * Feature boundary: Order.
+ */
 export class OrderController {
   getAll = asyncHandler(async (req: Request, res: Response) => {
     const page = Math.max(1, parseInt(req.query['page'] as string) || 1);
@@ -100,3 +104,7 @@ export class OrderController {
 }
 
 export const orderController = new OrderController();
+/**
+ * Translates validated HTTP requests into service calls and standardized API responses.
+ * Feature boundary: order.
+ */

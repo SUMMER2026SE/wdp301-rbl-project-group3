@@ -31,6 +31,10 @@ function toPromotionResponse(p: IPromotion) {
   };
 }
 
+/**
+ * Application service that coordinates business rules, authorization, and side effects.
+ * Feature boundary: Promotion.
+ */
 export class PromotionService {
   private assertCanManage(promotion: IPromotion, caller: CallerContext): void {
     if (caller.role === 'admin') return;

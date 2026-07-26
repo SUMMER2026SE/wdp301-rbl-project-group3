@@ -4,6 +4,10 @@ import { asyncHandler } from '../../utils/asyncHandler';
 import { sendSuccess } from '../../utils/response.util';
 import { changeRoleSchema, listUsersSchema } from './admin-user.validation';
 
+/**
+ * HTTP adapter that validates request context and delegates business work.
+ * Feature boundary: AdminUser.
+ */
 export class AdminUserController {
   list = asyncHandler(async (req: Request, res: Response) => {
     const { query } = listUsersSchema.parse({
@@ -43,3 +47,7 @@ export class AdminUserController {
 }
 
 export const adminUserController = new AdminUserController();
+/**
+ * Translates validated HTTP requests into service calls and standardized API responses.
+ * Feature boundary: admin-user.
+ */

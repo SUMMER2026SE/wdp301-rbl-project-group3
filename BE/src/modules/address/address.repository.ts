@@ -1,6 +1,10 @@
 import { Types } from 'mongoose';
 import { UserAddress, IUserAddress } from '../../models/userAddress.model';
 
+/**
+ * Persistence gateway that centralizes database access for this domain.
+ * Feature boundary: Address.
+ */
 export class AddressRepository {
     async findAllByUserId(userId: string): Promise<IUserAddress[]> {
         return UserAddress.find({ userId: new Types.ObjectId(userId) })
@@ -73,3 +77,7 @@ export class AddressRepository {
 }
 
 export const addressRepository = new AddressRepository();
+/**
+ * Encapsulates database queries for this module and keeps persistence details out of services.
+ * Feature boundary: address.
+ */

@@ -8,6 +8,10 @@ import type {
   AdminOrderStatus,
 } from '@/types'
 
+/**
+ * Supports customer checkout as well as back-office order fulfilment operations.
+ * Request construction and response normalization stay here so UI code remains presentation-focused.
+ */
 export const orderService = {
   // ── CUSTOMER PORTAL API CALLS ──
 
@@ -118,3 +122,7 @@ export const orderService = {
     return response.data
   },
 }
+/**
+ * Frontend API client module that centralizes requests and response contracts for one feature.
+ * Keeping this concern isolated makes feature code easier to reuse and maintain.
+ */

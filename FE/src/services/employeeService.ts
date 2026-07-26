@@ -1,6 +1,10 @@
 import apiClient from './api'
 import type { ApiResponse, Employee } from '@/types'
 
+/**
+ * Provides employee records and staff-administration actions.
+ * Request construction and response normalization stay here so UI code remains presentation-focused.
+ */
 export const employeeService = {
   listEmployees: async (params?: {
     page?: number
@@ -55,3 +59,7 @@ export const employeeService = {
     return response.data
   },
 }
+/**
+ * Frontend API client module that centralizes requests and response contracts for one feature.
+ * Keeping this concern isolated makes feature code easier to reuse and maintain.
+ */

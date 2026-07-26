@@ -44,3 +44,7 @@ BannerSchema.index({ status: 1 });
 BannerSchema.index({ order: 1 });
 
 export const Banner = mongoose.model<IBanner>('Banner', BannerSchema);
+/**
+ * Defines the Mongoose schema, TypeScript contract, and persistence rules for this domain entity.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

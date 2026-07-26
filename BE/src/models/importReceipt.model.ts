@@ -95,3 +95,7 @@ ImportReceiptSchema.index({ branchId: 1, createdAt: -1 });
 ImportReceiptSchema.index({ status: 1 });
 
 export const ImportReceipt = mongoose.model<IImportReceipt>('ImportReceipt', ImportReceiptSchema);
+/**
+ * Defines the Mongoose schema, TypeScript contract, and persistence rules for this domain entity.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

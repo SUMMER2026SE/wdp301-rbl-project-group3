@@ -52,6 +52,10 @@ function assertValueMatchesType(value: unknown, valueType: SettingValueType): vo
   }
 }
 
+/**
+ * Application service that coordinates business rules, authorization, and side effects.
+ * Feature boundary: SystemSetting.
+ */
 export class SystemSettingService {
   private async ensureDefaultSettings(): Promise<void> {
     // Upsert each default setting — only inserts if the key doesn't exist yet.

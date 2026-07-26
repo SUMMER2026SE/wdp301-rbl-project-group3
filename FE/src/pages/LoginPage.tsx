@@ -48,6 +48,10 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   return msg
 }
 
+/**
+ * Authenticates local or Google users and redirects them to their permitted area.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ */
 export const LoginPage = () => {
   const navigate = useNavigate()
   const { login, loading } = useAuth()
@@ -360,3 +364,7 @@ export const LoginPage = () => {
     </div>
   )
 }
+/**
+ * Customer-facing route component responsible for this standalone application screen.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

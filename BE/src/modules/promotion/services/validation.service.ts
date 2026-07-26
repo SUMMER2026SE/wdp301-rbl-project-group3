@@ -2,6 +2,10 @@ import { promotionRepository } from '../promotion.repository';
 import { IVoucher } from '../../../models/voucher.model';
 import { AppError } from '../../../middlewares/errorHandler.middleware';
 
+/**
+ * Application service that coordinates business rules, authorization, and side effects.
+ * Feature boundary: PromotionValidation.
+ */
 export class PromotionValidationService {
   /**
    * Kiểm tra tính hợp lệ của mã giảm giá
@@ -67,3 +71,7 @@ export class PromotionValidationService {
 }
 
 export const promotionValidationService = new PromotionValidationService();
+/**
+ * Business-support component for the promotion feature.
+ * It centralizes this concern so controllers and other modules reuse one consistent workflow.
+ */

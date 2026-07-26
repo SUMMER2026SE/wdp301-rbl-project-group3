@@ -1,8 +1,19 @@
 import apiClient from '@services/api'
 import type { ApiResponse, Category } from '@/types'
 
+/**
+ * Retrieves and maintains product taxonomy used for catalog navigation.
+ * Request construction and response normalization stay here so UI code remains presentation-focused.
+ */
 export const categoryService = {
-  // Get all categories (filterable by status/keyword/page/limit)
+  /**
+   * Lấy danh sách toàn bộ hoặc một phần danh mục sản phẩm từ cơ sở dữ liệu.
+   * Hỗ trợ chức năng phân trang (Pagination) và Lọc đa chiều (Filtering & Searching).
+   * Kết quả trả về được chuẩn hóa ép kiểu (normalize) lại cấu trúc trạng thái 'active'/'inactive'.
+   * 
+   * @param params Các tham số truy vấn trên thanh URL (Query string) như status, keyword, page.
+   * @returns Một mảng Category đã chuẩn hóa kèm theo thông tin tổng số trang để render Table.
+   */
   getCategories: async (params?: {
     status?: 'active' | 'inactive';
     keyword?: string;
@@ -47,13 +58,24 @@ export const categoryService = {
     }
   },
 
-  // Create a new category
+  /**
+   * Tạo một phân loại/danh mục sản phẩm mới vào hệ thống (Admin Only).
+   * Yêu cầu chuỗi `code` phải là duy nhất và không chứa ký tự đặc biệt theo quy chuẩn.
+   * 
+   * @param categoryData Object chứa Tên, Mã, Mô tả và Trạng thái hiển thị
+   */
   createCategory: async (categoryData: { name: string; code: string; description?: string; status?: 'active' | 'inactive' }): Promise<ApiResponse<Category>> => {
     const response = await apiClient.post('/api/categories', categoryData)
     return response.data
   },
 
-  // Update a category
+  /**
+   * Chỉnh sửa thông tin một danh mục đã tồn tại dựa vào UUID hoặc ID định danh.
+   * Có thể cập nhật một phần (Partial) dữ liệu mà không cần gửi toàn bộ Model.
+   * 
+   * @param id Khóa chính (Primary Key) của danh mục
+   * @param categoryData Dữ liệu cần cập nhật mới
+   */
   updateCategory: async (id: string, categoryData: Partial<{ name: string; code: string; description?: string; status?: 'active' | 'inactive' }>): Promise<ApiResponse<Category>> => {
     const response = await apiClient.patch(`/api/categories/${id}`, categoryData)
     return response.data
@@ -65,3 +87,7 @@ export const categoryService = {
     return response.data
   },
 }
+/**
+ * Frontend API client module that centralizes requests and response contracts for one feature.
+ * Keeping this concern isolated makes feature code easier to reuse and maintain.
+ */

@@ -2,6 +2,10 @@ import { Favorite } from '../../models/favorite.model';
 import { Product } from '../../models/product.model';
 import { AppError } from '../../middlewares/errorHandler.middleware';
 
+/**
+ * Application service that coordinates business rules, authorization, and side effects.
+ * Feature boundary: Favorite.
+ */
 export class FavoriteService {
     async getFavorites(userId: string) {
         const list = await Favorite.find({ userId })
@@ -43,3 +47,7 @@ export class FavoriteService {
 }
 
 export const favoriteService = new FavoriteService();
+/**
+ * Business-support component for the favorite feature.
+ * It centralizes this concern so controllers and other modules reuse one consistent workflow.
+ */

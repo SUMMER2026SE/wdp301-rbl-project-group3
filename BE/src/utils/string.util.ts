@@ -1,3 +1,7 @@
+/**
+ * Normalizes nullable text for case-insensitive comparisons and search.
+ * The implementation is shared to keep this cross-cutting behavior consistent.
+ */
 export const normalizeString = (str: string | undefined | null): string => {
   if (!str) return '';
   return str
@@ -9,3 +13,7 @@ export const normalizeString = (str: string | undefined | null): string => {
     .replace(/\s+/g, ' ') // Xóa khoảng trắng thừa
     .trim();
 };
+/**
+ * Shared backend utility that keeps this concern consistent across feature modules.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

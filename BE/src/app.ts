@@ -13,6 +13,11 @@ import { initOrderAutoCancelCron } from './modules/order/order.cron';
 import { maintenanceModeMiddleware } from './middlewares/maintenanceMode.middleware';
 import { initSocket } from './config/socket.config';
 
+/**
+ * Express application composition root. Middleware is registered in request
+ * order so security, parsing, maintenance checks, routing, and errors have a
+ * predictable execution sequence.
+ */
 const app = express();
 
 // ─── Security Middlewares ──────────────────────────────────
@@ -51,6 +56,10 @@ app.use((_req, res) => {
 app.use(errorHandler);
 
 // ─── Start Server ──────────────────────────────────────────
+/**
+ * Starts infrastructure that must exist before the API accepts traffic:
+ * MongoDB, scheduled jobs, and the Socket.IO server share this lifecycle.
+ */
 const start = async () => {
   await connectDatabase();
   initCrawlerCron();

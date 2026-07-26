@@ -266,6 +266,10 @@ const FlashSaleCard = ({
   )
 }
 
+/**
+ * Renders a recommended product with a compact purchase action.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ */
 const RecommendedCard = ({ product, onAddToCart }: { product: any; onAddToCart?: () => void }) => {
   const { isFavorite, addToFavorites, removeFromFavorites } = useFavorites()
   const title = product.productName || product.name
@@ -330,6 +334,10 @@ const RecommendedCard = ({ product, onAddToCart }: { product: any; onAddToCart?:
   )
 }
 
+/**
+ * Builds the storefront landing experience from categories, products, and promotional data.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ */
 export const HomePage = () => {
   const navigate = useNavigate()
   const { user, isAuthenticated, logout } = useAuth()
@@ -1598,3 +1606,7 @@ export const HomePage = () => {
     </div>
   )
 }
+/**
+ * Customer-facing route component responsible for this standalone application screen.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

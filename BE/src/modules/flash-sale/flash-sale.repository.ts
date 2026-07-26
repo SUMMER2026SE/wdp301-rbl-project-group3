@@ -9,6 +9,10 @@ export interface FlashSaleFilter {
   limit?: number;
 }
 
+/**
+ * Persistence gateway that centralizes database access for this domain.
+ * Feature boundary: FlashSale.
+ */
 export class FlashSaleRepository {
   async createFlashSale(data: Partial<IFlashSale>): Promise<IFlashSale> {
     const flashSale = new FlashSale(data);
@@ -149,3 +153,11 @@ export class FlashSaleRepository {
 }
 
 export const flashSaleRepository = new FlashSaleRepository();
+/**
+ * Encapsulates database queries for this module and keeps persistence details out of services.
+ * Feature boundary: flash-sale.
+ */
+/**
+ * Business-support component for the flash-sale feature.
+ * It centralizes this concern so controllers and other modules reuse one consistent workflow.
+ */

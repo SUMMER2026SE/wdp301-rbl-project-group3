@@ -1,6 +1,10 @@
 import apiClient from '@services/api'
 import type { ApiResponse, CompetitorProduct } from '@/types'
 
+/**
+ * Connects back-office product comparison screens to competitor-price data.
+ * Request construction and response normalization stay here so UI code remains presentation-focused.
+ */
 export const competitorProductService = {
   // Get crawled products from competitor
   getCompetitorProducts: async (params?: { keyword?: string; page?: number; limit?: number }): Promise<ApiResponse<CompetitorProduct[]> & { pagination?: any }> => {
@@ -27,3 +31,7 @@ export const competitorProductService = {
     return response.data
   }
 }
+/**
+ * Frontend API client module that centralizes requests and response contracts for one feature.
+ * Keeping this concern isolated makes feature code easier to reuse and maintain.
+ */

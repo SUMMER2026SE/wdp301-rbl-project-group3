@@ -3,6 +3,10 @@ import { categoryService } from './category.service';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { sendSuccess } from '../../utils/response.util';
 
+/**
+ * HTTP adapter that validates request context and delegates business work.
+ * Feature boundary: Category.
+ */
 export class CategoryController {
   create = asyncHandler(async (req: Request, res: Response) => {
     const category = await categoryService.createCategory(req.body);
@@ -44,3 +48,7 @@ export class CategoryController {
 }
 
 export const categoryController = new CategoryController();
+/**
+ * Translates validated HTTP requests into service calls and standardized API responses.
+ * Feature boundary: category.
+ */

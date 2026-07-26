@@ -25,6 +25,10 @@ async function getMaintenanceMode(): Promise<boolean> {
 }
 
 // Call this to immediately invalidate the cache (used when admin toggles the setting)
+/**
+ * Invalidates cached maintenance settings after an administrator updates them.
+ * The implementation is shared to keep this cross-cutting behavior consistent.
+ */
 export function invalidateMaintenanceCache(): void {
   cacheExpiresAt = 0;
 }
@@ -55,6 +59,10 @@ function isAdminOrStaff(req: Request): boolean {
   }
 }
 
+/**
+ * Blocks normal traffic while maintenance mode is active, preserving allowed routes.
+ * The implementation is shared to keep this cross-cutting behavior consistent.
+ */
 export const maintenanceModeMiddleware = async (
   req: Request,
   res: Response,
@@ -90,3 +98,7 @@ export const maintenanceModeMiddleware = async (
     next();
   }
 };
+/**
+ * Express middleware that enforces a cross-cutting request-processing concern.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

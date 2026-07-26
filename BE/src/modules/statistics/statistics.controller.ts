@@ -26,6 +26,10 @@ function queryStr(value: unknown): string | undefined {
   return undefined;
 }
 
+/**
+ * HTTP adapter that validates request context and delegates business work.
+ * Feature boundary: Statistics.
+ */
 export class StatisticsController {
   // ═══════════════════════════════════════════════════════════════════════════
   // DASHBOARDS BY ROLE
@@ -156,3 +160,7 @@ export class StatisticsController {
 }
 
 export const statisticsController = new StatisticsController();
+/**
+ * Translates validated HTTP requests into service calls and standardized API responses.
+ * Feature boundary: statistics.
+ */

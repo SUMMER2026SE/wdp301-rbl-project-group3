@@ -25,6 +25,10 @@ const formatVND = (num: number) => {
   }).format(num)
 }
 
+/**
+ * Creates and monitors limited-time flash-sale campaigns and their products.
+ * Data loading, mutation feedback, and screen-specific state are coordinated at this page boundary.
+ */
 export const ManageFlashSalesPage = () => {
   const { user } = useAuth()
   const { socket } = useSocket()
@@ -926,3 +930,7 @@ export const ManageFlashSalesPage = () => {
   )
 }
 export default ManageFlashSalesPage
+/**
+ * Administrative dashboard view that presents and manages a specific back-office feature.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

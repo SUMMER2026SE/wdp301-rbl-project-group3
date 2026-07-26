@@ -52,3 +52,7 @@ router.use('/competitor-products', competitorProductRoutes);
 router.use('/favorites', favoriteRoutes);
 
 export default router;
+/**
+ * Supports backend composition, shared contracts, scheduled work, or operational data maintenance.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

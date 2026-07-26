@@ -72,6 +72,10 @@ function calcUsageRate(byStatus: Record<string, number>): {
 
 // ─── Service ─────────────────────────────────────────────────────────────────
 
+/**
+ * Application service that coordinates business rules, authorization, and side effects.
+ * Feature boundary: Statistics.
+ */
 export class StatisticsService {
   // ═══════════════════════════════════════════════════════════════════════════
   // ADMIN DASHBOARD

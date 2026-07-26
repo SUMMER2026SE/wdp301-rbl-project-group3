@@ -16,6 +16,10 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
 
+/**
+ * Maintains the authenticated shopper's cart and synchronizes cart mutations with the API.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ */
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cart, setCart] = useState<CartResponse | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
@@ -275,6 +279,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   )
 }
 
+/**
+ * Returns the cart context and fails early when used outside its provider.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ */
 export const useCart = () => {
   const context = useContext(CartContext)
   if (context === undefined) {
@@ -282,3 +290,7 @@ export const useCart = () => {
   }
   return context
 }
+/**
+ * Provides shared client state and side effects to descendant React components.
+ * Keeping this concern isolated makes feature code easier to reuse and maintain.
+ */

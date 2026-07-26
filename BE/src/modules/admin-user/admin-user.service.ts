@@ -47,6 +47,10 @@ function toAdminUserResponse(user: IUser) {
   };
 }
 
+/**
+ * Application service that coordinates business rules, authorization, and side effects.
+ * Feature boundary: AdminUser.
+ */
 export class AdminUserService {
   async listUsers(query: ListUsersQuery): Promise<ListUsersResult> {
     const { items, total, page, limit, totalPages } = await adminUserRepository.findPaginated(
@@ -200,3 +204,7 @@ export class AdminUserService {
 }
 
 export const adminUserService = new AdminUserService();
+/**
+ * Business-support component for the admin-user feature.
+ * It centralizes this concern so controllers and other modules reuse one consistent workflow.
+ */

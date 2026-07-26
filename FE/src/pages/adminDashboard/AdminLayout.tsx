@@ -49,6 +49,10 @@ type BackOfficeRole = (typeof BACK_OFFICE_ROLES)[number]
 const isBackOffice = (role: string): role is BackOfficeRole =>
   (BACK_OFFICE_ROLES as readonly string[]).includes(role)
 
+/**
+ * Protects the back-office shell and renders navigation for authorized staff roles.
+ * Data loading, mutation feedback, and screen-specific state are coordinated at this page boundary.
+ */
 export const AdminLayout = () => {
   const location = useLocation()
   const navigate = useNavigate()
@@ -469,3 +473,7 @@ export const AdminLayout = () => {
     </div>
   )
 }
+/**
+ * Administrative dashboard view that presents and manages a specific back-office feature.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

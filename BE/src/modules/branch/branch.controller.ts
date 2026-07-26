@@ -4,6 +4,10 @@ import { asyncHandler } from '../../utils/asyncHandler';
 import { sendSuccess } from '../../utils/response.util';
 import { AppError } from '../../middlewares/errorHandler.middleware';
 
+/**
+ * HTTP adapter that validates request context and delegates business work.
+ * Feature boundary: Branch.
+ */
 export class BranchController {
   create = asyncHandler(async (req: Request, res: Response) => {
     const branch = await branchService.createBranch(req.body);
@@ -55,3 +59,7 @@ export class BranchController {
 }
 
 export const branchController = new BranchController();
+/**
+ * Translates validated HTTP requests into service calls and standardized API responses.
+ * Feature boundary: branch.
+ */

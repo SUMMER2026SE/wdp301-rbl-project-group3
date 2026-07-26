@@ -16,6 +16,10 @@ function buildAddressResponse(address: IUserAddress) {
     };
 }
 
+/**
+ * Application service that coordinates business rules, authorization, and side effects.
+ * Feature boundary: Address.
+ */
 export class AddressService {
     async getAddresses(userId: string) {
         const addresses = await addressRepository.findAllByUserId(userId);
@@ -91,3 +95,7 @@ export class AddressService {
 }
 
 export const addressService = new AddressService();
+/**
+ * Business-support component for the address feature.
+ * It centralizes this concern so controllers and other modules reuse one consistent workflow.
+ */

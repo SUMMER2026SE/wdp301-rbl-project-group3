@@ -3,6 +3,10 @@ import { inventoryService } from './inventory.service';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { sendSuccess } from '../../utils/response.util';
 
+/**
+ * HTTP adapter that validates request context and delegates business work.
+ * Feature boundary: Inventory.
+ */
 export class InventoryController {
   getInventory = asyncHandler(async (req: Request, res: Response) => {
     const inventory = await inventoryService.getInventory({
@@ -160,3 +164,7 @@ export class InventoryController {
 }
 
 export const inventoryController = new InventoryController();
+/**
+ * Translates validated HTTP requests into service calls and standardized API responses.
+ * Feature boundary: inventory.
+ */

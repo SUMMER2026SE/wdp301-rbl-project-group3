@@ -29,3 +29,7 @@ export const uploadBannerImage = multer({
   fileFilter,
   limits: { fileSize: 10 * 1024 * 1024 },
 }).single('image');
+/**
+ * Express middleware that enforces a cross-cutting request-processing concern.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

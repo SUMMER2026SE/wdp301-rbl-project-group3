@@ -12,6 +12,10 @@ export interface EmployeeFilters {
 const employeeProjection =
   '-passwordHash -emailVerifyToken -emailVerifyTokenExpires';
 
+/**
+ * Persistence gateway that centralizes database access for this domain.
+ * Feature boundary: Employee.
+ */
 export class EmployeeRepository {
   async findPaginated(filters: EmployeeFilters, page: number, limit: number) {
     const query: Record<string, unknown> = {
@@ -133,3 +137,7 @@ export class EmployeeRepository {
 }
 
 export const employeeRepository = new EmployeeRepository();
+/**
+ * Encapsulates database queries for this module and keeps persistence details out of services.
+ * Feature boundary: employee.
+ */

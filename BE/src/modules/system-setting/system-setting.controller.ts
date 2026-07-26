@@ -9,6 +9,10 @@ import {
   updateSettingSchema,
 } from './system-setting.validation';
 
+/**
+ * HTTP adapter that validates request context and delegates business work.
+ * Feature boundary: SystemSetting.
+ */
 export class SystemSettingController {
   list = asyncHandler(async (req: Request, res: Response) => {
     const { query } = listSettingsSchema.parse({
@@ -76,3 +80,7 @@ export class SystemSettingController {
 }
 
 export const systemSettingController = new SystemSettingController();
+/**
+ * Translates validated HTTP requests into service calls and standardized API responses.
+ * Feature boundary: system-setting.
+ */

@@ -7,3 +7,7 @@ export { AddressesPage } from './AddressesPage'
 export { VouchersPage } from './VouchersPage'
 export { DashboardProfilePage } from './DashboardProfilePage'
 export { SettingsPage } from './SettingsPage'
+/**
+ * Customer dashboard view or route composition for account-specific data and actions.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

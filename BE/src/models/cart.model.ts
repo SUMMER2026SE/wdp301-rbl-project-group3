@@ -40,3 +40,7 @@ const CartSchema = new Schema<ICart>(
 CartSchema.index({ userId: 1 });
 
 export const Cart = mongoose.model<ICart>('Cart', CartSchema);
+/**
+ * Defines the Mongoose schema, TypeScript contract, and persistence rules for this domain entity.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

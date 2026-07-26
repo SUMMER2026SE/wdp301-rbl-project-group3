@@ -68,3 +68,7 @@ router.post(
 );
 
 export default router;
+/**
+ * Defines the HTTP endpoints and middleware chain for this feature module.
+ * Feature boundary: inventory.
+ */

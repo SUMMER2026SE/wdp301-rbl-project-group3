@@ -4,6 +4,10 @@ import { listBannersSchema } from './banner.validation';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { sendSuccess } from '../../utils/response.util';
 
+/**
+ * HTTP adapter that validates request context and delegates business work.
+ * Feature boundary: Banner.
+ */
 export class BannerController {
   list = asyncHandler(async (req: Request, res: Response) => {
     const { query } = listBannersSchema.parse({
@@ -71,3 +75,7 @@ export class BannerController {
 }
 
 export const bannerController = new BannerController();
+/**
+ * Translates validated HTTP requests into service calls and standardized API responses.
+ * Feature boundary: banner.
+ */

@@ -5,6 +5,10 @@ import { sendSuccess } from '../../utils/response.util';
 import { listProductsSchema } from './product.validation';
 import { pricingService } from './pricing.service';
 
+/**
+ * HTTP adapter that validates request context and delegates business work.
+ * Feature boundary: Product.
+ */
 export class ProductController {
   list = asyncHandler(async (req: Request, res: Response) => {
     const { query } = listProductsSchema.parse({
@@ -56,3 +60,7 @@ export class ProductController {
 }
 
 export const productController = new ProductController();
+/**
+ * Translates validated HTTP requests into service calls and standardized API responses.
+ * Feature boundary: product.
+ */

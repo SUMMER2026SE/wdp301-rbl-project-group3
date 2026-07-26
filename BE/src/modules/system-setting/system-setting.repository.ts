@@ -14,6 +14,10 @@ export interface PaginatedSettings {
   totalPages: number;
 }
 
+/**
+ * Persistence gateway that centralizes database access for this domain.
+ * Feature boundary: SystemSetting.
+ */
 export class SystemSettingRepository {
   async countAll(): Promise<number> {
     return SystemSetting.countDocuments().exec();
@@ -89,3 +93,7 @@ export class SystemSettingRepository {
 }
 
 export const systemSettingRepository = new SystemSettingRepository();
+/**
+ * Encapsulates database queries for this module and keeps persistence details out of services.
+ * Feature boundary: system-setting.
+ */

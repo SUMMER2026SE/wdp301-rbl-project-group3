@@ -48,6 +48,10 @@ function toEmployeeResponse(employee: IUser) {
   };
 }
 
+/**
+ * Application service that coordinates business rules, authorization, and side effects.
+ * Feature boundary: Employee.
+ */
 export class EmployeeService {
   async listEmployees(
     filters: {
@@ -313,3 +317,7 @@ export class EmployeeService {
 }
 
 export const employeeService = new EmployeeService();
+/**
+ * Business-support component for the employee feature.
+ * It centralizes this concern so controllers and other modules reuse one consistent workflow.
+ */

@@ -29,6 +29,10 @@ function queryStr(value: unknown): string | undefined {
   return undefined;
 }
 
+/**
+ * HTTP adapter that validates request context and delegates business work.
+ * Feature boundary: Promotion.
+ */
 export class PromotionController {
   // ─── Promotion CRUD ────────────────────────────────────────────────────────
 

@@ -4,6 +4,10 @@ import { env } from './env.config';
 
 let io: Server | null = null;
 
+/**
+ * Attaches Socket.IO to the HTTP server and configures its connection policy.
+ * The implementation is shared to keep this cross-cutting behavior consistent.
+ */
 export const initSocket = (server: HttpServer): Server => {
   io = new Server(server, {
     cors: {
@@ -36,6 +40,10 @@ export const initSocket = (server: HttpServer): Server => {
   return io;
 };
 
+/**
+ * Returns the initialized Socket.IO instance or fails if startup is incomplete.
+ * The implementation is shared to keep this cross-cutting behavior consistent.
+ */
 export const getIO = (): Server => {
   if (!io) {
     throw new Error('Socket.io has not been initialized!');
@@ -43,14 +51,26 @@ export const getIO = (): Server => {
   return io;
 };
 
+/**
+ * Publishes a real-time event to one authorized application room.
+ * The implementation is shared to keep this cross-cutting behavior consistent.
+ */
 export const emitToRoom = (room: string, event: string, data: any) => {
   if (io) {
     io.to(room).emit(event, data);
   }
 };
 
+/**
+ * Publishes an event to all currently connected clients.
+ * The implementation is shared to keep this cross-cutting behavior consistent.
+ */
 export const emitGlobal = (event: string, data: any) => {
   if (io) {
     io.emit(event, data);
   }
 };
+/**
+ * Centralizes configuration and initialization for this external infrastructure integration.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

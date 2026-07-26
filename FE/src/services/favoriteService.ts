@@ -1,6 +1,10 @@
 import apiClient from '@services/api'
 import type { ApiResponse, Product } from '@/types'
 
+/**
+ * Persists a user's favorite product collection.
+ * Request construction and response normalization stay here so UI code remains presentation-focused.
+ */
 export const favoriteService = {
   // Get all favorites
   getFavorites: async (): Promise<ApiResponse<Product[]>> => {
@@ -31,3 +35,7 @@ export const favoriteService = {
     return response.data
   },
 }
+/**
+ * Frontend API client module that centralizes requests and response contracts for one feature.
+ * Keeping this concern isolated makes feature code easier to reuse and maintain.
+ */

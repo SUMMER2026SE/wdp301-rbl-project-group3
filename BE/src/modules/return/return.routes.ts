@@ -29,3 +29,7 @@ router.patch('/:id/reject', validate(rejectReturnSchema), returnController.rejec
 router.patch('/:id/complete', validate(completeReturnSchema), returnController.complete);
 
 export default router;
+/**
+ * Defines the HTTP endpoints and middleware chain for this feature module.
+ * Feature boundary: return.
+ */

@@ -7,6 +7,10 @@ import { orderService } from './order.service';
  * Cron Job tự động kiểm tra và hủy các đơn hàng ở trạng thái pending quá hạn
  * dựa trên tham số cài đặt hệ thống `order_cancel_timeout_minutes`
  */
+/**
+ * Starts the scheduled task that cancels eligible unpaid overdue orders.
+ * The implementation is shared to keep this cross-cutting behavior consistent.
+ */
 export const initOrderAutoCancelCron = () => {
     // Chạy định kỳ mỗi 1 phút một lần
     cron.schedule('*/1 * * * *', async () => {

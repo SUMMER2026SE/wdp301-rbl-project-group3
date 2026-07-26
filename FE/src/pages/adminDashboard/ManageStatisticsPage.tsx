@@ -25,6 +25,10 @@ const formatVND = (num: number) => {
   }).format(num)
 }
 
+/**
+ * Presents operational statistics through filters, summaries, and visual reporting.
+ * Data loading, mutation feedback, and screen-specific state are coordinated at this page boundary.
+ */
 export const ManageStatisticsPage = () => {
   const { user, loading: authLoading } = useAuth()
   const isAdmin = user?.role === 'admin'
@@ -878,3 +882,7 @@ export const ManageStatisticsPage = () => {
     </div>
   )
 }
+/**
+ * Administrative dashboard view that presents and manages a specific back-office feature.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

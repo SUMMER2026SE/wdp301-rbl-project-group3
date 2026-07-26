@@ -26,6 +26,10 @@ const formatVND = (num: number) => {
   }).format(num)
 }
 
+/**
+ * Định nghĩa cấu trúc cho các thẻ thống kê tổng quan (Thẻ Card vuông góc trên).
+ * Bao gồm tên thống kê, giá trị thực tế, mô tả phụ, icon và định dạng màu sắc (tone).
+ */
 type StatCard = {
   title: string
   value: string | number
@@ -35,8 +39,16 @@ type StatCard = {
   link: string
 }
 
+/** 
+ * Kiểu dữ liệu hẹp (Union Type) liệt kê các trạng thái có thể có của đơn hàng 
+ * để hiển thị riêng trên Dashboard (đã được gom nhóm từ các trạng thái chi tiết của backend).
+ */
 type RecentOrderStatus = 'pending' | 'processing' | 'completed' | 'cancelled'
 
+/**
+ * Định nghĩa cấu trúc dữ liệu tóm tắt (View Model) của Đơn hàng để hiển thị trên bảng danh sách.
+ * Giúp bóc tách logic hiển thị UI khỏi dữ liệu thô (raw data) trả về từ API.
+ */
 type DisplayOrder = {
   id: string
   code: string
@@ -46,6 +58,10 @@ type DisplayOrder = {
   itemsCount: number
 }
 
+/**
+ * Bảng ánh xạ cấu hình (Configuration Map) liên kết giữa trạng thái đơn hàng (RecentOrderStatus)
+ * và cách hiển thị tương ứng trên UI (như nhãn tiếng Việt, biểu tượng icon, CSS class màu sắc).
+ */
 const statusMeta: Record<
   RecentOrderStatus,
   { label: string; icon: LucideIcon; className: string }
@@ -72,16 +88,38 @@ const statusMeta: Record<
   },
 }
 
+/**
+ * Summarizes account activity, recent orders, and customer-facing metrics.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ * Component hiển thị trang Tổng quan (Dashboard Overview) của người dùng.
+ * Cung cấp cái nhìn toàn cảnh về tài khoản: thống kê đơn hàng, tổng chi tiêu,
+ * đơn hàng gần đây và các phím tắt nhanh tới các chức năng khác.
+ * Tích hợp Socket.io để cập nhật trạng thái đơn hàng theo thời gian thực.
+ *
+ * @author MinhLD
+ */
 export const DashboardOverview = () => {
   const { user } = useAuth()
+  
+  /** Tên hiển thị (Display Name) của người dùng, dùng làm lời chào trên banner. Dự phòng là 'Customer'. */
   const displayName = user?.fullName || 'Customer'
 
+  /** Trạng thái lưu trữ danh sách nguyên bản (raw data) toàn bộ đơn hàng của người dùng trả về từ API */
   const [orders, setOrders] = useState<Order[]>([])
+  
+  /** Trạng thái cờ tải dữ liệu (loading flag), mặc định bật để render khung xương (skeleton/spinner) lúc ban đầu */
   const [loading, setLoading] = useState(true)
+  
+  /** Trạng thái lưu trữ nội dung chuỗi thông báo lỗi để hiển thị cảnh báo (Alert) nếu API sập */
   const [error, setError] = useState<string | null>(null)
 
+  /** Khởi tạo Context để lấy đối tượng websocket (socket.io) dùng cho việc kết nối thời gian thực */
   const { socket } = useSocket()
 
+  /**
+   * Gọi API để tải danh sách đơn hàng của người dùng hiện tại.
+   * Lấy tối đa 100 đơn hàng gần nhất để phục vụ cho việc tính toán thống kê.
+   */
   const loadData = async () => {
     try {
       setLoading(true)
@@ -103,25 +141,36 @@ export const DashboardOverview = () => {
     loadData()
   }, [])
 
-  // Lắng nghe các thay đổi đơn hàng thời gian thực
+  /**
+   * Hook lắng nghe (Listener hook) kết nối với Socket.io của Backend.
+   * Khi Backend phát tín hiệu đơn hàng có sự thay đổi (được tạo mới hoặc cập nhật trạng thái),
+   * Dashboard sẽ lập tức bắt tín hiệu (trigger) và tự động gọi lại hàm loadData() để refresh giao diện
+   * mà không cần người dùng phải bấm tải lại trang (F5).
+   */
   useEffect(() => {
     if (!socket) return
 
     const handleOrderChange = () => {
       console.log('Realtime order update received in dashboard overview')
-      loadData()
+      loadData() // Refresh danh sách
     }
 
+    // Lắng nghe 2 kênh sự kiện chính
     socket.on('order:status_updated', handleOrderChange)
     socket.on('order:new', handleOrderChange)
 
+    // Cleanup function: Hủy đăng ký lắng nghe khi component unmount để tránh rò rỉ bộ nhớ (Memory Leak)
     return () => {
       socket.off('order:status_updated', handleOrderChange)
       socket.off('order:new', handleOrderChange)
     }
   }, [socket])
 
-  // Calculate live statistics
+  /**
+   * Sử dụng Hook useMemo để tối ưu hóa hiệu năng (Performance Optimization).
+   * Đoạn code tính toán các chỉ số thống kê (tổng chi tiêu, tổng đơn, v.v.) khá nặng, 
+   * nên useMemo sẽ lưu lại kết quả (cache) và CHỈ tính toán lại khi mảng dependency [orders] thực sự thay đổi.
+   */
   const statsData = useMemo(() => {
     const totalOrders = orders.length
     
@@ -379,3 +428,7 @@ export const DashboardOverview = () => {
     </div>
   )
 }
+/**
+ * Customer dashboard view or route composition for account-specific data and actions.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

@@ -3,6 +3,10 @@ import { addressService } from './address.service';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { sendSuccess } from '../../utils/response.util';
 
+/**
+ * HTTP adapter that validates request context and delegates business work.
+ * Feature boundary: Address.
+ */
 export class AddressController {
     getAddresses = asyncHandler(async (req: Request, res: Response) => {
         const addresses = await addressService.getAddresses(req.user!.userId);
@@ -40,3 +44,7 @@ export class AddressController {
 }
 
 export const addressController = new AddressController();
+/**
+ * Translates validated HTTP requests into service calls and standardized API responses.
+ * Feature boundary: address.
+ */

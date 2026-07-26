@@ -48,3 +48,7 @@ ShiftRegistrationSchema.index({ branchId: 1, date: 1 });
 ShiftRegistrationSchema.index({ date: 1, shiftTemplateId: 1 });
 
 export const ShiftRegistration = mongoose.model<IShiftRegistration>('ShiftRegistration', ShiftRegistrationSchema);
+/**
+ * Defines the Mongoose schema, TypeScript contract, and persistence rules for this domain entity.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

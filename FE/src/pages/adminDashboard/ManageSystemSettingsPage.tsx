@@ -125,6 +125,10 @@ const formatVND = (val: number) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val)
 
 // ─── Toggle Switch component ─────────────────────────────────────────────────
+/**
+ * Renders an accessible boolean setting control shared by the settings screen.
+ * Data loading, mutation feedback, and screen-specific state are coordinated at this page boundary.
+ */
 const ToggleSwitch = ({
   checked,
   onChange,
@@ -153,6 +157,17 @@ const ToggleSwitch = ({
 )
 
 // ─── Main Page ───────────────────────────────────────────────────────────────
+/**
+ * Edits system-wide settings while grouping controls by operational concern.
+ * Data loading, mutation feedback, and screen-specific state are coordinated at this page boundary.
+ * Component Quản lý Cài đặt hệ thống (Dành cho Admin).
+ * Cho phép điều chỉnh các tham số vận hành cốt lõi như:
+ * - Thông tin chung (Tên, Email, Chế độ bảo trì)
+ * - Đơn hàng, Giao hàng, Thanh toán, Loyalty.
+ * Quản lý trạng thái dirty (chưa lưu) và cập nhật hàng loạt (bulk update).
+ *
+ * @author MinhLD
+ */
 export const ManageSystemSettingsPage = () => {
   const [groups, setGroups] = useState<Partial<Record<SettingGroup, SystemSetting[]>>>({})
   const [localValues, setLocalValues] = useState<Record<string, string | number | boolean>>({})
@@ -163,6 +178,10 @@ export const ManageSystemSettingsPage = () => {
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<SettingGroup>('general')
 
+  /**
+   * Tải toàn bộ danh sách cài đặt từ server và nhóm chúng theo từng tab.
+   * Khởi tạo giá trị local để người dùng có thể chỉnh sửa trước khi lưu.
+   */
   const fetchSettings = useCallback(async () => {
     try {
       setLoading(true)
@@ -199,6 +218,10 @@ export const ManageSystemSettingsPage = () => {
     setSuccessMsg(null)
   }
 
+  /**
+   * Lấy danh sách các cài đặt đã bị thay đổi (dirty) và gửi yêu cầu
+   * cập nhật hàng loạt lên máy chủ qua API bulkUpdate.
+   */
   const handleSave = async () => {
     if (dirtyKeys.size === 0) return
     try {
@@ -576,3 +599,7 @@ export const ManageSystemSettingsPage = () => {
     </div>
   )
 }
+/**
+ * Administrative dashboard view that presents and manages a specific back-office feature.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

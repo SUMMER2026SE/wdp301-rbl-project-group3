@@ -11,6 +11,10 @@ const formatVND = (num: number) => {
   }).format(num)
 }
 
+/**
+ * Displays saved products and connects favorite actions to the shared context.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ */
 export const FavoritesPage = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const { favorites, loading, removeFromFavorites } = useFavorites()
@@ -189,3 +193,7 @@ export const FavoritesPage = () => {
     </div>
   )
 }
+/**
+ * Customer dashboard view or route composition for account-specific data and actions.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */

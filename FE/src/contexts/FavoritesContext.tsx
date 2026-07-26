@@ -16,6 +16,10 @@ interface FavoritesContextType {
 
 const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined)
 
+/**
+ * Maintains the current user's favorite products and exposes mutation helpers.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ */
 export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth()
   const [favorites, setFavorites] = useState<Product[]>([])
@@ -115,6 +119,10 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   )
 }
 
+/**
+ * Returns the favorites context for pages and reusable product UI.
+ * This boundary owns its UI state and delegates persistence to the appropriate service layer.
+ */
 export const useFavorites = () => {
   const context = useContext(FavoritesContext)
   if (context === undefined) {
@@ -122,3 +130,7 @@ export const useFavorites = () => {
   }
   return context
 }
+/**
+ * Provides shared client state and side effects to descendant React components.
+ * Keeping this concern isolated makes feature code easier to reuse and maintain.
+ */

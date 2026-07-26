@@ -52,3 +52,7 @@ InventorySchema.index({ branchId: 1 });
 InventorySchema.index({ productId: 1 });
 
 export const Inventory = mongoose.model<IInventory>('Inventory', InventorySchema);
+/**
+ * Defines the Mongoose schema, TypeScript contract, and persistence rules for this domain entity.
+ * This file is intentionally kept focused so callers depend on one clear responsibility.
+ */

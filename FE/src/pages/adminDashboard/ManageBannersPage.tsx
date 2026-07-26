@@ -17,6 +17,12 @@ import { useAuth } from '@hooks/useAuth'
 import type { Banner } from '@/types'
 import { ConfirmModal } from '@/components/ConfirmModal'
 
+/**
+ * Manages promotional banner records and their display lifecycle.
+ * Data loading, mutation feedback, and screen-specific state are coordinated at this page boundary.
+ * Cho phép thêm, sửa, xóa, và thay đổi trạng thái hiển thị của các banner trên trang chủ.
+ * Hỗ trợ tải lên (upload) hình ảnh và xem trước giao diện banner.
+ */
 export const ManageBannersPage = () => {
   const { user } = useAuth()
   const isStaff = user?.role === 'staff'
@@ -54,6 +60,9 @@ export const ManageBannersPage = () => {
     fetchBanners()
   }, [])
 
+  /**
+   * Tải danh sách tất cả các banner từ máy chủ.
+   */
   const fetchBanners = async () => {
     try {
       setIsLoading(true)
@@ -178,6 +187,13 @@ export const ManageBannersPage = () => {
     })
   }
 
+  /**
+   * Xử lý form thêm mới hoặc cập nhật banner.
+   * Validate dữ liệu đầu vào và bắt buộc phải có ảnh khi tạo mới.
+   * Sử dụng FormData để upload file cùng với dữ liệu text.
+   *
+   * @param {React.FormEvent} e - Sự kiện submit form
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (isStaff) return
@@ -588,3 +604,7 @@ export const ManageBannersPage = () => {
     </div>
   )
 }
+/**
+ * Administrative dashboard view that presents and manages a specific back-office feature.
+ * UI state, loading behavior, and user actions are kept close to this route boundary.
+ */
