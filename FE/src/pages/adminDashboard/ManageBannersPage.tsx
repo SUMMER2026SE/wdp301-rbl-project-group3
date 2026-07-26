@@ -15,18 +15,13 @@ import {
 import { bannerService } from '@/services/bannerService'
 import { useAuth } from '@hooks/useAuth'
 import type { Banner } from '@/types'
+import { ConfirmModal } from '@/components/ConfirmModal'
 
 /**
  * Manages promotional banner records and their display lifecycle.
  * Data loading, mutation feedback, and screen-specific state are coordinated at this page boundary.
-import { ConfirmModal } from '@/components/ConfirmModal'
-
-/**
- * Component Quản lý Banner Động (Dành cho Admin/Manager).
  * Cho phép thêm, sửa, xóa, và thay đổi trạng thái hiển thị của các banner trên trang chủ.
  * Hỗ trợ tải lên (upload) hình ảnh và xem trước giao diện banner.
- *
- * @author MinhLD
  */
 export const ManageBannersPage = () => {
   const { user } = useAuth()
