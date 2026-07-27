@@ -460,7 +460,8 @@ export const ManageShiftsPage = () => {
         triggerError(res.message || 'Không thể cập nhật đơn đăng ký')
       }
     } catch (err: any) {
-      triggerError(err.message || 'Lỗi hệ thống khi xử lý đơn đăng ký')
+      const errorMsg = err?.response?.data?.message || err?.message || 'Lỗi hệ thống khi xử lý đơn đăng ký'
+      triggerError(errorMsg)
     } finally {
       setIsSubmittingReview(false)
     }
@@ -932,12 +933,23 @@ export const ManageShiftsPage = () => {
                   ) : (
                     registrations.map((reg) => {
                       const regDate = new Date(reg.date)
+                      const regDateStr = reg.date.substring(0, 10)
                       const regDateFormatted = regDate.toLocaleDateString('vi-VN', {
                         weekday: 'long',
                         year: 'numeric',
                         month: '2-digit',
                         day: '2-digit',
                       })
+
+                      const tpl = templates.find((t) => t._id === reg.shiftTemplateId)
+                      const maxStaff = tpl?.maxStaff || 3
+                      const approvedCount = registrations.filter(
+                        (r) =>
+                          r.date.substring(0, 10) === regDateStr &&
+                          r.shiftTemplateId === reg.shiftTemplateId &&
+                          r.status === 'approved'
+                      ).length
+                      const isShiftFull = approvedCount >= maxStaff
 
                       return (
                         <tr key={reg._id} className="group transition-colors hover:bg-surface-container-low/40">
@@ -959,6 +971,11 @@ export const ManageShiftsPage = () => {
                               <p className="text-[11px] text-on-surface-variant font-bold mt-0.5">
                                 {reg.startTime} - {reg.endTime} (8 tiếng)
                               </p>
+                              {isShiftFull && reg.status === 'pending' && (
+                                <span className="inline-flex items-center gap-1 rounded bg-amber-500/10 text-amber-600 border border-amber-500/20 px-2 py-0.5 text-[10px] font-bold mt-1">
+                                  ⚠️ Ca đã đủ {approvedCount}/{maxStaff} người
+                                </span>
+                              )}
                             </div>
                           </td>
                           <td className="px-6 py-4">
@@ -997,9 +1014,23 @@ export const ManageShiftsPage = () => {
                               {reg.status === 'pending' ? (
                                 <>
                                   <button
-                                    onClick={() => handleOpenReviewModal(reg, 'approved')}
-                                    className="rounded-lg p-1.5 bg-success-container text-on-success-container hover:bg-success hover:text-white transition-colors"
-                                    title="Duyệt ca làm"
+                                    onClick={() => {
+                                      if (isShiftFull) {
+                                        triggerError(`Ca làm này đã đủ số lượng nhân sự tối đa (${approvedCount}/${maxStaff} người). Vui lòng từ chối đơn này hoặc tăng giới hạn nhân sự ca mẫu!`)
+                                      } else {
+                                        handleOpenReviewModal(reg, 'approved')
+                                      }
+                                    }}
+                                    className={`rounded-lg p-1.5 transition-colors ${
+                                      isShiftFull
+                                        ? 'bg-surface-container-high text-on-surface-variant/40 cursor-not-allowed border border-outline-variant'
+                                        : 'bg-success-container text-on-success-container hover:bg-success hover:text-white'
+                                    }`}
+                                    title={
+                                      isShiftFull
+                                        ? `Ca đã đủ ${approvedCount}/${maxStaff} người. Không thể duyệt thêm.`
+                                        : 'Duyệt ca làm'
+                                    }
                                     type="button"
                                   >
                                     <Check size={16} />

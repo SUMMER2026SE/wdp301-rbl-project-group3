@@ -263,7 +263,7 @@ export class ShiftService {
       const approvedCount = await shiftRepository.countApprovedRegistrations(registration.date, registration.shiftTemplateId.toString());
 
       if (approvedCount >= maxStaff) {
-        throw new AppError(`This shift is full. Limit is ${maxStaff} staff.`, 400);
+        throw new AppError(`Ca làm này đã đủ số lượng nhân sự tối đa (${approvedCount}/${maxStaff} người). Không thể duyệt thêm.`, 400);
       }
     }
 
