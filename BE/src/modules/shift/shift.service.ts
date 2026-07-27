@@ -140,6 +140,13 @@ export class ShiftService {
       throw new AppError('Cannot register for shifts in the past', 400);
     }
 
+    // Limit check: Don't allow registration if shift is already full with approved staff
+    const maxStaff = template.maxStaff ?? 3;
+    const approvedCount = await shiftRepository.countApprovedRegistrations(date, data.shiftTemplateId);
+    if (approvedCount >= maxStaff) {
+      throw new AppError(`Ca làm này đã đủ số lượng nhân viên được duyệt (${approvedCount}/${maxStaff}).`, 400);
+    }
+
     // Conflict check
     const existing = await shiftRepository.findConflictingRegistration(actor.userId, date, data.shiftTemplateId);
     if (existing) {
@@ -172,7 +179,6 @@ export class ShiftService {
     };
 
     if (actor.role === 'staff') {
-      repositoryFilters.userId = actor.userId;
       repositoryFilters.branchId = actor.branchId;
     } else if (actor.role === 'branch_manager') {
       repositoryFilters.branchId = actor.branchId;

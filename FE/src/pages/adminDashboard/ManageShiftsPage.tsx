@@ -231,7 +231,7 @@ export const ManageShiftsPage = () => {
       }
 
       if (isStaff) {
-        params.userId = user?.id || (user as any)._id
+        // Fetch all registrations in branch so staff can see shift capacity and approved counts
       } else {
         if (filterEmployeeId !== 'all') {
           params.userId = filterEmployeeId
@@ -725,12 +725,25 @@ export const ManageShiftsPage = () => {
                           </p>
                         ) : (
                           templates.map((tpl) => {
-                            // Find if registered for this template on this date
+                            const userIdStr = String(user?.id || (user as any)?._id)
+
+                            // Find if current user registered for this template on this date
                             const reg = registrations.find(
                               (r) =>
                                 r.date.substring(0, 10) === dateStr &&
-                                r.shiftTemplateId === tpl._id
+                                r.shiftTemplateId === tpl._id &&
+                                String((r.userId as any)?._id || r.userId) === userIdStr
                             )
+
+                            // Count approved staff for this shift slot
+                            const approvedCount = registrations.filter(
+                              (r) =>
+                                r.date.substring(0, 10) === dateStr &&
+                                r.shiftTemplateId === tpl._id &&
+                                r.status === 'approved'
+                            ).length
+
+                            const isFull = approvedCount >= (tpl.maxStaff || 3)
 
                             return (
                               <div
@@ -751,7 +764,13 @@ export const ManageShiftsPage = () => {
                                     <span className="text-on-surface truncate pr-1" title={tpl.name}>
                                       {tpl.name}
                                     </span>
-                                    <span className="text-[10px] text-primary shrink-0">8h/ca</span>
+                                    <span
+                                      className={`text-[10px] font-bold shrink-0 ${
+                                        isFull ? 'text-error' : 'text-primary'
+                                      }`}
+                                    >
+                                      {approvedCount}/{tpl.maxStaff || 3} người
+                                    </span>
                                   </div>
                                   <div className="mt-1 flex items-center gap-1 text-[10px] text-on-surface-variant font-semibold">
                                     <Clock size={11} className="text-on-surface-variant" />
@@ -809,15 +828,17 @@ export const ManageShiftsPage = () => {
                                   ) : (
                                     <button
                                       onClick={() => handleOpenRegisterModal(tpl, dateItem)}
-                                      disabled={isPast}
+                                      disabled={isPast || isFull}
                                       className={`w-full py-1 rounded text-center text-[10px] font-bold transition-all ${
                                         isPast
                                           ? 'bg-surface-container-high text-on-surface-variant/40 cursor-not-allowed'
+                                          : isFull
+                                          ? 'bg-surface-container-high text-on-surface-variant/60 cursor-not-allowed border border-outline-variant'
                                           : 'bg-primary text-white hover:bg-primary-dark hover:scale-[1.02]'
                                       }`}
                                       type="button"
                                     >
-                                      {isPast ? 'Đã qua' : 'Đăng ký'}
+                                      {isPast ? 'Đã qua' : isFull ? `Đã đủ người (${approvedCount}/${tpl.maxStaff})` : 'Đăng ký'}
                                     </button>
                                   )}
                                 </div>
